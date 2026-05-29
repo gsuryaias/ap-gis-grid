@@ -1,0 +1,38 @@
+{
+  "name": "ap-gis-grid",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Interactive GIS + MIS lookup for the AP-TRANSCO transmission network (400/220/132 kV lines and substations).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "build:data": "tsx scripts/build-data.mts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
+    "maplibre-gl": "^5.8.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.7",
+    "@tmcw/togeojson": "^7.1.2",
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "@xmldom/xmldom": "^0.9.8",
+    "node-html-parser": "^7.0.1",
+    "tailwindcss": "^4.1.7",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0",
+    "vitest": "^3.1.4"
+  }
+}

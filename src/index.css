@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/* v4 defaults dark mode to prefers-color-scheme; we drive it from a .dark class
+   on <html> so the basemap/theme switcher can control it. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Voltage palette — Okabe-Ito derived, distinguishable under all CVD types.
+     Colour is paired with redundant line width + dash in the map styling. */
+  --color-v400: #d55e00; /* vermillion — 400 kV */
+  --color-v220: #0072b2; /* blue       — 220 kV */
+  --color-v132: #009e73; /* green      — 132 kV */
+
+  --color-v400-soft: #f4a261;
+  --color-v220-soft: #5aa9e6;
+  --color-v132-soft: #5fc9a3;
+
+  /* App surfaces */
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f6f9;
+  --color-surface-3: #e8ecf2;
+  --color-ink: #0d1b2a;
+  --color-ink-2: #44566c;
+  --color-line: #d6deea;
+  --color-accent: #1a936f;
+  --color-brand: #0b3d5c;
+
+  --radius-panel: 14px;
+  --shadow-panel: 0 8px 30px -8px rgb(13 27 42 / 0.25);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Dark surface overrides */
+.dark {
+  --color-surface: #0e1622;
+  --color-surface-2: #15202e;
+  --color-surface-3: #1d2c3d;
+  --color-ink: #eaf1f8;
+  --color-ink-2: #9bb0c4;
+  --color-line: #294056;
+  --color-brand: #6fb3d9;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* MapLibre attribution: keep readable on both basemaps, never hide it. */
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
