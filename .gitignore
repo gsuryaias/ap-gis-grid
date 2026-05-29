@@ -24,3 +24,6 @@ pnpm-debug.log*
 # Vite / TS cache
 .vite/
 *.tsbuildinfo
+
+# Playwright MCP artifacts
+.playwright-mcp/

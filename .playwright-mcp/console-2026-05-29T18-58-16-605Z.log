@@ -1,1 +1,5 @@
 [      51ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/ap-gis-grid/node_modules/.vite/deps/react-dom_client.js?v=a58fcffa:20102
+[  274375ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/ap-gis-grid/@vite/client:864
+[  275544ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/ap-gis-grid/node_modules/.vite/deps/react-dom_client.js?v=106c32d3:20102
+[  294062ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/ap-gis-grid/@vite/client:864
+[  294171ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/ap-gis-grid/node_modules/.vite/deps/react-dom_client.js?v=106c32d3:20102
