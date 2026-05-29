@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-05-29T18:41:36.268Z",
+  "source": "Transco.kml (AP-TRANSCO, Google Earth export)",
+  "counts": {
+    "substations": 499,
+    "lines": 715
+  },
+  "byVoltage": {
+    "132": {
+      "substations": 349,
+      "lines": 477,
+      "lengthKm": 10128.8
+    },
+    "220": {
+      "substations": 123,
+      "lines": 203,
+      "lengthKm": 8372.6
+    },
+    "400": {
+      "substations": 27,
+      "lines": 35,
+      "lengthKm": 3375.3
+    }
+  },
+  "totalLengthKm": 21876.7,
+  "bounds": [
+    [
+      76.49845,
+      12.7382
+    ],
+    [
+      84.68578,
+      19.10464
+    ]
+  ],
+  "snapThresholdM": 500
+}
