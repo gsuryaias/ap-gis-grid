@@ -27,35 +27,54 @@ const voltColor = e([
   "#888888",
 ]);
 
-const lineWidthBase = e([
-  "interpolate", ["linear"], ["zoom"],
-  5, ["match", ["get", "voltage"], 400, 1.4, 220, 1.0, 132, 0.6, 1.0],
-  9, ["match", ["get", "voltage"], 400, 3.0, 220, 2.0, 132, 1.3, 1.5],
-  13, ["match", ["get", "voltage"], 400, 6.0, 220, 4.2, 132, 2.8, 2.5],
-]);
+// MapLibre requires ["zoom"] to be the TOP-LEVEL input of interpolate/step, so the
+// feature-state selection factor is folded into each stop output rather than wrapping
+// the interpolate (which would be rejected as "zoom may only be a top-level input").
+type Quad = [number, number, number, number, number]; // [zoom, v400, v220, v132, default]
 
-const lineSelFactor = e([
+const matchV = (a: number, b: number, c: number, d: number): unknown => [
+  "match", ["get", "voltage"], 400, a, 220, b, 132, c, d,
+];
+
+const LINE_SEL: unknown = [
   "case",
   ["boolean", ["feature-state", "selected"], false], 1.7,
   ["boolean", ["feature-state", "hover"], false], 1.3,
   1,
-]);
-
-const lineWidth = e(["*", lineWidthBase, lineSelFactor]);
-
-const ssRadiusBase = e([
-  "interpolate", ["linear"], ["zoom"],
-  5, ["match", ["get", "voltage"], 400, 3.6, 220, 2.8, 132, 2.0, 2.4],
-  10, ["match", ["get", "voltage"], 400, 7.0, 220, 5.4, 132, 3.8, 4.0],
-  14, ["match", ["get", "voltage"], 400, 11.0, 220, 9.0, 132, 6.8, 6.0],
-]);
-
-const ssSelFactor = e([
+];
+const SS_SEL: unknown = [
   "case",
   ["boolean", ["feature-state", "selected"], false], 1.55,
   ["boolean", ["feature-state", "hover"], false], 1.25,
   1,
-]);
+];
+const CASE_EXTRA: unknown = [
+  "case",
+  ["boolean", ["feature-state", "selected"], false], 6,
+  ["boolean", ["feature-state", "hover"], false], 3,
+  1.4,
+];
+
+const LINE_STOPS: Quad[] = [
+  [5, 1.4, 1.0, 0.6, 1.0],
+  [9, 3.0, 2.0, 1.3, 1.5],
+  [13, 6.0, 4.2, 2.8, 2.5],
+];
+const SS_STOPS: Quad[] = [
+  [5, 3.6, 2.8, 2.0, 2.4],
+  [10, 7.0, 5.4, 3.8, 4.0],
+  [14, 11.0, 9.0, 6.8, 6.0],
+];
+
+function zoomInterp(stops: Quad[], wrap: (perVoltage: unknown) => unknown): ExpressionSpecification {
+  const out: unknown[] = ["interpolate", ["linear"], ["zoom"]];
+  for (const [z, a, b, c, d] of stops) out.push(z, wrap(matchV(a, b, c, d)));
+  return e(out);
+}
+
+const lineWidth = zoomInterp(LINE_STOPS, (v) => ["*", v, LINE_SEL]);
+const casingWidth = zoomInterp(LINE_STOPS, (v) => ["+", ["*", v, LINE_SEL], CASE_EXTRA]);
+const ssRadius = zoomInterp(SS_STOPS, (v) => ["*", v, SS_SEL]);
 
 function casingColor(def: (typeof BASEMAPS)[Basemap]): ExpressionSpecification {
   return e([
@@ -76,11 +95,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
       layout: { "line-cap": "round", "line-join": "round" },
       paint: {
         "line-color": casingColor(def),
-        "line-width": e([
-          "+",
-          lineWidth,
-          ["case", ["boolean", ["feature-state", "selected"], false], 6, ["boolean", ["feature-state", "hover"], false], 3, 1.4],
-        ]),
+        "line-width": casingWidth,
         "line-opacity": e([
           "case",
           ["boolean", ["feature-state", "selected"], false], 0.95,
@@ -116,7 +131,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
       source: SRC.substations,
       paint: {
         "circle-color": voltColor,
-        "circle-radius": e(["*", ssRadiusBase, ssSelFactor]),
+        "circle-radius": ssRadius,
         "circle-stroke-color": e([
           "case",
           ["boolean", ["feature-state", "selected"], false], SELECT_HALO,

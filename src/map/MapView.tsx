@@ -66,7 +66,9 @@ export function MapView({ data }: { data: GridData }) {
     mapRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.addControl(new maplibregl.AttributionControl({ compact: false, customAttribution: def.attribution }), "bottom-right");
+    // CARTO's GL style already carries the mandatory OSM + CARTO attribution, so we let
+    // AttributionControl surface it rather than duplicating via customAttribution.
+    map.addControl(new maplibregl.AttributionControl({ compact: false }), "bottom-right");
     map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
     const select = useAppStore.getState().select;
@@ -164,5 +166,7 @@ export function MapView({ data }: { data: GridData }) {
     if (map && readyRef.current && flySignal) flyToFeature(map, data, flySignal.id);
   }, [flySignal, data]);
 
-  return <div ref={containerRef} className="absolute inset-0" aria-label="AP-TRANSCO network map" role="application" />;
+  // NB: use h-full/w-full, not `absolute inset-0` — MapLibre's unlayered
+  // `.maplibregl-map { position: relative }` overrides Tailwind's layered `.absolute`.
+  return <div ref={containerRef} className="h-full w-full" aria-label="AP-TRANSCO network map" role="application" />;
 }

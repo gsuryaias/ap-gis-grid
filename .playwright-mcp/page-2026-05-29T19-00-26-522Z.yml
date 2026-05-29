@@ -1,0 +1,151 @@
+- generic [ref=e7]:
+  - application "AP-TRANSCO network map" [ref=e8]:
+    - region "Map" [ref=e9]
+    - generic:
+      - generic [ref=e10]: 2 km
+      - generic:
+        - group [ref=e11]:
+          - generic [ref=e12]:
+            - text: ©
+            - link "CARTO" [ref=e13] [cursor=pointer]:
+              - /url: https://carto.com/about-carto/
+            - text: ", ©"
+            - link "OpenStreetMap" [ref=e14] [cursor=pointer]:
+              - /url: http://www.openstreetmap.org/about/
+            - text: contributors | ©
+            - link "OpenStreetMap" [ref=e15] [cursor=pointer]:
+              - /url: https://www.openstreetmap.org/copyright
+            - text: contributors, ©
+            - link "CARTO" [ref=e16] [cursor=pointer]:
+              - /url: https://carto.com/attributions
+        - generic [ref=e17]:
+          - button "Zoom in" [ref=e18] [cursor=pointer]
+          - button "Zoom out" [ref=e20] [cursor=pointer]
+  - generic:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - img [ref=e26]
+        - generic [ref=e28]:
+          - heading "AP-TRANSCO Grid Atlas" [level=1] [ref=e29]
+          - paragraph [ref=e30]: Transmission network · 400 / 220 / 132 kV
+      - generic [ref=e31]:
+        - paragraph [ref=e32]: 499 SS · 715 lines · 21,877 km
+        - button "Quality" [ref=e33]:
+          - img [ref=e34]
+          - text: Quality
+    - generic [ref=e39]:
+      - img [ref=e40]
+      - textbox "Search substations and lines" [ref=e43]:
+        - /placeholder: Search substations & lines…
+        - text: Chittoor
+      - button "Clear search" [ref=e113]:
+        - img [ref=e114]
+    - generic [ref=e45]:
+      - button "Layers & legend" [expanded] [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e48]
+          - text: Layers & legend
+        - img [ref=e52]
+      - generic [ref=e54]:
+        - generic [ref=e55]: Voltage
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e59]: 400 kV
+            - generic [ref=e60]: 27 SS · 35 ln
+          - switch "Toggle 400 kV" [checked] [ref=e61]
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e66]: 220 kV
+            - generic [ref=e67]: 123 SS · 203 ln
+          - switch "Toggle 220 kV" [checked] [ref=e68]
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - generic [ref=e73]: 132 kV
+            - generic [ref=e74]: 349 SS · 477 ln
+          - switch "Toggle 132 kV" [checked] [ref=e75]
+        - generic [ref=e77]: Show
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - img [ref=e80]
+            - text: Substations
+          - switch "Toggle substations" [checked] [ref=e82]
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - img [ref=e86]
+            - text: Lines
+          - switch "Toggle lines" [checked] [ref=e87]
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]:
+              - img [ref=e92]
+              - text: Single circuit
+            - switch "Toggle single-circuit" [checked] [ref=e93]
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - img [ref=e97]
+              - text: Double circuit
+            - switch "Toggle double-circuit" [checked] [ref=e98]
+        - generic [ref=e101]:
+          - button "Light" [ref=e102]:
+            - img [ref=e103]
+            - text: Light
+          - button "Dark" [active] [pressed] [ref=e106]:
+            - img [ref=e107]
+            - text: Dark
+  - complementary "Feature details" [ref=e316]:
+    - generic [ref=e317]:
+      - img [ref=e319]
+      - generic [ref=e322]:
+        - generic [ref=e323]:
+          - generic [ref=e324]: 400 kV
+          - generic [ref=e325]: Substation
+        - heading "Chittoor" [level=2] [ref=e326]
+      - generic [ref=e327]:
+        - button "Center on map" [ref=e328]:
+          - img [ref=e329]
+        - button "Close details" [ref=e333]:
+          - img [ref=e334]
+    - generic [ref=e336]:
+      - generic [ref=e337]:
+        - generic [ref=e338]: Substation code
+        - generic [ref=e339]: SS-400KV-CTTR
+      - generic [ref=e340]:
+        - generic [ref=e341]: Full name
+        - generic [ref=e342]: CHITTOOR-400/220KV-SUBSTATION
+      - generic [ref=e343]:
+        - generic [ref=e344]: Coordinates
+        - generic [ref=e345]: 13.21639, 79.22333
+      - generic [ref=e346]: Connected lines · 7(spatially inferred)
+      - generic [ref=e347]:
+        - button "400KV CHITTOOR KALIKIRI TM DC LINE DC · 0 m" [ref=e348]:
+          - img [ref=e351]
+          - generic [ref=e355]: 400KV CHITTOOR KALIKIRI TM DC LINE
+          - generic [ref=e356]: DC · 0 m
+        - button "400KV Krishnapatnam-Chittoor QMDC Line DC · 0 m" [ref=e357]:
+          - img [ref=e360]
+          - generic [ref=e364]: 400KV Krishnapatnam-Chittoor QMDC Line
+          - generic [ref=e365]: DC · 0 m
+        - button "400KV MAHADEVAMANGALAM(CHITTOOR) LILO DC · 0 m" [ref=e366]:
+          - img [ref=e369]
+          - generic [ref=e373]: 400KV MAHADEVAMANGALAM(CHITTOOR) LILO
+          - generic [ref=e374]: DC · 0 m
+        - button "220KV Mahadeva Mangalam - Palamaner DC Line DC · 0 m" [ref=e375]:
+          - img [ref=e378]
+          - generic [ref=e382]: 220KV Mahadeva Mangalam - Palamaner DC Line
+          - generic [ref=e383]: DC · 0 m
+        - button "220KV MAHADEVA MANGALAM -CHITTOOR DC LINE DC · 0 m" [ref=e384]:
+          - img [ref=e387]
+          - generic [ref=e391]: 220KV MAHADEVA MANGALAM -CHITTOOR DC LINE
+          - generic [ref=e392]: DC · 0 m
+        - button "220KV NAGARI-MAHADEVAMANGALAM CKT-01 SC · 0 m" [ref=e393]:
+          - img [ref=e396]
+          - generic [ref=e400]: 220KV NAGARI-MAHADEVAMANGALAM CKT-01
+          - generic [ref=e401]: SC · 0 m
+        - button "220KV RENIGUNTA-MAHADEVAMANGALAM CKT-01 SC · 0 m" [ref=e402]:
+          - img [ref=e405]
+          - generic [ref=e409]: 220KV RENIGUNTA-MAHADEVAMANGALAM CKT-01
+          - generic [ref=e410]: SC · 0 m
+  - button "Browse data table" [ref=e312]:
+    - img [ref=e313]
+    - text: Browse data table
+  - generic: "Network data: AP-TRANSCO"

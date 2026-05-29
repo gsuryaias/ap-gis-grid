@@ -1,0 +1,3660 @@
+- generic [ref=e7]:
+  - application "AP-TRANSCO network map" [ref=e8]:
+    - region "Map" [ref=e9]
+    - generic:
+      - generic [ref=e10]: 2 km
+      - generic:
+        - group [ref=e11]:
+          - generic [ref=e12]:
+            - text: ©
+            - link "CARTO" [ref=e13] [cursor=pointer]:
+              - /url: https://carto.com/about-carto/
+            - text: ", ©"
+            - link "OpenStreetMap" [ref=e14] [cursor=pointer]:
+              - /url: http://www.openstreetmap.org/about/
+            - text: contributors | ©
+            - link "OpenStreetMap" [ref=e15] [cursor=pointer]:
+              - /url: https://www.openstreetmap.org/copyright
+            - text: contributors, ©
+            - link "CARTO" [ref=e16] [cursor=pointer]:
+              - /url: https://carto.com/attributions
+        - generic [ref=e17]:
+          - button "Zoom in" [ref=e18] [cursor=pointer]
+          - button "Zoom out" [ref=e20] [cursor=pointer]
+  - generic:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - img [ref=e26]
+        - generic [ref=e28]:
+          - heading "AP-TRANSCO Grid Atlas" [level=1] [ref=e29]
+          - paragraph [ref=e30]: Transmission network · 400 / 220 / 132 kV
+      - generic [ref=e31]:
+        - paragraph [ref=e32]: 499 SS · 715 lines · 21,877 km
+        - button "Quality" [ref=e33]:
+          - img [ref=e34]
+          - text: Quality
+    - generic [ref=e39]:
+      - img [ref=e40]
+      - textbox "Search substations and lines" [ref=e43]:
+        - /placeholder: Search substations & lines…
+        - text: Chittoor
+      - button "Clear search" [ref=e113]:
+        - img [ref=e114]
+    - generic [ref=e45]:
+      - button "Layers & legend" [expanded] [ref=e46]:
+        - generic [ref=e47]:
+          - img [ref=e48]
+          - text: Layers & legend
+        - img [ref=e52]
+      - generic [ref=e54]:
+        - generic [ref=e55]: Voltage
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e59]: 400 kV
+            - generic [ref=e60]: 27 SS · 35 ln
+          - switch "Toggle 400 kV" [checked] [ref=e61]
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e66]: 220 kV
+            - generic [ref=e67]: 123 SS · 203 ln
+          - switch "Toggle 220 kV" [checked] [ref=e68]
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - generic [ref=e73]: 132 kV
+            - generic [ref=e74]: 349 SS · 477 ln
+          - switch "Toggle 132 kV" [checked] [ref=e75]
+        - generic [ref=e77]: Show
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - img [ref=e80]
+            - text: Substations
+          - switch "Toggle substations" [checked] [ref=e82]
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - img [ref=e86]
+            - text: Lines
+          - switch "Toggle lines" [checked] [ref=e87]
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]:
+              - img [ref=e92]
+              - text: Single circuit
+            - switch "Toggle single-circuit" [checked] [ref=e93]
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - img [ref=e97]
+              - text: Double circuit
+            - switch "Toggle double-circuit" [checked] [ref=e98]
+        - generic [ref=e101]:
+          - button "Light" [ref=e102]:
+            - img [ref=e103]
+            - text: Light
+          - button "Dark" [pressed] [ref=e106]:
+            - img [ref=e107]
+            - text: Dark
+  - complementary "Feature details" [ref=e316]:
+    - generic [ref=e317]:
+      - img [ref=e319]
+      - generic [ref=e322]:
+        - generic [ref=e323]:
+          - generic [ref=e324]: 400 kV
+          - generic [ref=e325]: Substation
+        - heading "Chittoor" [level=2] [ref=e326]
+      - generic [ref=e327]:
+        - button "Center on map" [ref=e328]:
+          - img [ref=e329]
+        - button "Close details" [ref=e333]:
+          - img [ref=e334]
+    - generic [ref=e336]:
+      - generic [ref=e337]:
+        - generic [ref=e338]: Substation code
+        - generic [ref=e339]: SS-400KV-CTTR
+      - generic [ref=e340]:
+        - generic [ref=e341]: Full name
+        - generic [ref=e342]: CHITTOOR-400/220KV-SUBSTATION
+      - generic [ref=e343]:
+        - generic [ref=e344]: Coordinates
+        - generic [ref=e345]: 13.21639, 79.22333
+      - generic [ref=e346]: Connected lines · 7(spatially inferred)
+      - generic [ref=e347]:
+        - button "400KV CHITTOOR KALIKIRI TM DC LINE DC · 0 m" [ref=e348]:
+          - img [ref=e351]
+          - generic [ref=e355]: 400KV CHITTOOR KALIKIRI TM DC LINE
+          - generic [ref=e356]: DC · 0 m
+        - button "400KV Krishnapatnam-Chittoor QMDC Line DC · 0 m" [ref=e357]:
+          - img [ref=e360]
+          - generic [ref=e364]: 400KV Krishnapatnam-Chittoor QMDC Line
+          - generic [ref=e365]: DC · 0 m
+        - button "400KV MAHADEVAMANGALAM(CHITTOOR) LILO DC · 0 m" [ref=e366]:
+          - img [ref=e369]
+          - generic [ref=e373]: 400KV MAHADEVAMANGALAM(CHITTOOR) LILO
+          - generic [ref=e374]: DC · 0 m
+        - button "220KV Mahadeva Mangalam - Palamaner DC Line DC · 0 m" [ref=e375]:
+          - img [ref=e378]
+          - generic [ref=e382]: 220KV Mahadeva Mangalam - Palamaner DC Line
+          - generic [ref=e383]: DC · 0 m
+        - button "220KV MAHADEVA MANGALAM -CHITTOOR DC LINE DC · 0 m" [ref=e384]:
+          - img [ref=e387]
+          - generic [ref=e391]: 220KV MAHADEVA MANGALAM -CHITTOOR DC LINE
+          - generic [ref=e392]: DC · 0 m
+        - button "220KV NAGARI-MAHADEVAMANGALAM CKT-01 SC · 0 m" [ref=e393]:
+          - img [ref=e396]
+          - generic [ref=e400]: 220KV NAGARI-MAHADEVAMANGALAM CKT-01
+          - generic [ref=e401]: SC · 0 m
+        - button "220KV RENIGUNTA-MAHADEVAMANGALAM CKT-01 SC · 0 m" [ref=e402]:
+          - img [ref=e405]
+          - generic [ref=e409]: 220KV RENIGUNTA-MAHADEVAMANGALAM CKT-01
+          - generic [ref=e410]: SC · 0 m
+  - generic [ref=e411]:
+    - banner [ref=e412]:
+      - generic [ref=e413]:
+        - button "Substations · 499" [ref=e414]
+        - button "Lines · 715" [ref=e415]
+      - generic [ref=e416]:
+        - img [ref=e417]
+        - textbox "Filter substations…" [ref=e420]
+      - button "Close table" [ref=e421]:
+        - img [ref=e422]
+    - table [ref=e426]:
+      - rowgroup [ref=e427]:
+        - row "Substation kV Circle Code Lines" [ref=e428]:
+          - columnheader "Substation" [ref=e429] [cursor=pointer]
+          - columnheader "kV" [ref=e430] [cursor=pointer]
+          - columnheader "Circle" [ref=e431] [cursor=pointer]
+          - columnheader "Code" [ref=e432] [cursor=pointer]
+          - columnheader "Lines" [ref=e433] [cursor=pointer]
+      - rowgroup [ref=e434]:
+        - row "Chittoor 400 kV — SS-400KV-CTTR 7" [ref=e435] [cursor=pointer]:
+          - cell "Chittoor" [ref=e436]
+          - cell "400 kV" [ref=e437]:
+            - generic [ref=e438]: 400 kV
+          - cell "—" [ref=e439]
+          - cell "SS-400KV-CTTR" [ref=e440]
+          - cell "7" [ref=e441]
+        - row "Ghani 400 kV — SS-400KV-GANI 1" [ref=e442] [cursor=pointer]:
+          - cell "Ghani" [ref=e443]
+          - cell "400 kV" [ref=e444]:
+            - generic [ref=e445]: 400 kV
+          - cell "—" [ref=e446]
+          - cell "SS-400KV-GANI" [ref=e447]
+          - cell "1" [ref=e448]
+        - row "Jammalamadugu 400 kV — SS-400KV-JLMD 5" [ref=e449] [cursor=pointer]:
+          - cell "Jammalamadugu" [ref=e450]
+          - cell "400 kV" [ref=e451]:
+            - generic [ref=e452]: 400 kV
+          - cell "—" [ref=e453]
+          - cell "SS-400KV-JLMD" [ref=e454]
+          - cell "5" [ref=e455]
+        - row "Kalikiri 400 kV — SS-400KV-KLKI 4" [ref=e456] [cursor=pointer]:
+          - cell "Kalikiri" [ref=e457]
+          - cell "400 kV" [ref=e458]:
+            - generic [ref=e459]: 400 kV
+          - cell "—" [ref=e460]
+          - cell "SS-400KV-KLKI" [ref=e461]
+          - cell "4" [ref=e462]
+        - row "Kalapaka 400 kV — SS-400KV-KLPK 11" [ref=e463] [cursor=pointer]:
+          - cell "Kalapaka" [ref=e464]
+          - cell "400 kV" [ref=e465]:
+            - generic [ref=e466]: 400 kV
+          - cell "—" [ref=e467]
+          - cell "SS-400KV-KLPK" [ref=e468]
+          - cell "11" [ref=e469]
+        - row "K V Kota 400 kV — SS-400KV-KMKT 3" [ref=e470] [cursor=pointer]:
+          - cell "K V Kota" [ref=e471]
+          - cell "400 kV" [ref=e472]:
+            - generic [ref=e473]: 400 kV
+          - cell "—" [ref=e474]
+          - cell "SS-400KV-KMKT" [ref=e475]
+          - cell "3" [ref=e476]
+        - row "Manubolu 400 kV — SS-400KV-MNBL 11" [ref=e477] [cursor=pointer]:
+          - cell "Manubolu" [ref=e478]
+          - cell "400 kV" [ref=e479]:
+            - generic [ref=e480]: 400 kV
+          - cell "—" [ref=e481]
+          - cell "SS-400KV-MNBL" [ref=e482]
+          - cell "11" [ref=e483]
+        - row "Maradam 400 kV — SS-400KV-MRDM 5" [ref=e484] [cursor=pointer]:
+          - cell "Maradam" [ref=e485]
+          - cell "400 kV" [ref=e486]:
+            - generic [ref=e487]: 400 kV
+          - cell "—" [ref=e488]
+          - cell "SS-400KV-MRDM" [ref=e489]
+          - cell "5" [ref=e490]
+        - row "Narnoor 400 kV — SS-400KV-NRNR 6" [ref=e491] [cursor=pointer]:
+          - cell "Narnoor" [ref=e492]
+          - cell "400 kV" [ref=e493]:
+            - generic [ref=e494]: 400 kV
+          - cell "—" [ref=e495]
+          - cell "SS-400KV-NRNR" [ref=e496]
+          - cell "6" [ref=e497]
+        - row "Podili 400 kV — SS-400KV-PODL 2" [ref=e498] [cursor=pointer]:
+          - cell "Podili" [ref=e499]
+          - cell "400 kV" [ref=e500]:
+            - generic [ref=e501]: 400 kV
+          - cell "—" [ref=e502]
+          - cell "SS-400KV-PODL" [ref=e503]
+          - cell "2" [ref=e504]
+        - row "Sattenapalli 400 kV — SS-400KV-SNPL 8" [ref=e505] [cursor=pointer]:
+          - cell "Sattenapalli" [ref=e506]
+          - cell "400 kV" [ref=e507]:
+            - generic [ref=e508]: 400 kV
+          - cell "—" [ref=e509]
+          - cell "SS-400KV-SNPL" [ref=e510]
+          - cell "8" [ref=e511]
+        - row "Uravakonda 400 kV — SS-400KV-URKD 9" [ref=e512] [cursor=pointer]:
+          - cell "Uravakonda" [ref=e513]
+          - cell "400 kV" [ref=e514]:
+            - generic [ref=e515]: 400 kV
+          - cell "—" [ref=e516]
+          - cell "SS-400KV-URKD" [ref=e517]
+          - cell "9" [ref=e518]
+        - row "Vemagiri 400 kV — SS-400KV-VMGR 14" [ref=e519] [cursor=pointer]:
+          - cell "Vemagiri" [ref=e520]
+          - cell "400 kV" [ref=e521]:
+            - generic [ref=e522]: 400 kV
+          - cell "—" [ref=e523]
+          - cell "SS-400KV-VMGR" [ref=e524]
+          - cell "14" [ref=e525]
+        - row "Hidupur 400 kV — SS-400KV-HNDP 1" [ref=e526] [cursor=pointer]:
+          - cell "Hidupur" [ref=e527]
+          - cell "400 kV" [ref=e528]:
+            - generic [ref=e529]: 400 kV
+          - cell "—" [ref=e530]
+          - cell "SS-400KV-HNDP" [ref=e531]
+          - cell "1" [ref=e532]
+        - row "Thallaricheruvu 400 kV — SS-400KV-THCH 2" [ref=e533] [cursor=pointer]:
+          - cell "Thallaricheruvu" [ref=e534]
+          - cell "400 kV" [ref=e535]:
+            - generic [ref=e536]: 400 kV
+          - cell "—" [ref=e537]
+          - cell "SS-400KV-THCH" [ref=e538]
+          - cell "2" [ref=e539]
+        - row "STPP 400 kV — NTPC 4" [ref=e540] [cursor=pointer]:
+          - cell "STPP" [ref=e541]
+          - cell "400 kV" [ref=e542]:
+            - generic [ref=e543]: 400 kV
+          - cell "—" [ref=e544]
+          - cell "NTPC" [ref=e545]
+          - cell "4" [ref=e546]
+        - row "HNPCL 400 kV — Generator 1" [ref=e547] [cursor=pointer]:
+          - cell "HNPCL" [ref=e548]
+          - cell "400 kV" [ref=e549]:
+            - generic [ref=e550]: 400 kV
+          - cell "—" [ref=e551]
+          - cell "Generator" [ref=e552]
+          - cell "1" [ref=e553]
+        - row "GWK_PGCIL 400 kV — PGCIL 1" [ref=e554] [cursor=pointer]:
+          - cell "GWK_PGCIL" [ref=e555]
+          - cell "400 kV" [ref=e556]:
+            - generic [ref=e557]: 400 kV
+          - cell "—" [ref=e558]
+          - cell "PGCIL" [ref=e559]
+          - cell "1" [ref=e560]
+        - row "GMR 400 kV — Generator 1" [ref=e561] [cursor=pointer]:
+          - cell "GMR" [ref=e562]
+          - cell "400 kV" [ref=e563]:
+            - generic [ref=e564]: 400 kV
+          - cell "—" [ref=e565]
+          - cell "Generator" [ref=e566]
+          - cell "1" [ref=e567]
+        - row "GVK 400 kV — Generator 3" [ref=e568] [cursor=pointer]:
+          - cell "GVK" [ref=e569]
+          - cell "400 kV" [ref=e570]:
+            - generic [ref=e571]: 400 kV
+          - cell "—" [ref=e572]
+          - cell "Generator" [ref=e573]
+          - cell "3" [ref=e574]
+        - row "Gowthami 400 kV — Generator 1" [ref=e575] [cursor=pointer]:
+          - cell "Gowthami" [ref=e576]
+          - cell "400 kV" [ref=e577]:
+            - generic [ref=e578]: 400 kV
+          - cell "—" [ref=e579]
+          - cell "Generator" [ref=e580]
+          - cell "1" [ref=e581]
+        - row "Konaseema 400 kV — Generator 1" [ref=e582] [cursor=pointer]:
+          - cell "Konaseema" [ref=e583]
+          - cell "400 kV" [ref=e584]:
+            - generic [ref=e585]: 400 kV
+          - cell "—" [ref=e586]
+          - cell "Generator" [ref=e587]
+          - cell "1" [ref=e588]
+        - row "Nunna_PGCIL 400 kV — PGCIL 8" [ref=e589] [cursor=pointer]:
+          - cell "Nunna_PGCIL" [ref=e590]
+          - cell "400 kV" [ref=e591]:
+            - generic [ref=e592]: 400 kV
+          - cell "—" [ref=e593]
+          - cell "PGCIL" [ref=e594]
+          - cell "8" [ref=e595]
+        - row "VTPS 400 kV — APGENCO 3" [ref=e596] [cursor=pointer]:
+          - cell "VTPS" [ref=e597]
+          - cell "400 kV" [ref=e598]:
+            - generic [ref=e599]: 400 kV
+          - cell "—" [ref=e600]
+          - cell "APGENCO" [ref=e601]
+          - cell "3" [ref=e602]
+        - row "Srisailam 400 kV — APGENCO 14" [ref=e603] [cursor=pointer]:
+          - cell "Srisailam" [ref=e604]
+          - cell "400 kV" [ref=e605]:
+            - generic [ref=e606]: 400 kV
+          - cell "—" [ref=e607]
+          - cell "APGENCO" [ref=e608]
+          - cell "14" [ref=e609]
+        - row "Krishnapatnam 400 kV — APGENCO 2" [ref=e610] [cursor=pointer]:
+          - cell "Krishnapatnam" [ref=e611]
+          - cell "400 kV" [ref=e612]:
+            - generic [ref=e613]: 400 kV
+          - cell "—" [ref=e614]
+          - cell "APGENCO" [ref=e615]
+          - cell "2" [ref=e616]
+        - row "RTPP 400 kV — APGENCO 1" [ref=e617] [cursor=pointer]:
+          - cell "RTPP" [ref=e618]
+          - cell "400 kV" [ref=e619]:
+            - generic [ref=e620]: 400 kV
+          - cell "—" [ref=e621]
+          - cell "APGENCO" [ref=e622]
+          - cell "1" [ref=e623]
+        - row "A.P.Carbides 220 kV — SS-220KV-APCB 9" [ref=e624] [cursor=pointer]:
+          - cell "A.P.Carbides" [ref=e625]
+          - cell "220 kV" [ref=e626]:
+            - generic [ref=e627]: 220 kV
+          - cell "—" [ref=e628]
+          - cell "SS-220KV-APCB" [ref=e629]
+          - cell "9" [ref=e630]
+        - row "Anantapur 220 kV — SS-220KV-ATPR 8" [ref=e631] [cursor=pointer]:
+          - cell "Anantapur" [ref=e632]
+          - cell "220 kV" [ref=e633]:
+            - generic [ref=e634]: 220 kV
+          - cell "—" [ref=e635]
+          - cell "SS-220KV-ATPR" [ref=e636]
+          - cell "8" [ref=e637]
+        - row "Bilakalagudur 220 kV — SS-220KV-BGDR 2" [ref=e638] [cursor=pointer]:
+          - cell "Bilakalagudur" [ref=e639]
+          - cell "220 kV" [ref=e640]:
+            - generic [ref=e641]: 220 kV
+          - cell "—" [ref=e642]
+          - cell "SS-220KV-BGDR" [ref=e643]
+          - cell "2" [ref=e644]
+        - row "Brahmankotkur 220 kV — SS-220KV-BNKR 3" [ref=e645] [cursor=pointer]:
+          - cell "Brahmankotkur" [ref=e646]
+          - cell "220 kV" [ref=e647]:
+            - generic [ref=e648]: 220 kV
+          - cell "—" [ref=e649]
+          - cell "SS-220KV-BNKR" [ref=e650]
+          - cell "3" [ref=e651]
+        - row "Boyareddypalli 220 kV — SS-220KV-BRPL 1" [ref=e652] [cursor=pointer]:
+          - cell "Boyareddypalli" [ref=e653]
+          - cell "220 kV" [ref=e654]:
+            - generic [ref=e655]: 220 kV
+          - cell "—" [ref=e656]
+          - cell "SS-220KV-BRPL" [ref=e657]
+          - cell "1" [ref=e658]
+        - row "Chittoor 220 kV — SS-220KV-CHTR 6" [ref=e659] [cursor=pointer]:
+          - cell "Chittoor" [ref=e660]
+          - cell "220 kV" [ref=e661]:
+            - generic [ref=e662]: 220 kV
+          - cell "—" [ref=e663]
+          - cell "SS-220KV-CHTR" [ref=e664]
+          - cell "6" [ref=e665]
+        - row "Chinakampalli 220 kV — SS-220KV-CKPL 8" [ref=e666] [cursor=pointer]:
+          - cell "Chinakampalli" [ref=e667]
+          - cell "220 kV" [ref=e668]:
+            - generic [ref=e669]: 220 kV
+          - cell "—" [ref=e670]
+          - cell "SS-220KV-CKPL" [ref=e671]
+          - cell "8" [ref=e672]
+        - row "Dhone 220 kV — SS-220KV-DHNE 5" [ref=e673] [cursor=pointer]:
+          - cell "Dhone" [ref=e674]
+          - cell "220 kV" [ref=e675]:
+            - generic [ref=e676]: 220 kV
+          - cell "—" [ref=e677]
+          - cell "SS-220KV-DHNE" [ref=e678]
+          - cell "5" [ref=e679]
+        - row "Goddumarri 220 kV — SS-220KV-GDMR 2" [ref=e680] [cursor=pointer]:
+          - cell "Goddumarri" [ref=e681]
+          - cell "220 kV" [ref=e682]:
+            - generic [ref=e683]: 220 kV
+          - cell "—" [ref=e684]
+          - cell "SS-220KV-GDMR" [ref=e685]
+          - cell "2" [ref=e686]
+        - row "Gooty RS 220 kV — SS-220KV-GTRS 9" [ref=e687] [cursor=pointer]:
+          - cell "Gooty RS" [ref=e688]
+          - cell "220 kV" [ref=e689]:
+            - generic [ref=e690]: 220 kV
+          - cell "—" [ref=e691]
+          - cell "SS-220KV-GTRS" [ref=e692]
+          - cell "9" [ref=e693]
+        - row "Gooty RTSS 220 kV — SS-220KV-GTRT 2" [ref=e694] [cursor=pointer]:
+          - cell "Gooty RTSS" [ref=e695]
+          - cell "220 kV" [ref=e696]:
+            - generic [ref=e697]: 220 kV
+          - cell "—" [ref=e698]
+          - cell "SS-220KV-GTRT" [ref=e699]
+          - cell "2" [ref=e700]
+        - row "Gooty SwS 220 kV — SS-220KV-GTSS 7" [ref=e701] [cursor=pointer]:
+          - cell "Gooty SwS" [ref=e702]
+          - cell "220 kV" [ref=e703]:
+            - generic [ref=e704]: 220 kV
+          - cell "—" [ref=e705]
+          - cell "SS-220KV-GTSS" [ref=e706]
+          - cell "7" [ref=e707]
+        - row "Gaddamvaripalli 220 kV — SS-220KV-GVPL 2" [ref=e708] [cursor=pointer]:
+          - cell "Gaddamvaripalli" [ref=e709]
+          - cell "220 kV" [ref=e710]:
+            - generic [ref=e711]: 220 kV
+          - cell "—" [ref=e712]
+          - cell "SS-220KV-GVPL" [ref=e713]
+          - cell "2" [ref=e714]
+        - row "Hindupur 220 kV — SS-220KV-HDPR 7" [ref=e715] [cursor=pointer]:
+          - cell "Hindupur" [ref=e716]
+          - cell "220 kV" [ref=e717]:
+            - generic [ref=e718]: 220 kV
+          - cell "—" [ref=e719]
+          - cell "SS-220KV-HDPR" [ref=e720]
+          - cell "7" [ref=e721]
+        - row "Kadapa 220 kV — SS-220KV-KDPA 6" [ref=e722] [cursor=pointer]:
+          - cell "Kadapa" [ref=e723]
+          - cell "220 kV" [ref=e724]:
+            - generic [ref=e725]: 220 kV
+          - cell "—" [ref=e726]
+          - cell "SS-220KV-KDPA" [ref=e727]
+          - cell "6" [ref=e728]
+        - row "Kalyandurg 220 kV — SS-220KV-KLDG 6" [ref=e729] [cursor=pointer]:
+          - cell "Kalyandurg" [ref=e730]
+          - cell "220 kV" [ref=e731]:
+            - generic [ref=e732]: 220 kV
+          - cell "—" [ref=e733]
+          - cell "SS-220KV-KLDG" [ref=e734]
+          - cell "6" [ref=e735]
+        - row "Kalikiri 220 kV — SS-220KV-KLKR 7" [ref=e736] [cursor=pointer]:
+          - cell "Kalikiri" [ref=e737]
+          - cell "220 kV" [ref=e738]:
+            - generic [ref=e739]: 220 kV
+          - cell "—" [ref=e740]
+          - cell "SS-220KV-KLKR" [ref=e741]
+          - cell "7" [ref=e742]
+        - row "Kambalapadu 220 kV — SS-220KV-KLPD 2" [ref=e743] [cursor=pointer]:
+          - cell "Kambalapadu" [ref=e744]
+          - cell "220 kV" [ref=e745]:
+            - generic [ref=e746]: 220 kV
+          - cell "—" [ref=e747]
+          - cell "SS-220KV-KLPD" [ref=e748]
+          - cell "2" [ref=e749]
+        - row "Kondapuram 220 kV — SS-220KV-KNDP 4" [ref=e750] [cursor=pointer]:
+          - cell "Kondapuram" [ref=e751]
+          - cell "220 kV" [ref=e752]:
+            - generic [ref=e753]: 220 kV
+          - cell "—" [ref=e754]
+          - cell "SS-220KV-KNDP" [ref=e755]
+          - cell "4" [ref=e756]
+        - row "Kodur 220 kV — SS-220KV-KODR 2" [ref=e757] [cursor=pointer]:
+          - cell "Kodur" [ref=e758]
+          - cell "220 kV" [ref=e759]:
+            - generic [ref=e760]: 220 kV
+          - cell "—" [ref=e761]
+          - cell "SS-220KV-KODR" [ref=e762]
+          - cell "2" [ref=e763]
+        - row "Kuppam 220 kV — SS-220KV-KPAM 2" [ref=e764] [cursor=pointer]:
+          - cell "Kuppam" [ref=e765]
+          - cell "220 kV" [ref=e766]:
+            - generic [ref=e767]: 220 kV
+          - cell "—" [ref=e768]
+          - cell "SS-220KV-KPAM" [ref=e769]
+          - cell "2" [ref=e770]
+        - row "Krishnagiri 220 kV — SS-220KV-KSNG 2" [ref=e771] [cursor=pointer]:
+          - cell "Krishnagiri" [ref=e772]
+          - cell "220 kV" [ref=e773]:
+            - generic [ref=e774]: 220 kV
+          - cell "—" [ref=e775]
+          - cell "SS-220KV-KSNG" [ref=e776]
+          - cell "2" [ref=e777]
+        - row "Lakkasagaram 220 kV — SS-220KV-LKSR 2" [ref=e778] [cursor=pointer]:
+          - cell "Lakkasagaram" [ref=e779]
+          - cell "220 kV" [ref=e780]:
+            - generic [ref=e781]: 220 kV
+          - cell "—" [ref=e782]
+          - cell "SS-220KV-LKSR" [ref=e783]
+          - cell "2" [ref=e784]
+        - row "Muchumarri 220 kV — SS-220KV-MCMR 1" [ref=e785] [cursor=pointer]:
+          - cell "Muchumarri" [ref=e786]
+          - cell "220 kV" [ref=e787]:
+            - generic [ref=e788]: 220 kV
+          - cell "—" [ref=e789]
+          - cell "SS-220KV-MCMR" [ref=e790]
+          - cell "1" [ref=e791]
+        - row "Mydukur 220 kV — SS-220KV-MDKR 2" [ref=e792] [cursor=pointer]:
+          - cell "Mydukur" [ref=e793]
+          - cell "220 kV" [ref=e794]:
+            - generic [ref=e795]: 220 kV
+          - cell "—" [ref=e796]
+          - cell "SS-220KV-MDKR" [ref=e797]
+          - cell "2" [ref=e798]
+        - row "Madanapalli 220 kV — SS-220KV-MDNP 8" [ref=e799] [cursor=pointer]:
+          - cell "Madanapalli" [ref=e800]
+          - cell "220 kV" [ref=e801]:
+            - generic [ref=e802]: 220 kV
+          - cell "—" [ref=e803]
+          - cell "SS-220KV-MDNP" [ref=e804]
+          - cell "8" [ref=e805]
+        - row "Malyala 220 kV — SS-220KV-MLYL 2" [ref=e806] [cursor=pointer]:
+          - cell "Malyala" [ref=e807]
+          - cell "220 kV" [ref=e808]:
+            - generic [ref=e809]: 220 kV
+          - cell "—" [ref=e810]
+          - cell "SS-220KV-MLYL" [ref=e811]
+          - cell "2" [ref=e812]
+        - row "Nandyal 220 kV — SS-220KV-NDYL 7" [ref=e813] [cursor=pointer]:
+          - cell "Nandyal" [ref=e814]
+          - cell "220 kV" [ref=e815]:
+            - generic [ref=e816]: 220 kV
+          - cell "—" [ref=e817]
+          - cell "SS-220KV-NDYL" [ref=e818]
+          - cell "7" [ref=e819]
+        - row "Nagari 220 kV — SS-220KV-NGRI 6" [ref=e820] [cursor=pointer]:
+          - cell "Nagari" [ref=e821]
+          - cell "220 kV" [ref=e822]:
+            - generic [ref=e823]: 220 kV
+          - cell "—" [ref=e824]
+          - cell "SS-220KV-NGRI" [ref=e825]
+          - cell "6" [ref=e826]
+        - row "Nansuralla 220 kV — SS-220KV-NSRL 3" [ref=e827] [cursor=pointer]:
+          - cell "Nansuralla" [ref=e828]
+          - cell "220 kV" [ref=e829]:
+            - generic [ref=e830]: 220 kV
+          - cell "—" [ref=e831]
+          - cell "SS-220KV-NSRL" [ref=e832]
+          - cell "3" [ref=e833]
+        - row "Porumamilla 220 kV — SS-220KV-PMML 2" [ref=e834] [cursor=pointer]:
+          - cell "Porumamilla" [ref=e835]
+          - cell "220 kV" [ref=e836]:
+            - generic [ref=e837]: 220 kV
+          - cell "—" [ref=e838]
+          - cell "SS-220KV-PMML" [ref=e839]
+          - cell "2" [ref=e840]
+        - row "Palamaneru 220 kV — SS-220KV-PMNR 6" [ref=e841] [cursor=pointer]:
+          - cell "Palamaneru" [ref=e842]
+          - cell "220 kV" [ref=e843]:
+            - generic [ref=e844]: 220 kV
+          - cell "—" [ref=e845]
+          - cell "SS-220KV-PMNR" [ref=e846]
+          - cell "6" [ref=e847]
+        - row "Pulivendula 220 kV — SS-220KV-PVLA 7" [ref=e848] [cursor=pointer]:
+          - cell "Pulivendula" [ref=e849]
+          - cell "220 kV" [ref=e850]:
+            - generic [ref=e851]: 220 kV
+          - cell "—" [ref=e852]
+          - cell "SS-220KV-PVLA" [ref=e853]
+          - cell "7" [ref=e854]
+        - row "Rachagunneri 220 kV — SS-220KV-RCGR 8" [ref=e855] [cursor=pointer]:
+          - cell "Rachagunneri" [ref=e856]
+          - cell "220 kV" [ref=e857]:
+            - generic [ref=e858]: 220 kV
+          - cell "—" [ref=e859]
+          - cell "SS-220KV-RCGR" [ref=e860]
+          - cell "8" [ref=e861]
+        - row "Ragulapadu 220 kV — SS-220KV-RGPD 3" [ref=e862] [cursor=pointer]:
+          - cell "Ragulapadu" [ref=e863]
+          - cell "220 kV" [ref=e864]:
+            - generic [ref=e865]: 220 kV
+          - cell "—" [ref=e866]
+          - cell "SS-220KV-RGPD" [ref=e867]
+          - cell "3" [ref=e868]
+        - row "Rajampet 220 kV — SS-220KV-RJPT 4" [ref=e869] [cursor=pointer]:
+          - cell "Rajampet" [ref=e870]
+          - cell "220 kV" [ref=e871]:
+            - generic [ref=e872]: 220 kV
+          - cell "—" [ref=e873]
+          - cell "SS-220KV-RJPT" [ref=e874]
+          - cell "4" [ref=e875]
+        - row "Ramagiri 220 kV — SS-220KV-RMGR 3" [ref=e876] [cursor=pointer]:
+          - cell "Ramagiri" [ref=e877]
+          - cell "220 kV" [ref=e878]:
+            - generic [ref=e879]: 220 kV
+          - cell "—" [ref=e880]
+          - cell "SS-220KV-RMGR" [ref=e881]
+          - cell "3" [ref=e882]
+        - row "Renigunta 220 kV — SS-220KV-RNGT 12" [ref=e883] [cursor=pointer]:
+          - cell "Renigunta" [ref=e884]
+          - cell "220 kV" [ref=e885]:
+            - generic [ref=e886]: 220 kV
+          - cell "—" [ref=e887]
+          - cell "SS-220KV-RNGT" [ref=e888]
+          - cell "12" [ref=e889]
+        - row "Subbarayanapalli 220 kV — SS-220KV-SBRP 3" [ref=e890] [cursor=pointer]:
+          - cell "Subbarayanapalli" [ref=e891]
+          - cell "220 kV" [ref=e892]:
+            - generic [ref=e893]: 220 kV
+          - cell "—" [ref=e894]
+          - cell "SS-220KV-SBRP" [ref=e895]
+          - cell "3" [ref=e896]
+        - row "Shapuram 220 kV — SS-220KV-SHPM 5" [ref=e897] [cursor=pointer]:
+          - cell "Shapuram" [ref=e898]
+          - cell "220 kV" [ref=e899]:
+            - generic [ref=e900]: 220 kV
+          - cell "—" [ref=e901]
+          - cell "SS-220KV-SHPM" [ref=e902]
+          - cell "5" [ref=e903]
+        - row "Settypalli 220 kV — SS-220KV-STPL 1" [ref=e904] [cursor=pointer]:
+          - cell "Settypalli" [ref=e905]
+          - cell "220 kV" [ref=e906]:
+            - generic [ref=e907]: 220 kV
+          - cell "—" [ref=e908]
+          - cell "SS-220KV-STPL" [ref=e909]
+          - cell "1" [ref=e910]
+        - row "Somayajulapalli 220 kV — SS-220KV-SYPL 6" [ref=e911] [cursor=pointer]:
+          - cell "Somayajulapalli" [ref=e912]
+          - cell "220 kV" [ref=e913]:
+            - generic [ref=e914]: 220 kV
+          - cell "—" [ref=e915]
+          - cell "SS-220KV-SYPL" [ref=e916]
+          - cell "6" [ref=e917]
+        - row "Tadipatri 220 kV — SS-220KV-TDPR 6" [ref=e918] [cursor=pointer]:
+          - cell "Tadipatri" [ref=e919]
+          - cell "220 kV" [ref=e920]:
+            - generic [ref=e921]: 220 kV
+          - cell "—" [ref=e922]
+          - cell "SS-220KV-TDPR" [ref=e923]
+          - cell "6" [ref=e924]
+        - row "Thimmapuram 220 kV — SS-220KV-TMPM 2" [ref=e925] [cursor=pointer]:
+          - cell "Thimmapuram" [ref=e926]
+          - cell "220 kV" [ref=e927]:
+            - generic [ref=e928]: 220 kV
+          - cell "—" [ref=e929]
+          - cell "SS-220KV-TMPM" [ref=e930]
+          - cell "2" [ref=e931]
+        - row "Thimmapuram 220 kV — SS-220KV-TMPR 4" [ref=e932] [cursor=pointer]:
+          - cell "Thimmapuram" [ref=e933]
+          - cell "220 kV" [ref=e934]:
+            - generic [ref=e935]: 220 kV
+          - cell "—" [ref=e936]
+          - cell "SS-220KV-TMPR" [ref=e937]
+          - cell "4" [ref=e938]
+        - row "Vajrakarur 220 kV — SS-220KV-VJKR 2" [ref=e939] [cursor=pointer]:
+          - cell "Vajrakarur" [ref=e940]
+          - cell "220 kV" [ref=e941]:
+            - generic [ref=e942]: 220 kV
+          - cell "—" [ref=e943]
+          - cell "SS-220KV-VJKR" [ref=e944]
+          - cell "2" [ref=e945]
+        - row "Yerraguntla 220 kV — SS-220KV-YGTL 10" [ref=e946] [cursor=pointer]:
+          - cell "Yerraguntla" [ref=e947]
+          - cell "220 kV" [ref=e948]:
+            - generic [ref=e949]: 220 kV
+          - cell "—" [ref=e950]
+          - cell "SS-220KV-YGTL" [ref=e951]
+          - cell "10" [ref=e952]
+        - row "Yellanur 220 kV — SS-220KV-YLNR 2" [ref=e953] [cursor=pointer]:
+          - cell "Yellanur" [ref=e954]
+          - cell "220 kV" [ref=e955]:
+            - generic [ref=e956]: 220 kV
+          - cell "—" [ref=e957]
+          - cell "SS-220KV-YLNR" [ref=e958]
+          - cell "2" [ref=e959]
+        - row "Gollapuram 220 kV — SS-220KV-GLPM 4" [ref=e960] [cursor=pointer]:
+          - cell "Gollapuram" [ref=e961]
+          - cell "220 kV" [ref=e962]:
+            - generic [ref=e963]: 220 kV
+          - cell "—" [ref=e964]
+          - cell "SS-220KV-GLPM" [ref=e965]
+          - cell "4" [ref=e966]
+        - row "Chakrayapet 220 kV — SS-220KV-CKRPT 2" [ref=e967] [cursor=pointer]:
+          - cell "Chakrayapet" [ref=e968]
+          - cell "220 kV" [ref=e969]:
+            - generic [ref=e970]: 220 kV
+          - cell "—" [ref=e971]
+          - cell "SS-220KV-CKRPT" [ref=e972]
+          - cell "2" [ref=e973]
+        - row "Animala 220 kV — Animala 2" [ref=e974] [cursor=pointer]:
+          - cell "Animala" [ref=e975]
+          - cell "220 kV" [ref=e976]:
+            - generic [ref=e977]: 220 kV
+          - cell "—" [ref=e978]
+          - cell "Animala" [ref=e979]
+          - cell "2" [ref=e980]
+        - row "Nimbagallu 220 kV — Nimbagallu 1" [ref=e981] [cursor=pointer]:
+          - cell "Nimbagallu" [ref=e982]
+          - cell "220 kV" [ref=e983]:
+            - generic [ref=e984]: 220 kV
+          - cell "—" [ref=e985]
+          - cell "Nimbagallu" [ref=e986]
+          - cell "1" [ref=e987]
+        - row "AXIS WIND 220 kV — AXIS WIND 1" [ref=e988] [cursor=pointer]:
+          - cell "AXIS WIND" [ref=e989]
+          - cell "220 kV" [ref=e990]:
+            - generic [ref=e991]: 220 kV
+          - cell "—" [ref=e992]
+          - cell "AXIS WIND" [ref=e993]
+          - cell "1" [ref=e994]
+        - row "Beluguppa 220 kV — Beluguppa 1" [ref=e995] [cursor=pointer]:
+          - cell "Beluguppa" [ref=e996]
+          - cell "220 kV" [ref=e997]:
+            - generic [ref=e998]: 220 kV
+          - cell "—" [ref=e999]
+          - cell "Beluguppa" [ref=e1000]
+          - cell "1" [ref=e1001]
+        - row "Muttala 220 kV — Muttala 1" [ref=e1002] [cursor=pointer]:
+          - cell "Muttala" [ref=e1003]
+          - cell "220 kV" [ref=e1004]:
+            - generic [ref=e1005]: 220 kV
+          - cell "—" [ref=e1006]
+          - cell "Muttala" [ref=e1007]
+          - cell "1" [ref=e1008]
+        - row "ECOREN 220 kV — ECOREN 1" [ref=e1009] [cursor=pointer]:
+          - cell "ECOREN" [ref=e1010]
+          - cell "220 kV" [ref=e1011]:
+            - generic [ref=e1012]: 220 kV
+          - cell "—" [ref=e1013]
+          - cell "ECOREN" [ref=e1014]
+          - cell "1" [ref=e1015]
+        - row "SUZLON 220 kV — SUZLON 1" [ref=e1016] [cursor=pointer]:
+          - cell "SUZLON" [ref=e1017]
+          - cell "220 kV" [ref=e1018]:
+            - generic [ref=e1019]: 220 kV
+          - cell "—" [ref=e1020]
+          - cell "SUZLON" [ref=e1021]
+          - cell "1" [ref=e1022]
+        - row "Borampally 220 kV — Borampally 6" [ref=e1023] [cursor=pointer]:
+          - cell "Borampally" [ref=e1024]
+          - cell "220 kV" [ref=e1025]:
+            - generic [ref=e1026]: 220 kV
+          - cell "—" [ref=e1027]
+          - cell "Borampally" [ref=e1028]
+          - cell "6" [ref=e1029]
+        - row "ECOREN 220 kV — ECOREN 1" [ref=e1030] [cursor=pointer]:
+          - cell "ECOREN" [ref=e1031]
+          - cell "220 kV" [ref=e1032]:
+            - generic [ref=e1033]: 220 kV
+          - cell "—" [ref=e1034]
+          - cell "ECOREN" [ref=e1035]
+          - cell "1" [ref=e1036]
+        - row "GREENKO 220 kV — GREENKO 1" [ref=e1037] [cursor=pointer]:
+          - cell "GREENKO" [ref=e1038]
+          - cell "220 kV" [ref=e1039]:
+            - generic [ref=e1040]: 220 kV
+          - cell "—" [ref=e1041]
+          - cell "GREENKO" [ref=e1042]
+          - cell "1" [ref=e1043]
+        - row "HERO 220 kV — HERO 1" [ref=e1044] [cursor=pointer]:
+          - cell "HERO" [ref=e1045]
+          - cell "220 kV" [ref=e1046]:
+            - generic [ref=e1047]: 220 kV
+          - cell "—" [ref=e1048]
+          - cell "HERO" [ref=e1049]
+          - cell "1" [ref=e1050]
+        - row "Ammavaripally 220 kV — Ammavaripally 2" [ref=e1051] [cursor=pointer]:
+          - cell "Ammavaripally" [ref=e1052]
+          - cell "220 kV" [ref=e1053]:
+            - generic [ref=e1054]: 220 kV
+          - cell "—" [ref=e1055]
+          - cell "Ammavaripally" [ref=e1056]
+          - cell "2" [ref=e1057]
+        - row "Boksampally 220 kV — Boksampally 4" [ref=e1058] [cursor=pointer]:
+          - cell "Boksampally" [ref=e1059]
+          - cell "220 kV" [ref=e1060]:
+            - generic [ref=e1061]: 220 kV
+          - cell "—" [ref=e1062]
+          - cell "Boksampally" [ref=e1063]
+          - cell "4" [ref=e1064]
+        - row "RCI 220 kV — RCI 1" [ref=e1065] [cursor=pointer]:
+          - cell "RCI" [ref=e1066]
+          - cell "220 kV" [ref=e1067]:
+            - generic [ref=e1068]: 220 kV
+          - cell "—" [ref=e1069]
+          - cell "RCI" [ref=e1070]
+          - cell "1" [ref=e1071]
+        - row "KIA 220 kV — KIA 2" [ref=e1072] [cursor=pointer]:
+          - cell "KIA" [ref=e1073]
+          - cell "220 kV" [ref=e1074]:
+            - generic [ref=e1075]: 220 kV
+          - cell "—" [ref=e1076]
+          - cell "KIA" [ref=e1077]
+          - cell "2" [ref=e1078]
+        - row "ULTRATECH 220 kV — ULTRATECH 1" [ref=e1079] [cursor=pointer]:
+          - cell "ULTRATECH" [ref=e1080]
+          - cell "220 kV" [ref=e1081]:
+            - generic [ref=e1082]: 220 kV
+          - cell "—" [ref=e1083]
+          - cell "ULTRATECH" [ref=e1084]
+          - cell "1" [ref=e1085]
+        - row "Pendekallu RTSS 220 kV — Pendekallu RTSS 1" [ref=e1086] [cursor=pointer]:
+          - cell "Pendekallu RTSS" [ref=e1087]
+          - cell "220 kV" [ref=e1088]:
+            - generic [ref=e1089]: 220 kV
+          - cell "—" [ref=e1090]
+          - cell "Pendekallu RTSS" [ref=e1091]
+          - cell "1" [ref=e1092]
+        - row "SUZLON 220 kV — SUZLON 2" [ref=e1093] [cursor=pointer]:
+          - cell "SUZLON" [ref=e1094]
+          - cell "220 kV" [ref=e1095]:
+            - generic [ref=e1096]: 220 kV
+          - cell "—" [ref=e1097]
+          - cell "SUZLON" [ref=e1098]
+          - cell "2" [ref=e1099]
+        - row "Theta 220 kV — Theta 1" [ref=e1100] [cursor=pointer]:
+          - cell "Theta" [ref=e1101]
+          - cell "220 kV" [ref=e1102]:
+            - generic [ref=e1103]: 220 kV
+          - cell "—" [ref=e1104]
+          - cell "Theta" [ref=e1105]
+          - cell "1" [ref=e1106]
+        - row "RTPP 220 kV — RTPP 5" [ref=e1107] [cursor=pointer]:
+          - cell "RTPP" [ref=e1108]
+          - cell "220 kV" [ref=e1109]:
+            - generic [ref=e1110]: 220 kV
+          - cell "—" [ref=e1111]
+          - cell "RTPP" [ref=e1112]
+          - cell "5" [ref=e1113]
+        - row "Chillakallu 220 kV — SS-220KV-CHKL 10" [ref=e1114] [cursor=pointer]:
+          - cell "Chillakallu" [ref=e1115]
+          - cell "220 kV" [ref=e1116]:
+            - generic [ref=e1117]: 220 kV
+          - cell "—" [ref=e1118]
+          - cell "SS-220KV-CHKL" [ref=e1119]
+          - cell "10" [ref=e1120]
+        - row "Gudivada 220 kV — SS-220KV-GDVD 8" [ref=e1121] [cursor=pointer]:
+          - cell "Gudivada" [ref=e1122]
+          - cell "220 kV" [ref=e1123]:
+            - generic [ref=e1124]: 220 kV
+          - cell "—" [ref=e1125]
+          - cell "SS-220KV-GDVD" [ref=e1126]
+          - cell "8" [ref=e1127]
+        - row "Gunadala 220 kV — SS-220KV-GNDL 6" [ref=e1128] [cursor=pointer]:
+          - cell "Gunadala" [ref=e1129]
+          - cell "220 kV" [ref=e1130]:
+            - generic [ref=e1131]: 220 kV
+          - cell "—" [ref=e1132]
+          - cell "SS-220KV-GNDL" [ref=e1133]
+          - cell "6" [ref=e1134]
+        - row "Kondapalli 220 kV — SS-220KV-KDPL 8" [ref=e1135] [cursor=pointer]:
+          - cell "Kondapalli" [ref=e1136]
+          - cell "220 kV" [ref=e1137]:
+            - generic [ref=e1138]: 220 kV
+          - cell "—" [ref=e1139]
+          - cell "SS-220KV-KDPL" [ref=e1140]
+          - cell "8" [ref=e1141]
+        - row "Markapur 220 kV — SS-220KV-MRPR 4" [ref=e1142] [cursor=pointer]:
+          - cell "Markapur" [ref=e1143]
+          - cell "220 kV" [ref=e1144]:
+            - generic [ref=e1145]: 220 kV
+          - cell "—" [ref=e1146]
+          - cell "SS-220KV-MRPR" [ref=e1147]
+          - cell "4" [ref=e1148]
+        - row "Nellore 220 kV — SS-220KV-NELR 9" [ref=e1149] [cursor=pointer]:
+          - cell "Nellore" [ref=e1150]
+          - cell "220 kV" [ref=e1151]:
+            - generic [ref=e1152]: 220 kV
+          - cell "—" [ref=e1153]
+          - cell "SS-220KV-NELR" [ref=e1154]
+          - cell "9" [ref=e1155]
+        - row "Narasaraopet 220 kV — SS-220KV-NRPT 4" [ref=e1156] [cursor=pointer]:
+          - cell "Narasaraopet" [ref=e1157]
+          - cell "220 kV" [ref=e1158]:
+            - generic [ref=e1159]: 220 kV
+          - cell "—" [ref=e1160]
+          - cell "SS-220KV-NRPT" [ref=e1161]
+          - cell "4" [ref=e1162]
+        - row "Ongole 220 kV — SS-220KV-ONGL 9" [ref=e1163] [cursor=pointer]:
+          - cell "Ongole" [ref=e1164]
+          - cell "220 kV" [ref=e1165]:
+            - generic [ref=e1166]: 220 kV
+          - cell "—" [ref=e1167]
+          - cell "SS-220KV-ONGL" [ref=e1168]
+          - cell "9" [ref=e1169]
+        - row "Podili 220 kV — SS-220KV-PDLI 10" [ref=e1170] [cursor=pointer]:
+          - cell "Podili" [ref=e1171]
+          - cell "220 kV" [ref=e1172]:
+            - generic [ref=e1173]: 220 kV
+          - cell "—" [ref=e1174]
+          - cell "SS-220KV-PDLI" [ref=e1175]
+          - cell "10" [ref=e1176]
+        - row "Parchuru 220 kV — SS-220KV-PRCR 7" [ref=e1177] [cursor=pointer]:
+          - cell "Parchuru" [ref=e1178]
+          - cell "220 kV" [ref=e1179]:
+            - generic [ref=e1180]: 220 kV
+          - cell "—" [ref=e1181]
+          - cell "SS-220KV-PRCR" [ref=e1182]
+          - cell "7" [ref=e1183]
+        - row "Rentachintala 220 kV — SS-220KV-RTCL 5" [ref=e1184] [cursor=pointer]:
+          - cell "Rentachintala" [ref=e1185]
+          - cell "220 kV" [ref=e1186]:
+            - generic [ref=e1187]: 220 kV
+          - cell "—" [ref=e1188]
+          - cell "SS-220KV-RTCL" [ref=e1189]
+          - cell "5" [ref=e1190]
+        - row "Sullurpet 220 kV — SS-220KV-SLPT 8" [ref=e1191] [cursor=pointer]:
+          - cell "Sullurpet" [ref=e1192]
+          - cell "220 kV" [ref=e1193]:
+            - generic [ref=e1194]: 220 kV
+          - cell "—" [ref=e1195]
+          - cell "SS-220KV-SLPT" [ref=e1196]
+          - cell "8" [ref=e1197]
+        - row "Tadikonda 220 kV — SS-220KV-TDKD 7" [ref=e1198] [cursor=pointer]:
+          - cell "Tadikonda" [ref=e1199]
+          - cell "220 kV" [ref=e1200]:
+            - generic [ref=e1201]: 220 kV
+          - cell "—" [ref=e1202]
+          - cell "SS-220KV-TDKD" [ref=e1203]
+          - cell "7" [ref=e1204]
+        - row "Tallapalli 220 kV — SS-220KV-TLPL 6" [ref=e1205] [cursor=pointer]:
+          - cell "Tallapalli" [ref=e1206]
+          - cell "220 kV" [ref=e1207]:
+            - generic [ref=e1208]: 220 kV
+          - cell "—" [ref=e1209]
+          - cell "SS-220KV-TLPL" [ref=e1210]
+          - cell "6" [ref=e1211]
+        - row "VTPS 220 kV — Yard-VTPS 13" [ref=e1212] [cursor=pointer]:
+          - cell "VTPS" [ref=e1213]
+          - cell "220 kV" [ref=e1214]:
+            - generic [ref=e1215]: 220 kV
+          - cell "—" [ref=e1216]
+          - cell "Yard-VTPS" [ref=e1217]
+          - cell "13" [ref=e1218]
+        - row "Nuzividu 220 kV — Nuzividu 4" [ref=e1219] [cursor=pointer]:
+          - cell "Nuzividu" [ref=e1220]
+          - cell "220 kV" [ref=e1221]:
+            - generic [ref=e1222]: 220 kV
+          - cell "—" [ref=e1223]
+          - cell "Nuzividu" [ref=e1224]
+          - cell "4" [ref=e1225]
+        - row "Kandukur 220 kV — Kandukur 3" [ref=e1226] [cursor=pointer]:
+          - cell "Kandukur" [ref=e1227]
+          - cell "220 kV" [ref=e1228]:
+            - generic [ref=e1229]: 220 kV
+          - cell "—" [ref=e1230]
+          - cell "Kandukur" [ref=e1231]
+          - cell "3" [ref=e1232]
+        - row "Racharlapadu 220 kV — Racharlapadu 4" [ref=e1233] [cursor=pointer]:
+          - cell "Racharlapadu" [ref=e1234]
+          - cell "220 kV" [ref=e1235]:
+            - generic [ref=e1236]: 220 kV
+          - cell "—" [ref=e1237]
+          - cell "Racharlapadu" [ref=e1238]
+          - cell "4" [ref=e1239]
+        - row "Atmakur 220 kV — Atmakur 5" [ref=e1240] [cursor=pointer]:
+          - cell "Atmakur" [ref=e1241]
+          - cell "220 kV" [ref=e1242]:
+            - generic [ref=e1243]: 220 kV
+          - cell "—" [ref=e1244]
+          - cell "Atmakur" [ref=e1245]
+          - cell "5" [ref=e1246]
+        - row "Prathipadu 220 kV — Prathipadu 4" [ref=e1247] [cursor=pointer]:
+          - cell "Prathipadu" [ref=e1248]
+          - cell "220 kV" [ref=e1249]:
+            - generic [ref=e1250]: 220 kV
+          - cell "—" [ref=e1251]
+          - cell "Prathipadu" [ref=e1252]
+          - cell "4" [ref=e1253]
+        - row "SBQ Steels 220 kV — SBQ Steels 1" [ref=e1254] [cursor=pointer]:
+          - cell "SBQ Steels" [ref=e1255]
+          - cell "220 kV" [ref=e1256]:
+            - generic [ref=e1257]: 220 kV
+          - cell "—" [ref=e1258]
+          - cell "SBQ Steels" [ref=e1259]
+          - cell "1" [ref=e1260]
+        - row "Anrak 220 kV — SS-220KV-ANRK 3" [ref=e1261] [cursor=pointer]:
+          - cell "Anrak" [ref=e1262]
+          - cell "220 kV" [ref=e1263]:
+            - generic [ref=e1264]: 220 kV
+          - cell "—" [ref=e1265]
+          - cell "SS-220KV-ANRK" [ref=e1266]
+          - cell "3" [ref=e1267]
+        - row "Bobblil 220 kV — SS-220KV-BBGC 8" [ref=e1268] [cursor=pointer]:
+          - cell "Bobblil" [ref=e1269]
+          - cell "220 kV" [ref=e1270]:
+            - generic [ref=e1271]: 220 kV
+          - cell "—" [ref=e1272]
+          - cell "SS-220KV-BBGC" [ref=e1273]
+          - cell "8" [ref=e1274]
+        - row "BD Palem 220 kV — SS-220KV-BDPM 3" [ref=e1275] [cursor=pointer]:
+          - cell "BD Palem" [ref=e1276]
+          - cell "220 kV" [ref=e1277]:
+            - generic [ref=e1278]: 220 kV
+          - cell "—" [ref=e1279]
+          - cell "SS-220KV-BDPM" [ref=e1280]
+          - cell "3" [ref=e1281]
+        - row "Bhimadole 220 kV — SS-220KV-BMDL 8" [ref=e1282] [cursor=pointer]:
+          - cell "Bhimadole" [ref=e1283]
+          - cell "220 kV" [ref=e1284]:
+            - generic [ref=e1285]: 220 kV
+          - cell "—" [ref=e1286]
+          - cell "SS-220KV-BMDL" [ref=e1287]
+          - cell "8" [ref=e1288]
+        - row "Bommuru 220 kV — SS-220KV-BMRU 15" [ref=e1289] [cursor=pointer]:
+          - cell "Bommuru" [ref=e1290]
+          - cell "220 kV" [ref=e1291]:
+            - generic [ref=e1292]: 220 kV
+          - cell "—" [ref=e1293]
+          - cell "SS-220KV-BMRU" [ref=e1294]
+          - cell "15" [ref=e1295]
+        - row "Brandix 220 kV — SS-220KV-BRDX 8" [ref=e1296] [cursor=pointer]:
+          - cell "Brandix" [ref=e1297]
+          - cell "220 kV" [ref=e1298]:
+            - generic [ref=e1299]: 220 kV
+          - cell "—" [ref=e1300]
+          - cell "SS-220KV-BRDX" [ref=e1301]
+          - cell "8" [ref=e1302]
+        - row "Duvva 220 kV — SS-220KV-DUVA 4" [ref=e1303] [cursor=pointer]:
+          - cell "Duvva" [ref=e1304]
+          - cell "220 kV" [ref=e1305]:
+            - generic [ref=e1306]: 220 kV
+          - cell "—" [ref=e1307]
+          - cell "SS-220KV-DUVA" [ref=e1308]
+          - cell "4" [ref=e1309]
+        - row "Dairy 220 kV — SS-220KV-DYFM 3" [ref=e1310] [cursor=pointer]:
+          - cell "Dairy" [ref=e1311]
+          - cell "220 kV" [ref=e1312]:
+            - generic [ref=e1313]: 220 kV
+          - cell "—" [ref=e1314]
+          - cell "SS-220KV-DYFM" [ref=e1315]
+          - cell "3" [ref=e1316]
+        - row "Gajuwaka 220 kV — SS-220KV-GJWK 12" [ref=e1317] [cursor=pointer]:
+          - cell "Gajuwaka" [ref=e1318]
+          - cell "220 kV" [ref=e1319]:
+            - generic [ref=e1320]: 220 kV
+          - cell "—" [ref=e1321]
+          - cell "SS-220KV-GJWK" [ref=e1322]
+          - cell "12" [ref=e1323]
+        - row "Garividi 220 kV — SS-220KV-GRVD 14" [ref=e1324] [cursor=pointer]:
+          - cell "Garividi" [ref=e1325]
+          - cell "220 kV" [ref=e1326]:
+            - generic [ref=e1327]: 220 kV
+          - cell "—" [ref=e1328]
+          - cell "SS-220KV-GRVD" [ref=e1329]
+          - cell "14" [ref=e1330]
+        - row "Gangavaram 220 kV — SS-220KV-GVRM 3" [ref=e1331] [cursor=pointer]:
+          - cell "Gangavaram" [ref=e1332]
+          - cell "220 kV" [ref=e1333]:
+            - generic [ref=e1334]: 220 kV
+          - cell "—" [ref=e1335]
+          - cell "SS-220KV-GVRM" [ref=e1336]
+          - cell "3" [ref=e1337]
+        - row "Kakinada 220 kV — SS-220KV-KKND 9" [ref=e1338] [cursor=pointer]:
+          - cell "Kakinada" [ref=e1339]
+          - cell "220 kV" [ref=e1340]:
+            - generic [ref=e1341]: 220 kV
+          - cell "—" [ref=e1342]
+          - cell "SS-220KV-KKND" [ref=e1343]
+          - cell "9" [ref=e1344]
+        - row "KV Kota 220 kV — SS-220KV-KMVK 8" [ref=e1345] [cursor=pointer]:
+          - cell "KV Kota" [ref=e1346]
+          - cell "220 kV" [ref=e1347]:
+            - generic [ref=e1348]: 220 kV
+          - cell "—" [ref=e1349]
+          - cell "SS-220KV-KMVK" [ref=e1350]
+          - cell "8" [ref=e1351]
+        - row "Pallantla 220 kV — SS-220KV-PLNL 3" [ref=e1352] [cursor=pointer]:
+          - cell "Pallantla" [ref=e1353]
+          - cell "220 kV" [ref=e1354]:
+            - generic [ref=e1355]: 220 kV
+          - cell "—" [ref=e1356]
+          - cell "SS-220KV-PLNL" [ref=e1357]
+          - cell "3" [ref=e1358]
+        - row "Pendurthi 220 kV — SS-220KV-PNDT 13" [ref=e1359] [cursor=pointer]:
+          - cell "Pendurthi" [ref=e1360]
+          - cell "220 kV" [ref=e1361]:
+            - generic [ref=e1362]: 220 kV
+          - cell "—" [ref=e1363]
+          - cell "SS-220KV-PNDT" [ref=e1364]
+          - cell "13" [ref=e1365]
+        - row "Parawada 220 kV — SS-220KV-PRWD 4" [ref=e1366] [cursor=pointer]:
+          - cell "Parawada" [ref=e1367]
+          - cell "220 kV" [ref=e1368]:
+            - generic [ref=e1369]: 220 kV
+          - cell "—" [ref=e1370]
+          - cell "SS-220KV-PRWD" [ref=e1371]
+          - cell "4" [ref=e1372]
+        - row "Samalkota 220 kV — SS-220KV-SLKT 10" [ref=e1373] [cursor=pointer]:
+          - cell "Samalkota" [ref=e1374]
+          - cell "220 kV" [ref=e1375]:
+            - generic [ref=e1376]: 220 kV
+          - cell "—" [ref=e1377]
+          - cell "SS-220KV-SLKT" [ref=e1378]
+          - cell "10" [ref=e1379]
+        - row "Tekkali 220 kV — SS-220KV-TKLI 6" [ref=e1380] [cursor=pointer]:
+          - cell "Tekkali" [ref=e1381]
+          - cell "220 kV" [ref=e1382]:
+            - generic [ref=e1383]: 220 kV
+          - cell "—" [ref=e1384]
+          - cell "SS-220KV-TKLI" [ref=e1385]
+          - cell "6" [ref=e1386]
+        - row "Undi 220 kV — SS-220KV-UNDI 4" [ref=e1387] [cursor=pointer]:
+          - cell "Undi" [ref=e1388]
+          - cell "220 kV" [ref=e1389]:
+            - generic [ref=e1390]: 220 kV
+          - cell "—" [ref=e1391]
+          - cell "SS-220KV-UNDI" [ref=e1392]
+          - cell "4" [ref=e1393]
+        - row "Visakhapatnam 220 kV — SS-220KV-VPSS 7" [ref=e1394] [cursor=pointer]:
+          - cell "Visakhapatnam" [ref=e1395]
+          - cell "220 kV" [ref=e1396]:
+            - generic [ref=e1397]: 220 kV
+          - cell "—" [ref=e1398]
+          - cell "SS-220KV-VPSS" [ref=e1399]
+          - cell "7" [ref=e1400]
+        - row "Rampachodavaram 220 kV — SS-220KV-RCVM 1" [ref=e1401] [cursor=pointer]:
+          - cell "Rampachodavaram" [ref=e1402]
+          - cell "220 kV" [ref=e1403]:
+            - generic [ref=e1404]: 220 kV
+          - cell "—" [ref=e1405]
+          - cell "SS-220KV-RCVM" [ref=e1406]
+          - cell "1" [ref=e1407]
+        - row "Nidadavolu 220 kV — SS-220KV-NDVL 12" [ref=e1408] [cursor=pointer]:
+          - cell "Nidadavolu" [ref=e1409]
+          - cell "220 kV" [ref=e1410]:
+            - generic [ref=e1411]: 220 kV
+          - cell "—" [ref=e1412]
+          - cell "SS-220KV-NDVL" [ref=e1413]
+          - cell "12" [ref=e1414]
+        - row "Lower Sileru 220 kV — Lower_Sileru 5" [ref=e1415] [cursor=pointer]:
+          - cell "Lower Sileru" [ref=e1416]
+          - cell "220 kV" [ref=e1417]:
+            - generic [ref=e1418]: 220 kV
+          - cell "—" [ref=e1419]
+          - cell "Lower_Sileru" [ref=e1420]
+          - cell "5" [ref=e1421]
+        - row "GVK 220 kV — Pvt_Generator 5" [ref=e1422] [cursor=pointer]:
+          - cell "GVK" [ref=e1423]
+          - cell "220 kV" [ref=e1424]:
+            - generic [ref=e1425]: 220 kV
+          - cell "—" [ref=e1426]
+          - cell "Pvt_Generator" [ref=e1427]
+          - cell "5" [ref=e1428]
+        - row "Upper Sileru 220 kV — Upper_Sileru 2" [ref=e1429] [cursor=pointer]:
+          - cell "Upper Sileru" [ref=e1430]
+          - cell "220 kV" [ref=e1431]:
+            - generic [ref=e1432]: 220 kV
+          - cell "—" [ref=e1433]
+          - cell "Upper_Sileru" [ref=e1434]
+          - cell "2" [ref=e1435]
+        - row "Donkarayi 220 kV — Donkarayi 2" [ref=e1436] [cursor=pointer]:
+          - cell "Donkarayi" [ref=e1437]
+          - cell "220 kV" [ref=e1438]:
+            - generic [ref=e1439]: 220 kV
+          - cell "—" [ref=e1440]
+          - cell "Donkarayi" [ref=e1441]
+          - cell "2" [ref=e1442]
+        - row "Spectrum 220 kV — Spectrum 1" [ref=e1443] [cursor=pointer]:
+          - cell "Spectrum" [ref=e1444]
+          - cell "220 kV" [ref=e1445]:
+            - generic [ref=e1446]: 220 kV
+          - cell "—" [ref=e1447]
+          - cell "Spectrum" [ref=e1448]
+          - cell "1" [ref=e1449]
+        - row "GMR 220 kV — GMR_Kakinada 1" [ref=e1450] [cursor=pointer]:
+          - cell "GMR" [ref=e1451]
+          - cell "220 kV" [ref=e1452]:
+            - generic [ref=e1453]: 220 kV
+          - cell "—" [ref=e1454]
+          - cell "GMR_Kakinada" [ref=e1455]
+          - cell "1" [ref=e1456]
+        - row "Pattiseema 220 kV — Pattisema 1" [ref=e1457] [cursor=pointer]:
+          - cell "Pattiseema" [ref=e1458]
+          - cell "220 kV" [ref=e1459]:
+            - generic [ref=e1460]: 220 kV
+          - cell "—" [ref=e1461]
+          - cell "Pattisema" [ref=e1462]
+          - cell "1" [ref=e1463]
+        - row "Bavojipeta 220 kV — Bavojipeta 3" [ref=e1464] [cursor=pointer]:
+          - cell "Bavojipeta" [ref=e1465]
+          - cell "220 kV" [ref=e1466]:
+            - generic [ref=e1467]: 220 kV
+          - cell "—" [ref=e1468]
+          - cell "Bavojipeta" [ref=e1469]
+          - cell "3" [ref=e1470]
+        - row "Ramavaram 220 kV — Ramavaram 1" [ref=e1471] [cursor=pointer]:
+          - cell "Ramavaram" [ref=e1472]
+          - cell "220 kV" [ref=e1473]:
+            - generic [ref=e1474]: 220 kV
+          - cell "—" [ref=e1475]
+          - cell "Ramavaram" [ref=e1476]
+          - cell "1" [ref=e1477]
+        - row "Purushothapatnam 220 kV — Purushothapatnam 1" [ref=e1478] [cursor=pointer]:
+          - cell "Purushothapatnam" [ref=e1479]
+          - cell "220 kV" [ref=e1480]:
+            - generic [ref=e1481]: 220 kV
+          - cell "—" [ref=e1482]
+          - cell "Purushothapatnam" [ref=e1483]
+          - cell "1" [ref=e1484]
+        - row "Ankampalli 132 kV Ananthapuram SS-132KV-AKMP 3" [ref=e1485] [cursor=pointer]:
+          - cell "Ankampalli" [ref=e1486]
+          - cell "132 kV" [ref=e1487]:
+            - generic [ref=e1488]: 132 kV
+          - cell "Ananthapuram" [ref=e1489]
+          - cell "SS-132KV-AKMP" [ref=e1490]
+          - cell "3" [ref=e1491]
+        - row "Amarapuram 132 kV Ananthapuram SS-132KV-AMPR 1" [ref=e1492] [cursor=pointer]:
+          - cell "Amarapuram" [ref=e1493]
+          - cell "132 kV" [ref=e1494]:
+            - generic [ref=e1495]: 132 kV
+          - cell "Ananthapuram" [ref=e1496]
+          - cell "SS-132KV-AMPR" [ref=e1497]
+          - cell "1" [ref=e1498]
+        - row "Dharmavaram 132 kV Ananthapuram SS-132KV-DVRM 2" [ref=e1499] [cursor=pointer]:
+          - cell "Dharmavaram" [ref=e1500]
+          - cell "132 kV" [ref=e1501]:
+            - generic [ref=e1502]: 132 kV
+          - cell "Ananthapuram" [ref=e1503]
+          - cell "SS-132KV-DVRM" [ref=e1504]
+          - cell "2" [ref=e1505]
+        - row "Gudipadu 132 kV Ananthapuram SS-132KV-GDPD 3" [ref=e1506] [cursor=pointer]:
+          - cell "Gudipadu" [ref=e1507]
+          - cell "132 kV" [ref=e1508]:
+            - generic [ref=e1509]: 132 kV
+          - cell "Ananthapuram" [ref=e1510]
+          - cell "SS-132KV-GDPD" [ref=e1511]
+          - cell "3" [ref=e1512]
+        - row "Guntakal 132 kV Ananthapuram SS-132KV-GTKL 4" [ref=e1513] [cursor=pointer]:
+          - cell "Guntakal" [ref=e1514]
+          - cell "132 kV" [ref=e1515]:
+            - generic [ref=e1516]: 132 kV
+          - cell "Ananthapuram" [ref=e1517]
+          - cell "SS-132KV-GTKL" [ref=e1518]
+          - cell "4" [ref=e1519]
+        - row "Humpi Power House 132 kV Ananthapuram SS-132KV-HPHS 1" [ref=e1520] [cursor=pointer]:
+          - cell "Humpi Power House" [ref=e1521]
+          - cell "132 kV" [ref=e1522]:
+            - generic [ref=e1523]: 132 kV
+          - cell "Ananthapuram" [ref=e1524]
+          - cell "SS-132KV-HPHS" [ref=e1525]
+          - cell "1" [ref=e1526]
+        - row "Jammalabanda 132 kV Ananthapuram SS-132KV-JMBD 2" [ref=e1527] [cursor=pointer]:
+          - cell "Jammalabanda" [ref=e1528]
+          - cell "132 kV" [ref=e1529]:
+            - generic [ref=e1530]: 132 kV
+          - cell "Ananthapuram" [ref=e1531]
+          - cell "SS-132KV-JMBD" [ref=e1532]
+          - cell "2" [ref=e1533]
+        - row "Kadiri 132 kV Ananthapuram SS-132KV-KDRI 6" [ref=e1534] [cursor=pointer]:
+          - cell "Kadiri" [ref=e1535]
+          - cell "132 kV" [ref=e1536]:
+            - generic [ref=e1537]: 132 kV
+          - cell "Ananthapuram" [ref=e1538]
+          - cell "SS-132KV-KDRI" [ref=e1539]
+          - cell "6" [ref=e1540]
+        - row "Komali 132 kV Ananthapuram SS-132KV-KMLI 2" [ref=e1541] [cursor=pointer]:
+          - cell "Komali" [ref=e1542]
+          - cell "132 kV" [ref=e1543]:
+            - generic [ref=e1544]: 132 kV
+          - cell "Ananthapuram" [ref=e1545]
+          - cell "SS-132KV-KMLI" [ref=e1546]
+          - cell "2" [ref=e1547]
+        - row "Komatikuntla 132 kV Ananthapuram SS-132KV-KTKL 1" [ref=e1548] [cursor=pointer]:
+          - cell "Komatikuntla" [ref=e1549]
+          - cell "132 kV" [ref=e1550]:
+            - generic [ref=e1551]: 132 kV
+          - cell "Ananthapuram" [ref=e1552]
+          - cell "SS-132KV-KTKL" [ref=e1553]
+          - cell "1" [ref=e1554]
+        - row "Madakasira 132 kV Ananthapuram SS-132KV-MDKS 1" [ref=e1555] [cursor=pointer]:
+          - cell "Madakasira" [ref=e1556]
+          - cell "132 kV" [ref=e1557]:
+            - generic [ref=e1558]: 132 kV
+          - cell "Ananthapuram" [ref=e1559]
+          - cell "SS-132KV-MDKS" [ref=e1560]
+          - cell "1" [ref=e1561]
+        - row "Nagalapuram 132 kV Ananthapuram SS-132KV-NLPM 2" [ref=e1562] [cursor=pointer]:
+          - cell "Nagalapuram" [ref=e1563]
+          - cell "132 kV" [ref=e1564]:
+            - generic [ref=e1565]: 132 kV
+          - cell "Ananthapuram" [ref=e1566]
+          - cell "SS-132KV-NLPM" [ref=e1567]
+          - cell "2" [ref=e1568]
+        - row "Obulapuram 132 kV Ananthapuram SS-132KV-OBPM 1" [ref=e1569] [cursor=pointer]:
+          - cell "Obulapuram" [ref=e1570]
+          - cell "132 kV" [ref=e1571]:
+            - generic [ref=e1572]: 132 kV
+          - cell "Ananthapuram" [ref=e1573]
+          - cell "SS-132KV-OBPM" [ref=e1574]
+          - cell "1" [ref=e1575]
+        - row "Puttaparthy 132 kV Ananthapuram SS-132KV-PPTY 2" [ref=e1576] [cursor=pointer]:
+          - cell "Puttaparthy" [ref=e1577]
+          - cell "132 kV" [ref=e1578]:
+            - generic [ref=e1579]: 132 kV
+          - cell "Ananthapuram" [ref=e1580]
+          - cell "SS-132KV-PPTY" [ref=e1581]
+          - cell "2" [ref=e1582]
+        - row "Rayadurg 132 kV Ananthapuram SS-132KV-RYDG 2" [ref=e1583] [cursor=pointer]:
+          - cell "Rayadurg" [ref=e1584]
+          - cell "132 kV" [ref=e1585]:
+            - generic [ref=e1586]: 132 kV
+          - cell "Ananthapuram" [ref=e1587]
+          - cell "SS-132KV-RYDG" [ref=e1588]
+          - cell "2" [ref=e1589]
+        - row "Taticherla 132 kV Ananthapuram SS-132KV-TCRL 3" [ref=e1590] [cursor=pointer]:
+          - cell "Taticherla" [ref=e1591]
+          - cell "132 kV" [ref=e1592]:
+            - generic [ref=e1593]: 132 kV
+          - cell "Ananthapuram" [ref=e1594]
+          - cell "SS-132KV-TCRL" [ref=e1595]
+          - cell "3" [ref=e1596]
+        - row "Thumukunta 132 kV Ananthapuram SS-132KV-TMKT 2" [ref=e1597] [cursor=pointer]:
+          - cell "Thumukunta" [ref=e1598]
+          - cell "132 kV" [ref=e1599]:
+            - generic [ref=e1600]: 132 kV
+          - cell "Ananthapuram" [ref=e1601]
+          - cell "SS-132KV-TMKT" [ref=e1602]
+          - cell "2" [ref=e1603]
+        - row "Tanakallu 132 kV Ananthapuram SS-132KV-TNKL 1" [ref=e1604] [cursor=pointer]:
+          - cell "Tanakallu" [ref=e1605]
+          - cell "132 kV" [ref=e1606]:
+            - generic [ref=e1607]: 132 kV
+          - cell "Ananthapuram" [ref=e1608]
+          - cell "SS-132KV-TNKL" [ref=e1609]
+          - cell "1" [ref=e1610]
+        - row "Uravakonda 132 kV Ananthapuram SS-132KV-UVKD 1" [ref=e1611] [cursor=pointer]:
+          - cell "Uravakonda" [ref=e1612]
+          - cell "132 kV" [ref=e1613]:
+            - generic [ref=e1614]: 132 kV
+          - cell "Ananthapuram" [ref=e1615]
+          - cell "SS-132KV-UVKD" [ref=e1616]
+          - cell "1" [ref=e1617]
+        - row "Beechuganipalli 132 kV Ananthapuram SS-132KV-BGPL 3" [ref=e1618] [cursor=pointer]:
+          - cell "Beechuganipalli" [ref=e1619]
+          - cell "132 kV" [ref=e1620]:
+            - generic [ref=e1621]: 132 kV
+          - cell "Ananthapuram" [ref=e1622]
+          - cell "SS-132KV-BGPL" [ref=e1623]
+          - cell "3" [ref=e1624]
+        - row "Lepakshi 132 kV Ananthapuram SS-132KV-LPKS 1" [ref=e1625] [cursor=pointer]:
+          - cell "Lepakshi" [ref=e1626]
+          - cell "132 kV" [ref=e1627]:
+            - generic [ref=e1628]: 132 kV
+          - cell "Ananthapuram" [ref=e1629]
+          - cell "SS-132KV-LPKS" [ref=e1630]
+          - cell "1" [ref=e1631]
+        - row "Thagguparthy 132 kV Ananthapuram SS-132KV-TPTY 1" [ref=e1632] [cursor=pointer]:
+          - cell "Thagguparthy" [ref=e1633]
+          - cell "132 kV" [ref=e1634]:
+            - generic [ref=e1635]: 132 kV
+          - cell "Ananthapuram" [ref=e1636]
+          - cell "SS-132KV-TPTY" [ref=e1637]
+          - cell "1" [ref=e1638]
+        - row "Duddekunta 132 kV Ananthapuram SS-132KV-DDKT 1" [ref=e1639] [cursor=pointer]:
+          - cell "Duddekunta" [ref=e1640]
+          - cell "132 kV" [ref=e1641]:
+            - generic [ref=e1642]: 132 kV
+          - cell "Ananthapuram" [ref=e1643]
+          - cell "SS-132KV-DDKT" [ref=e1644]
+          - cell "1" [ref=e1645]
+        - row "Kothapally 132 kV Ananthapuram SS-132KV-KTPL 1" [ref=e1646] [cursor=pointer]:
+          - cell "Kothapally" [ref=e1647]
+          - cell "132 kV" [ref=e1648]:
+            - generic [ref=e1649]: 132 kV
+          - cell "Ananthapuram" [ref=e1650]
+          - cell "SS-132KV-KTPL" [ref=e1651]
+          - cell "1" [ref=e1652]
+        - row "Mallayagaripalli 132 kV Ananthapuram SS-132KV-MGPL 1" [ref=e1653] [cursor=pointer]:
+          - cell "Mallayagaripalli" [ref=e1654]
+          - cell "132 kV" [ref=e1655]:
+            - generic [ref=e1656]: 132 kV
+          - cell "Ananthapuram" [ref=e1657]
+          - cell "SS-132KV-MGPL" [ref=e1658]
+          - cell "1" [ref=e1659]
+        - row "Tadimarri 132 kV Ananthapuram SS-132KV-TDMR 1" [ref=e1660] [cursor=pointer]:
+          - cell "Tadimarri" [ref=e1661]
+          - cell "132 kV" [ref=e1662]:
+            - generic [ref=e1663]: 132 kV
+          - cell "Ananthapuram" [ref=e1664]
+          - cell "SS-132KV-TDMR" [ref=e1665]
+          - cell "1" [ref=e1666]
+        - row "Azure Solar 132 kV Ananthapuram ASPP 1" [ref=e1667] [cursor=pointer]:
+          - cell "Azure Solar" [ref=e1668]
+          - cell "132 kV" [ref=e1669]:
+            - generic [ref=e1670]: 132 kV
+          - cell "Ananthapuram" [ref=e1671]
+          - cell "ASPP" [ref=e1672]
+          - cell "1" [ref=e1673]
+        - row "Poly Solar 132 kV Ananthapuram Wind 1" [ref=e1674] [cursor=pointer]:
+          - cell "Poly Solar" [ref=e1675]
+          - cell "132 kV" [ref=e1676]:
+            - generic [ref=e1677]: 132 kV
+          - cell "Ananthapuram" [ref=e1678]
+          - cell "Wind" [ref=e1679]
+          - cell "1" [ref=e1680]
+        - row "Aarohi Solar 132 kV Ananthapuram AROHI 1" [ref=e1681] [cursor=pointer]:
+          - cell "Aarohi Solar" [ref=e1682]
+          - cell "132 kV" [ref=e1683]:
+            - generic [ref=e1684]: 132 kV
+          - cell "Ananthapuram" [ref=e1685]
+          - cell "AROHI" [ref=e1686]
+          - cell "1" [ref=e1687]
+        - row "Malgur Rly SS 132 kV Ananthapuram MLGR_RTSS 1" [ref=e1688] [cursor=pointer]:
+          - cell "Malgur Rly SS" [ref=e1689]
+          - cell "132 kV" [ref=e1690]:
+            - generic [ref=e1691]: 132 kV
+          - cell "Ananthapuram" [ref=e1692]
+          - cell "MLGR_RTSS" [ref=e1693]
+          - cell "1" [ref=e1694]
+        - row "Puttaparthy Rly SS 132 kV Ananthapuram PPTY_RTSS 0" [ref=e1695] [cursor=pointer]:
+          - cell "Puttaparthy Rly SS" [ref=e1696]
+          - cell "132 kV" [ref=e1697]:
+            - generic [ref=e1698]: 132 kV
+          - cell "Ananthapuram" [ref=e1699]
+          - cell "PPTY_RTSS" [ref=e1700]
+          - cell "0" [ref=e1701]
+        - row "Sagar Cements 132 kV Ananthapuram SCL 1" [ref=e1702] [cursor=pointer]:
+          - cell "Sagar Cements" [ref=e1703]
+          - cell "132 kV" [ref=e1704]:
+            - generic [ref=e1705]: 132 kV
+          - cell "Ananthapuram" [ref=e1706]
+          - cell "SCL" [ref=e1707]
+          - cell "1" [ref=e1708]
+        - row "Guntakal Rly SS 132 kV Ananthapuram GTKL_RTSS 1" [ref=e1709] [cursor=pointer]:
+          - cell "Guntakal Rly SS" [ref=e1710]
+          - cell "132 kV" [ref=e1711]:
+            - generic [ref=e1712]: 132 kV
+          - cell "Ananthapuram" [ref=e1713]
+          - cell "GTKL_RTSS" [ref=e1714]
+          - cell "1" [ref=e1715]
+        - row "Gerudau steels 132 kV Ananthapuram Gerudau steels 1" [ref=e1716] [cursor=pointer]:
+          - cell "Gerudau steels" [ref=e1717]
+          - cell "132 kV" [ref=e1718]:
+            - generic [ref=e1719]: 132 kV
+          - cell "Ananthapuram" [ref=e1720]
+          - cell "Gerudau steels" [ref=e1721]
+          - cell "1" [ref=e1722]
+        - row "PABR 132 kV Ananthapuram PABR 1" [ref=e1723] [cursor=pointer]:
+          - cell "PABR" [ref=e1724]
+          - cell "132 kV" [ref=e1725]:
+            - generic [ref=e1726]: 132 kV
+          - cell "Ananthapuram" [ref=e1727]
+          - cell "PABR" [ref=e1728]
+          - cell "1" [ref=e1729]
+        - row "Bharathi Cements Ltd 132 kV Kadapa SS-132KV-BCLD 4" [ref=e1730] [cursor=pointer]:
+          - cell "Bharathi Cements Ltd" [ref=e1731]
+          - cell "132 kV" [ref=e1732]:
+            - generic [ref=e1733]: 132 kV
+          - cell "Kadapa" [ref=e1734]
+          - cell "SS-132KV-BCLD" [ref=e1735]
+          - cell "4" [ref=e1736]
+        - row "Badvel 132 kV Kadapa SS-132KV-BDVL 3" [ref=e1737] [cursor=pointer]:
+          - cell "Badvel" [ref=e1738]
+          - cell "132 kV" [ref=e1739]:
+            - generic [ref=e1740]: 132 kV
+          - cell "Kadapa" [ref=e1741]
+          - cell "SS-132KV-BDVL" [ref=e1742]
+          - cell "3" [ref=e1743]
+        - row "Brahmamgari Matam 132 kV Kadapa SS-132KV-BMTM 1" [ref=e1744] [cursor=pointer]:
+          - cell "Brahmamgari Matam" [ref=e1745]
+          - cell "132 kV" [ref=e1746]:
+            - generic [ref=e1747]: 132 kV
+          - cell "Kadapa" [ref=e1748]
+          - cell "SS-132KV-BMTM" [ref=e1749]
+          - cell "1" [ref=e1750]
+        - row "Balapanur 132 kV Kadapa SS-132KV-BPNR 2" [ref=e1751] [cursor=pointer]:
+          - cell "Balapanur" [ref=e1752]
+          - cell "132 kV" [ref=e1753]:
+            - generic [ref=e1754]: 132 kV
+          - cell "Kadapa" [ref=e1755]
+          - cell "SS-132KV-BPNR" [ref=e1756]
+          - cell "2" [ref=e1757]
+        - row "Choutapalli 132 kV Kadapa SS-132KV-CTPL 2" [ref=e1758] [cursor=pointer]:
+          - cell "Choutapalli" [ref=e1759]
+          - cell "132 kV" [ref=e1760]:
+            - generic [ref=e1761]: 132 kV
+          - cell "Kadapa" [ref=e1762]
+          - cell "SS-132KV-CTPL" [ref=e1763]
+          - cell "2" [ref=e1764]
+        - row "Duvvur 132 kV Kadapa SS-132KV-DUVR 1" [ref=e1765] [cursor=pointer]:
+          - cell "Duvvur" [ref=e1766]
+          - cell "132 kV" [ref=e1767]:
+            - generic [ref=e1768]: 132 kV
+          - cell "Kadapa" [ref=e1769]
+          - cell "SS-132KV-DUVR" [ref=e1770]
+          - cell "1" [ref=e1771]
+        - row "G.K.Lis Kondapuram 132 kV Kadapa SS-132KV-GKPM 2" [ref=e1772] [cursor=pointer]:
+          - cell "G.K.Lis Kondapuram" [ref=e1773]
+          - cell "132 kV" [ref=e1774]:
+            - generic [ref=e1775]: 132 kV
+          - cell "Kadapa" [ref=e1776]
+          - cell "SS-132KV-GKPM" [ref=e1777]
+          - cell "2" [ref=e1778]
+        - row "Jammalamadugu 132 kV Kadapa SS-132KV-JMDG 3" [ref=e1779] [cursor=pointer]:
+          - cell "Jammalamadugu" [ref=e1780]
+          - cell "132 kV" [ref=e1781]:
+            - generic [ref=e1782]: 132 kV
+          - cell "Kadapa" [ref=e1783]
+          - cell "SS-132KV-JMDG" [ref=e1784]
+          - cell "3" [ref=e1785]
+        - row "Kalasapadu 132 kV Kadapa SS-132KV-KSPD 1" [ref=e1786] [cursor=pointer]:
+          - cell "Kalasapadu" [ref=e1787]
+          - cell "132 kV" [ref=e1788]:
+            - generic [ref=e1789]: 132 kV
+          - cell "Kadapa" [ref=e1790]
+          - cell "SS-132KV-KSPD" [ref=e1791]
+          - cell "1" [ref=e1792]
+        - row "Lingala 132 kV Kadapa SS-132KV-LNGL 1" [ref=e1793] [cursor=pointer]:
+          - cell "Lingala" [ref=e1794]
+          - cell "132 kV" [ref=e1795]:
+            - generic [ref=e1796]: 132 kV
+          - cell "Kadapa" [ref=e1797]
+          - cell "SS-132KV-LNGL" [ref=e1798]
+          - cell "1" [ref=e1799]
+        - row "Muddanur/Rtss 132 kV Kadapa SS-132KV-MDNR 2" [ref=e1800] [cursor=pointer]:
+          - cell "Muddanur/Rtss" [ref=e1801]
+          - cell "132 kV" [ref=e1802]:
+            - generic [ref=e1803]: 132 kV
+          - cell "Kadapa" [ref=e1804]
+          - cell "SS-132KV-MDNR" [ref=e1805]
+          - cell "2" [ref=e1806]
+        - row "Moolavanka 132 kV Kadapa SS-132KV-MLVK 2" [ref=e1807] [cursor=pointer]:
+          - cell "Moolavanka" [ref=e1808]
+          - cell "132 kV" [ref=e1809]:
+            - generic [ref=e1810]: 132 kV
+          - cell "Kadapa" [ref=e1811]
+          - cell "SS-132KV-MLVK" [ref=e1812]
+          - cell "2" [ref=e1813]
+        - row "Porumamilla 132 kV Kadapa SS-132KV-PRML 1" [ref=e1814] [cursor=pointer]:
+          - cell "Porumamilla" [ref=e1815]
+          - cell "132 kV" [ref=e1816]:
+            - generic [ref=e1817]: 132 kV
+          - cell "Kadapa" [ref=e1818]
+          - cell "SS-132KV-PRML" [ref=e1819]
+          - cell "1" [ref=e1820]
+        - row "Proddatur 132 kV Kadapa SS-132KV-PRTR 3" [ref=e1821] [cursor=pointer]:
+          - cell "Proddatur" [ref=e1822]
+          - cell "132 kV" [ref=e1823]:
+            - generic [ref=e1824]: 132 kV
+          - cell "Kadapa" [ref=e1825]
+          - cell "SS-132KV-PRTR" [ref=e1826]
+          - cell "3" [ref=e1827]
+        - row "Pulivendula 132 kV Kadapa SS-132KV-PVDA 5" [ref=e1828] [cursor=pointer]:
+          - cell "Pulivendula" [ref=e1829]
+          - cell "132 kV" [ref=e1830]:
+            - generic [ref=e1831]: 132 kV
+          - cell "Kadapa" [ref=e1832]
+          - cell "SS-132KV-PVDA" [ref=e1833]
+          - cell "5" [ref=e1834]
+        - row "Rayachoty 132 kV Kadapa SS-132KV-RCTY 2" [ref=e1835] [cursor=pointer]:
+          - cell "Rayachoty" [ref=e1836]
+          - cell "132 kV" [ref=e1837]:
+            - generic [ref=e1838]: 132 kV
+          - cell "Kadapa" [ref=e1839]
+          - cell "SS-132KV-RCTY" [ref=e1840]
+          - cell "2" [ref=e1841]
+        - row "Sambepalli 132 kV Kadapa SS-132KV-SBPL 3" [ref=e1842] [cursor=pointer]:
+          - cell "Sambepalli" [ref=e1843]
+          - cell "132 kV" [ref=e1844]:
+            - generic [ref=e1845]: 132 kV
+          - cell "Kadapa" [ref=e1846]
+          - cell "SS-132KV-SBPL" [ref=e1847]
+          - cell "3" [ref=e1848]
+        - row "Thimmayagaripalli 132 kV Kadapa SS-132KV-TGPL 2" [ref=e1849] [cursor=pointer]:
+          - cell "Thimmayagaripalli" [ref=e1850]
+          - cell "132 kV" [ref=e1851]:
+            - generic [ref=e1852]: 132 kV
+          - cell "Kadapa" [ref=e1853]
+          - cell "SS-132KV-TGPL" [ref=e1854]
+          - cell "2" [ref=e1855]
+        - row "Vempalli 132 kV Kadapa SS-132KV-VMPL 2" [ref=e1856] [cursor=pointer]:
+          - cell "Vempalli" [ref=e1857]
+          - cell "132 kV" [ref=e1858]:
+            - generic [ref=e1859]: 132 kV
+          - cell "Kadapa" [ref=e1860]
+          - cell "SS-132KV-VMPL" [ref=e1861]
+          - cell "2" [ref=e1862]
+        - row "Vontimitta 132 kV Kadapa SS-132KV-VNMT 2" [ref=e1863] [cursor=pointer]:
+          - cell "Vontimitta" [ref=e1864]
+          - cell "132 kV" [ref=e1865]:
+            - generic [ref=e1866]: 132 kV
+          - cell "Kadapa" [ref=e1867]
+          - cell "SS-132KV-VNMT" [ref=e1868]
+          - cell "2" [ref=e1869]
+        - row "Zuari Cements 132 kV Kadapa Zuari Cements 1" [ref=e1870] [cursor=pointer]:
+          - cell "Zuari Cements" [ref=e1871]
+          - cell "132 kV" [ref=e1872]:
+            - generic [ref=e1873]: 132 kV
+          - cell "Kadapa" [ref=e1874]
+          - cell "Zuari Cements" [ref=e1875]
+          - cell "1" [ref=e1876]
+        - row "India Cements 132 kV Kadapa India Cements 1" [ref=e1877] [cursor=pointer]:
+          - cell "India Cements" [ref=e1878]
+          - cell "132 kV" [ref=e1879]:
+            - generic [ref=e1880]: 132 kV
+          - cell "Kadapa" [ref=e1881]
+          - cell "India Cements" [ref=e1882]
+          - cell "1" [ref=e1883]
+        - row "India Cements 132 kV Kadapa India Cements 1" [ref=e1884] [cursor=pointer]:
+          - cell "India Cements" [ref=e1885]
+          - cell "132 kV" [ref=e1886]:
+            - generic [ref=e1887]: 132 kV
+          - cell "Kadapa" [ref=e1888]
+          - cell "India Cements" [ref=e1889]
+          - cell "1" [ref=e1890]
+        - row "Uranium Mine 132 kV Kadapa UCIL 1" [ref=e1891] [cursor=pointer]:
+          - cell "Uranium Mine" [ref=e1892]
+          - cell "132 kV" [ref=e1893]:
+            - generic [ref=e1894]: 132 kV
+          - cell "Kadapa" [ref=e1895]
+          - cell "UCIL" [ref=e1896]
+          - cell "1" [ref=e1897]
+        - row "GR Textiles 132 kV Kadapa GR Textiles 1" [ref=e1898] [cursor=pointer]:
+          - cell "GR Textiles" [ref=e1899]
+          - cell "132 kV" [ref=e1900]:
+            - generic [ref=e1901]: 132 kV
+          - cell "Kadapa" [ref=e1902]
+          - cell "GR Textiles" [ref=e1903]
+          - cell "1" [ref=e1904]
+        - row "Tirumalaypalli 132 kV Kadapa Tirumalaypalli 1" [ref=e1905] [cursor=pointer]:
+          - cell "Tirumalaypalli" [ref=e1906]
+          - cell "132 kV" [ref=e1907]:
+            - generic [ref=e1908]: 132 kV
+          - cell "Kadapa" [ref=e1909]
+          - cell "Tirumalaypalli" [ref=e1910]
+          - cell "1" [ref=e1911]
+        - row "Gandikota Wind 132 kV Kadapa GKPS 1" [ref=e1912] [cursor=pointer]:
+          - cell "Gandikota Wind" [ref=e1913]
+          - cell "132 kV" [ref=e1914]:
+            - generic [ref=e1915]: 132 kV
+          - cell "Kadapa" [ref=e1916]
+          - cell "GKPS" [ref=e1917]
+          - cell "1" [ref=e1918]
+        - row "Dhalmiya Cement 132 kV Kadapa Dhalmiya Cements 1" [ref=e1919] [cursor=pointer]:
+          - cell "Dhalmiya Cement" [ref=e1920]
+          - cell "132 kV" [ref=e1921]:
+            - generic [ref=e1922]: 132 kV
+          - cell "Kadapa" [ref=e1923]
+          - cell "Dhalmiya Cements" [ref=e1924]
+          - cell "1" [ref=e1925]
+        - row "Welsun 132 kV Kadapa Welsun 1" [ref=e1926] [cursor=pointer]:
+          - cell "Welsun" [ref=e1927]
+          - cell "132 kV" [ref=e1928]:
+            - generic [ref=e1929]: 132 kV
+          - cell "Kadapa" [ref=e1930]
+          - cell "Welsun" [ref=e1931]
+          - cell "1" [ref=e1932]
+        - row "Mekavaripalli 132 kV Kadapa Mekavaripalli 5" [ref=e1933] [cursor=pointer]:
+          - cell "Mekavaripalli" [ref=e1934]
+          - cell "132 kV" [ref=e1935]:
+            - generic [ref=e1936]: 132 kV
+          - cell "Kadapa" [ref=e1937]
+          - cell "Mekavaripalli" [ref=e1938]
+          - cell "5" [ref=e1939]
+        - row "Adoni 132 kV Kurnool SS-132KV-ADNI 4" [ref=e1940] [cursor=pointer]:
+          - cell "Adoni" [ref=e1941]
+          - cell "132 kV" [ref=e1942]:
+            - generic [ref=e1943]: 132 kV
+          - cell "Kurnool" [ref=e1944]
+          - cell "SS-132KV-ADNI" [ref=e1945]
+          - cell "4" [ref=e1946]
+        - row "Allagadda 132 kV Kurnool SS-132KV-ALGD 2" [ref=e1947] [cursor=pointer]:
+          - cell "Allagadda" [ref=e1948]
+          - cell "132 kV" [ref=e1949]:
+            - generic [ref=e1950]: 132 kV
+          - cell "Kurnool" [ref=e1951]
+          - cell "SS-132KV-ALGD" [ref=e1952]
+          - cell "2" [ref=e1953]
+        - row "Aluru 132 kV Kurnool SS-132KV-ALRU 2" [ref=e1954] [cursor=pointer]:
+          - cell "Aluru" [ref=e1955]
+          - cell "132 kV" [ref=e1956]:
+            - generic [ref=e1957]: 132 kV
+          - cell "Kurnool" [ref=e1958]
+          - cell "SS-132KV-ALRU" [ref=e1959]
+          - cell "2" [ref=e1960]
+        - row "Ankireddypalli 132 kV Kurnool SS-132KV-ARPL 2" [ref=e1961] [cursor=pointer]:
+          - cell "Ankireddypalli" [ref=e1962]
+          - cell "132 kV" [ref=e1963]:
+            - generic [ref=e1964]: 132 kV
+          - cell "Kurnool" [ref=e1965]
+          - cell "SS-132KV-ARPL" [ref=e1966]
+          - cell "2" [ref=e1967]
+        - row "Atmakur(K) 132 kV Kurnool SS-132KV-ATKR 3" [ref=e1968] [cursor=pointer]:
+          - cell "Atmakur(K)" [ref=e1969]
+          - cell "132 kV" [ref=e1970]:
+            - generic [ref=e1971]: 132 kV
+          - cell "Kurnool" [ref=e1972]
+          - cell "SS-132KV-ATKR" [ref=e1973]
+          - cell "3" [ref=e1974]
+        - row "Banaganapalli 132 kV Kurnool SS-132KV-BGPL 4" [ref=e1975] [cursor=pointer]:
+          - cell "Banaganapalli" [ref=e1976]
+          - cell "132 kV" [ref=e1977]:
+            - generic [ref=e1978]: 132 kV
+          - cell "Kurnool" [ref=e1979]
+          - cell "SS-132KV-BGPL" [ref=e1980]
+          - cell "4" [ref=e1981]
+        - row "Cement Nagar 132 kV Kurnool SS-132KV-CMNR 2" [ref=e1982] [cursor=pointer]:
+          - cell "Cement Nagar" [ref=e1983]
+          - cell "132 kV" [ref=e1984]:
+            - generic [ref=e1985]: 132 kV
+          - cell "Kurnool" [ref=e1986]
+          - cell "SS-132KV-CMNR" [ref=e1987]
+          - cell "2" [ref=e1988]
+        - row "Dhone 132 kV Kurnool SS-132KV-DONE 0" [ref=e1989] [cursor=pointer]:
+          - cell "Dhone" [ref=e1990]
+          - cell "132 kV" [ref=e1991]:
+            - generic [ref=e1992]: 132 kV
+          - cell "Kurnool" [ref=e1993]
+          - cell "SS-132KV-DONE" [ref=e1994]
+          - cell "0" [ref=e1995]
+        - row "Gudur(K) 132 kV Kurnool SS-132KV-GUDR 2" [ref=e1996] [cursor=pointer]:
+          - cell "Gudur(K)" [ref=e1997]
+          - cell "132 kV" [ref=e1998]:
+            - generic [ref=e1999]: 132 kV
+          - cell "Kurnool" [ref=e2000]
+          - cell "SS-132KV-GUDR" [ref=e2001]
+          - cell "2" [ref=e2002]
+        - row "Kurnool 132 kV Kurnool SS-132KV-KRNL 5" [ref=e2003] [cursor=pointer]:
+          - cell "Kurnool" [ref=e2004]
+          - cell "132 kV" [ref=e2005]:
+            - generic [ref=e2006]: 132 kV
+          - cell "Kurnool" [ref=e2007]
+          - cell "SS-132KV-KRNL" [ref=e2008]
+          - cell "5" [ref=e2009]
+        - row "Mudigedu 132 kV Kurnool SS-132KV-MDGD 1" [ref=e2010] [cursor=pointer]:
+          - cell "Mudigedu" [ref=e2011]
+          - cell "132 kV" [ref=e2012]:
+            - generic [ref=e2013]: 132 kV
+          - cell "Kurnool" [ref=e2014]
+          - cell "SS-132KV-MDGD" [ref=e2015]
+          - cell "1" [ref=e2016]
+        - row "Madhavaram(Mantralayam) 132 kV Kurnool SS-132KV-MDVM 2" [ref=e2017] [cursor=pointer]:
+          - cell "Madhavaram(Mantralayam)" [ref=e2018]
+          - cell "132 kV" [ref=e2019]:
+            - generic [ref=e2020]: 132 kV
+          - cell "Kurnool" [ref=e2021]
+          - cell "SS-132KV-MDVM" [ref=e2022]
+          - cell "2" [ref=e2023]
+        - row "Nandikotkur 132 kV Kurnool SS-132KV-NKKR 2" [ref=e2024] [cursor=pointer]:
+          - cell "Nandikotkur" [ref=e2025]
+          - cell "132 kV" [ref=e2026]:
+            - generic [ref=e2027]: 132 kV
+          - cell "Kurnool" [ref=e2028]
+          - cell "SS-132KV-NKKR" [ref=e2029]
+          - cell "2" [ref=e2030]
+        - row "Pathikonda 132 kV Kurnool SS-132KV-PTKD 2" [ref=e2031] [cursor=pointer]:
+          - cell "Pathikonda" [ref=e2032]
+          - cell "132 kV" [ref=e2033]:
+            - generic [ref=e2034]: 132 kV
+          - cell "Kurnool" [ref=e2035]
+          - cell "SS-132KV-PTKD" [ref=e2036]
+          - cell "2" [ref=e2037]
+        - row "Racherla 132 kV Kurnool SS-132KV-RCRL 2" [ref=e2038] [cursor=pointer]:
+          - cell "Racherla" [ref=e2039]
+          - cell "132 kV" [ref=e2040]:
+            - generic [ref=e2041]: 132 kV
+          - cell "Kurnool" [ref=e2042]
+          - cell "SS-132KV-RCRL" [ref=e2043]
+          - cell "2" [ref=e2044]
+        - row "Rudravaram 132 kV Kurnool SS-132KV-RDVM 2" [ref=e2045] [cursor=pointer]:
+          - cell "Rudravaram" [ref=e2046]
+          - cell "132 kV" [ref=e2047]:
+            - generic [ref=e2048]: 132 kV
+          - cell "Kurnool" [ref=e2049]
+          - cell "SS-132KV-RDVM" [ref=e2050]
+          - cell "2" [ref=e2051]
+        - row "Sunnipenta 132 kV Kurnool SS-132KV-SSLM 2" [ref=e2052] [cursor=pointer]:
+          - cell "Sunnipenta" [ref=e2053]
+          - cell "132 kV" [ref=e2054]:
+            - generic [ref=e2055]: 132 kV
+          - cell "Kurnool" [ref=e2056]
+          - cell "SS-132KV-SSLM" [ref=e2057]
+          - cell "2" [ref=e2058]
+        - row "Yemmiganur 132 kV Kurnool SS-132KV-YMGR 4" [ref=e2059] [cursor=pointer]:
+          - cell "Yemmiganur" [ref=e2060]
+          - cell "132 kV" [ref=e2061]:
+            - generic [ref=e2062]: 132 kV
+          - cell "Kurnool" [ref=e2063]
+          - cell "SS-132KV-YMGR" [ref=e2064]
+          - cell "4" [ref=e2065]
+        - row "Vemulapadu 132 kV Kurnool Vemulapadu 2" [ref=e2066] [cursor=pointer]:
+          - cell "Vemulapadu" [ref=e2067]
+          - cell "132 kV" [ref=e2068]:
+            - generic [ref=e2069]: 132 kV
+          - cell "Kurnool" [ref=e2070]
+          - cell "Vemulapadu" [ref=e2071]
+          - cell "2" [ref=e2072]
+        - row "Mantralayam Rly SS 132 kV Kurnool MANTRALAYAM RTSS 1" [ref=e2073] [cursor=pointer]:
+          - cell "Mantralayam Rly SS" [ref=e2074]
+          - cell "132 kV" [ref=e2075]:
+            - generic [ref=e2076]: 132 kV
+          - cell "Kurnool" [ref=e2077]
+          - cell "MANTRALAYAM RTSS" [ref=e2078]
+          - cell "1" [ref=e2079]
+        - row "Sree Jayajoti Cements 132 kV Kurnool SJCL 1" [ref=e2080] [cursor=pointer]:
+          - cell "Sree Jayajoti Cements" [ref=e2081]
+          - cell "132 kV" [ref=e2082]:
+            - generic [ref=e2083]: 132 kV
+          - cell "Kurnool" [ref=e2084]
+          - cell "SJCL" [ref=e2085]
+          - cell "1" [ref=e2086]
+        - row "Nagarur RTSS 132 kV Kurnool NAGARUR RTSS 1" [ref=e2087] [cursor=pointer]:
+          - cell "Nagarur RTSS" [ref=e2088]
+          - cell "132 kV" [ref=e2089]:
+            - generic [ref=e2090]: 132 kV
+          - cell "Kurnool" [ref=e2091]
+          - cell "NAGARUR RTSS" [ref=e2092]
+          - cell "1" [ref=e2093]
+        - row "SRPM 132 kV Kurnool SRPM 1" [ref=e2094] [cursor=pointer]:
+          - cell "SRPM" [ref=e2095]
+          - cell "132 kV" [ref=e2096]:
+            - generic [ref=e2097]: 132 kV
+          - cell "Kurnool" [ref=e2098]
+          - cell "SRPM" [ref=e2099]
+          - cell "1" [ref=e2100]
+        - row "BAEL 132 kV Kurnool BAEL 1" [ref=e2101] [cursor=pointer]:
+          - cell "BAEL" [ref=e2102]
+          - cell "132 kV" [ref=e2103]:
+            - generic [ref=e2104]: 132 kV
+          - cell "Kurnool" [ref=e2105]
+          - cell "BAEL" [ref=e2106]
+          - cell "1" [ref=e2107]
+        - row "Alipiri 132 kV Tirupathi SS-132KV-ALPR 2" [ref=e2108] [cursor=pointer]:
+          - cell "Alipiri" [ref=e2109]
+          - cell "132 kV" [ref=e2110]:
+            - generic [ref=e2111]: 132 kV
+          - cell "Tirupathi" [ref=e2112]
+          - cell "SS-132KV-ALPR" [ref=e2113]
+          - cell "2" [ref=e2114]
+        - row "Bandlavandlapalli 132 kV Tirupathi SS-132KV-BDVD 1" [ref=e2115] [cursor=pointer]:
+          - cell "Bandlavandlapalli" [ref=e2116]
+          - cell "132 kV" [ref=e2117]:
+            - generic [ref=e2118]: 132 kV
+          - cell "Tirupathi" [ref=e2119]
+          - cell "SS-132KV-BDVD" [ref=e2120]
+          - cell "1" [ref=e2121]
+        - row "B.Kothakota 132 kV Tirupathi SS-132KV-BKKT 1" [ref=e2122] [cursor=pointer]:
+          - cell "B.Kothakota" [ref=e2123]
+          - cell "132 kV" [ref=e2124]:
+            - generic [ref=e2125]: 132 kV
+          - cell "Tirupathi" [ref=e2126]
+          - cell "SS-132KV-BKKT" [ref=e2127]
+          - cell "1" [ref=e2128]
+        - row "Burakayala Kota 132 kV Tirupathi SS-132KV-BRKT 2" [ref=e2129] [cursor=pointer]:
+          - cell "Burakayala Kota" [ref=e2130]
+          - cell "132 kV" [ref=e2131]:
+            - generic [ref=e2132]: 132 kV
+          - cell "Tirupathi" [ref=e2133]
+          - cell "SS-132KV-BRKT" [ref=e2134]
+          - cell "2" [ref=e2135]
+        - row "Chandragiri 132 kV Tirupathi SS-132KV-CDGR 3" [ref=e2136] [cursor=pointer]:
+          - cell "Chandragiri" [ref=e2137]
+          - cell "132 kV" [ref=e2138]:
+            - generic [ref=e2139]: 132 kV
+          - cell "Tirupathi" [ref=e2140]
+          - cell "SS-132KV-CDGR" [ref=e2141]
+          - cell "3" [ref=e2142]
+        - row "Cherivi 132 kV Tirupathi SS-132KV-CRVI 3" [ref=e2143] [cursor=pointer]:
+          - cell "Cherivi" [ref=e2144]
+          - cell "132 kV" [ref=e2145]:
+            - generic [ref=e2146]: 132 kV
+          - cell "Tirupathi" [ref=e2147]
+          - cell "SS-132KV-CRVI" [ref=e2148]
+          - cell "3" [ref=e2149]
+        - row "Gurramkonda 132 kV Tirupathi SS-132KV-GMKD 4" [ref=e2150] [cursor=pointer]:
+          - cell "Gurramkonda" [ref=e2151]
+          - cell "132 kV" [ref=e2152]:
+            - generic [ref=e2153]: 132 kV
+          - cell "Tirupathi" [ref=e2154]
+          - cell "SS-132KV-GMKD" [ref=e2155]
+          - cell "4" [ref=e2156]
+        - row "Greenply 132 kV Tirupathi SS-132KV-GPLY 1" [ref=e2157] [cursor=pointer]:
+          - cell "Greenply" [ref=e2158]
+          - cell "132 kV" [ref=e2159]:
+            - generic [ref=e2160]: 132 kV
+          - cell "Tirupathi" [ref=e2161]
+          - cell "SS-132KV-GPLY" [ref=e2162]
+          - cell "1" [ref=e2163]
+        - row "Irala 132 kV Tirupathi SS-132KV-IRLA 2" [ref=e2164] [cursor=pointer]:
+          - cell "Irala" [ref=e2165]
+          - cell "132 kV" [ref=e2166]:
+            - generic [ref=e2167]: 132 kV
+          - cell "Tirupathi" [ref=e2168]
+          - cell "SS-132KV-IRLA" [ref=e2169]
+          - cell "2" [ref=e2170]
+        - row "Kothapalli(Gudipala) 132 kV Tirupathi SS-132KV-KPLI 1" [ref=e2171] [cursor=pointer]:
+          - cell "Kothapalli(Gudipala)" [ref=e2172]
+          - cell "132 kV" [ref=e2173]:
+            - generic [ref=e2174]: 132 kV
+          - cell "Tirupathi" [ref=e2175]
+          - cell "SS-132KV-KPLI" [ref=e2176]
+          - cell "1" [ref=e2177]
+        - row "Kothapalli Mitta[K.P.Mitta] 132 kV Tirupathi SS-132KV-KPMT 4" [ref=e2178] [cursor=pointer]:
+          - cell "Kothapalli Mitta[K.P.Mitta]" [ref=e2179]
+          - cell "132 kV" [ref=e2180]:
+            - generic [ref=e2181]: 132 kV
+          - cell "Tirupathi" [ref=e2182]
+          - cell "SS-132KV-KPMT" [ref=e2183]
+          - cell "4" [ref=e2184]
+        - row "Kuppam 132 kV Tirupathi SS-132KV-KUPM 2" [ref=e2185] [cursor=pointer]:
+          - cell "Kuppam" [ref=e2186]
+          - cell "132 kV" [ref=e2187]:
+            - generic [ref=e2188]: 132 kV
+          - cell "Tirupathi" [ref=e2189]
+          - cell "SS-132KV-KUPM" [ref=e2190]
+          - cell "2" [ref=e2191]
+        - row "Madanapalli 132 kV Tirupathi SS-132KV-MDPL 4" [ref=e2192] [cursor=pointer]:
+          - cell "Madanapalli" [ref=e2193]
+          - cell "132 kV" [ref=e2194]:
+            - generic [ref=e2195]: 132 kV
+          - cell "Tirupathi" [ref=e2196]
+          - cell "SS-132KV-MDPL" [ref=e2197]
+          - cell "4" [ref=e2198]
+        - row "Nagalapuram 132 kV Tirupathi SS-132KV-NGLP 1" [ref=e2199] [cursor=pointer]:
+          - cell "Nagalapuram" [ref=e2200]
+          - cell "132 kV" [ref=e2201]:
+            - generic [ref=e2202]: 132 kV
+          - cell "Tirupathi" [ref=e2203]
+          - cell "SS-132KV-NGLP" [ref=e2204]
+          - cell "1" [ref=e2205]
+        - row "Punganur 132 kV Tirupathi SS-132KV-PGNR 2" [ref=e2206] [cursor=pointer]:
+          - cell "Punganur" [ref=e2207]
+          - cell "132 kV" [ref=e2208]:
+            - generic [ref=e2209]: 132 kV
+          - cell "Tirupathi" [ref=e2210]
+          - cell "SS-132KV-PGNR" [ref=e2211]
+          - cell "2" [ref=e2212]
+        - row "Pakala 132 kV Tirupathi SS-132KV-PKLA 5" [ref=e2213] [cursor=pointer]:
+          - cell "Pakala" [ref=e2214]
+          - cell "132 kV" [ref=e2215]:
+            - generic [ref=e2216]: 132 kV
+          - cell "Tirupathi" [ref=e2217]
+          - cell "SS-132KV-PKLA" [ref=e2218]
+          - cell "5" [ref=e2219]
+        - row "Puttur 132 kV Tirupathi SS-132KV-PUTR 3" [ref=e2220] [cursor=pointer]:
+          - cell "Puttur" [ref=e2221]
+          - cell "132 kV" [ref=e2222]:
+            - generic [ref=e2223]: 132 kV
+          - cell "Tirupathi" [ref=e2224]
+          - cell "SS-132KV-PUTR" [ref=e2225]
+          - cell "3" [ref=e2226]
+        - row "Rompicherla 132 kV Tirupathi SS-132KV-RPCL 2" [ref=e2227] [cursor=pointer]:
+          - cell "Rompicherla" [ref=e2228]
+          - cell "132 kV" [ref=e2229]:
+            - generic [ref=e2230]: 132 kV
+          - cell "Tirupathi" [ref=e2231]
+          - cell "SS-132KV-RPCL" [ref=e2232]
+          - cell "2" [ref=e2233]
+        - row "Ramasamudram 132 kV Tirupathi SS-132KV-RSDM 1" [ref=e2234] [cursor=pointer]:
+          - cell "Ramasamudram" [ref=e2235]
+          - cell "132 kV" [ref=e2236]:
+            - generic [ref=e2237]: 132 kV
+          - cell "Tirupathi" [ref=e2238]
+          - cell "SS-132KV-RSDM" [ref=e2239]
+          - cell "1" [ref=e2240]
+        - row "Srikalahasti 132 kV Tirupathi SS-132KV-SKHT 4" [ref=e2241] [cursor=pointer]:
+          - cell "Srikalahasti" [ref=e2242]
+          - cell "132 kV" [ref=e2243]:
+            - generic [ref=e2244]: 132 kV
+          - cell "Tirupathi" [ref=e2245]
+          - cell "SS-132KV-SKHT" [ref=e2246]
+          - cell "4" [ref=e2247]
+        - row "Somala 132 kV Tirupathi SS-132KV-SMLA 2" [ref=e2248] [cursor=pointer]:
+          - cell "Somala" [ref=e2249]
+          - cell "132 kV" [ref=e2250]:
+            - generic [ref=e2251]: 132 kV
+          - cell "Tirupathi" [ref=e2252]
+          - cell "SS-132KV-SMLA" [ref=e2253]
+          - cell "2" [ref=e2254]
+        - row "Santhipuram 132 kV Tirupathi SS-132KV-SNTP 3" [ref=e2255] [cursor=pointer]:
+          - cell "Santhipuram" [ref=e2256]
+          - cell "132 kV" [ref=e2257]:
+            - generic [ref=e2258]: 132 kV
+          - cell "Tirupathi" [ref=e2259]
+          - cell "SS-132KV-SNTP" [ref=e2260]
+          - cell "3" [ref=e2261]
+        - row "Sivaramapuram 132 kV Tirupathi SS-132KV-SVPM 2" [ref=e2262] [cursor=pointer]:
+          - cell "Sivaramapuram" [ref=e2263]
+          - cell "132 kV" [ref=e2264]:
+            - generic [ref=e2265]: 132 kV
+          - cell "Tirupathi" [ref=e2266]
+          - cell "SS-132KV-SVPM" [ref=e2267]
+          - cell "2" [ref=e2268]
+        - row "Tirumala 132 kV Tirupathi SS-132KV-TRML 1" [ref=e2269] [cursor=pointer]:
+          - cell "Tirumala" [ref=e2270]
+          - cell "132 kV" [ref=e2271]:
+            - generic [ref=e2272]: 132 kV
+          - cell "Tirupathi" [ref=e2273]
+          - cell "SS-132KV-TRML" [ref=e2274]
+          - cell "1" [ref=e2275]
+        - row "Tirupati 132 kV Tirupathi SS-132KV-TRPT 2" [ref=e2276] [cursor=pointer]:
+          - cell "Tirupati" [ref=e2277]
+          - cell "132 kV" [ref=e2278]:
+            - generic [ref=e2279]: 132 kV
+          - cell "Tirupathi" [ref=e2280]
+          - cell "SS-132KV-TRPT" [ref=e2281]
+          - cell "2" [ref=e2282]
+        - row "Yerpedu 132 kV Tirupathi SS-132KV-YRPD 1" [ref=e2283] [cursor=pointer]:
+          - cell "Yerpedu" [ref=e2284]
+          - cell "132 kV" [ref=e2285]:
+            - generic [ref=e2286]: 132 kV
+          - cell "Tirupathi" [ref=e2287]
+          - cell "SS-132KV-YRPD" [ref=e2288]
+          - cell "1" [ref=e2289]
+        - row "Noonegundlapalli 132 kV Tirupathi SS-132KV-NGPL 4" [ref=e2290] [cursor=pointer]:
+          - cell "Noonegundlapalli" [ref=e2291]
+          - cell "132 kV" [ref=e2292]:
+            - generic [ref=e2293]: 132 kV
+          - cell "Tirupathi" [ref=e2294]
+          - cell "SS-132KV-NGPL" [ref=e2295]
+          - cell "4" [ref=e2296]
+        - row "Amararaja 132 kV Tirupathi Amararaja 1" [ref=e2297] [cursor=pointer]:
+          - cell "Amararaja" [ref=e2298]
+          - cell "132 kV" [ref=e2299]:
+            - generic [ref=e2300]: 132 kV
+          - cell "Tirupathi" [ref=e2301]
+          - cell "Amararaja" [ref=e2302]
+          - cell "1" [ref=e2303]
+        - row "Kalicherla 132 kV Tirupathi 132KV Kalicherla 3" [ref=e2304] [cursor=pointer]:
+          - cell "Kalicherla" [ref=e2305]
+          - cell "132 kV" [ref=e2306]:
+            - generic [ref=e2307]: 132 kV
+          - cell "Tirupathi" [ref=e2308]
+          - cell "132KV Kalicherla" [ref=e2309]
+          - cell "3" [ref=e2310]
+        - row "Dayanidhi Solar 132 kV Tirupathi Dayanidhi 1" [ref=e2311] [cursor=pointer]:
+          - cell "Dayanidhi Solar" [ref=e2312]
+          - cell "132 kV" [ref=e2313]:
+            - generic [ref=e2314]: 132 kV
+          - cell "Tirupathi" [ref=e2315]
+          - cell "Dayanidhi" [ref=e2316]
+          - cell "1" [ref=e2317]
+        - row "SAGAR SUGARS 132 kV Tirupathi SAGAR SUGARS 1" [ref=e2318] [cursor=pointer]:
+          - cell "SAGAR SUGARS" [ref=e2319]
+          - cell "132 kV" [ref=e2320]:
+            - generic [ref=e2321]: 132 kV
+          - cell "Tirupathi" [ref=e2322]
+          - cell "SAGAR SUGARS" [ref=e2323]
+          - cell "1" [ref=e2324]
+        - row "WANEEP SOLAR 132 kV Tirupathi WANEEP SOLAR 1" [ref=e2325] [cursor=pointer]:
+          - cell "WANEEP SOLAR" [ref=e2326]
+          - cell "132 kV" [ref=e2327]:
+            - generic [ref=e2328]: 132 kV
+          - cell "Tirupathi" [ref=e2329]
+          - cell "WANEEP SOLAR" [ref=e2330]
+          - cell "1" [ref=e2331]
+        - row "Mondelez 132 kV Tirupathi MONDELEZ 1" [ref=e2332] [cursor=pointer]:
+          - cell "Mondelez" [ref=e2333]
+          - cell "132 kV" [ref=e2334]:
+            - generic [ref=e2335]: 132 kV
+          - cell "Tirupathi" [ref=e2336]
+          - cell "MONDELEZ" [ref=e2337]
+          - cell "1" [ref=e2338]
+        - row "Solar plant 132 kV Tirupathi Solar 1" [ref=e2339] [cursor=pointer]:
+          - cell "Solar plant" [ref=e2340]
+          - cell "132 kV" [ref=e2341]:
+            - generic [ref=e2342]: 132 kV
+          - cell "Tirupathi" [ref=e2343]
+          - cell "Solar" [ref=e2344]
+          - cell "1" [ref=e2345]
+        - row "SNAM ALLOYS 132 kV Tirupathi SNAM ALLOYS 1" [ref=e2346] [cursor=pointer]:
+          - cell "SNAM ALLOYS" [ref=e2347]
+          - cell "132 kV" [ref=e2348]:
+            - generic [ref=e2349]: 132 kV
+          - cell "Tirupathi" [ref=e2350]
+          - cell "SNAM ALLOYS" [ref=e2351]
+          - cell "1" [ref=e2352]
+        - row "Renigunta RTSS 132 kV Tirupathi RRTSS 1" [ref=e2353] [cursor=pointer]:
+          - cell "Renigunta RTSS" [ref=e2354]
+          - cell "132 kV" [ref=e2355]:
+            - generic [ref=e2356]: 132 kV
+          - cell "Tirupathi" [ref=e2357]
+          - cell "RRTSS" [ref=e2358]
+          - cell "1" [ref=e2359]
+        - row "Prakash Ferros 132 kV Tirupathi PFIP 1" [ref=e2360] [cursor=pointer]:
+          - cell "Prakash Ferros" [ref=e2361]
+          - cell "132 kV" [ref=e2362]:
+            - generic [ref=e2363]: 132 kV
+          - cell "Tirupathi" [ref=e2364]
+          - cell "PFIP" [ref=e2365]
+          - cell "1" [ref=e2366]
+        - row "Lanco Industries 132 kV Tirupathi LANCO 1" [ref=e2367] [cursor=pointer]:
+          - cell "Lanco Industries" [ref=e2368]
+          - cell "132 kV" [ref=e2369]:
+            - generic [ref=e2370]: 132 kV
+          - cell "Tirupathi" [ref=e2371]
+          - cell "LANCO" [ref=e2372]
+          - cell "1" [ref=e2373]
+        - row "Puttur rly SS 132 kV Tirupathi PURTSS 1" [ref=e2374] [cursor=pointer]:
+          - cell "Puttur rly SS" [ref=e2375]
+          - cell "132 kV" [ref=e2376]:
+            - generic [ref=e2377]: 132 kV
+          - cell "Tirupathi" [ref=e2378]
+          - cell "PURTSS" [ref=e2379]
+          - cell "1" [ref=e2380]
+        - row "Pakala RTSS 132 kV Tirupathi PARTSS 1" [ref=e2381] [cursor=pointer]:
+          - cell "Pakala RTSS" [ref=e2382]
+          - cell "132 kV" [ref=e2383]:
+            - generic [ref=e2384]: 132 kV
+          - cell "Tirupathi" [ref=e2385]
+          - cell "PARTSS" [ref=e2386]
+          - cell "1" [ref=e2387]
+        - row "Grindwelnorton 132 kV Tirupathi GRINDWELNORTON 1" [ref=e2388] [cursor=pointer]:
+          - cell "Grindwelnorton" [ref=e2389]
+          - cell "132 kV" [ref=e2390]:
+            - generic [ref=e2391]: 132 kV
+          - cell "Tirupathi" [ref=e2392]
+          - cell "GRINDWELNORTON" [ref=e2393]
+          - cell "1" [ref=e2394]
+        - row "Amararaja Batteries 132 kV Tirupathi ARBSS 1" [ref=e2395] [cursor=pointer]:
+          - cell "Amararaja Batteries" [ref=e2396]
+          - cell "132 kV" [ref=e2397]:
+            - generic [ref=e2398]: 132 kV
+          - cell "Tirupathi" [ref=e2399]
+          - cell "ARBSS" [ref=e2400]
+          - cell "1" [ref=e2401]
+        - row "Bhimavaram 132 kV Eluru SS-132KV-BVRM 5" [ref=e2402] [cursor=pointer]:
+          - cell "Bhimavaram" [ref=e2403]
+          - cell "132 kV" [ref=e2404]:
+            - generic [ref=e2405]: 132 kV
+          - cell "Eluru" [ref=e2406]
+          - cell "SS-132KV-BVRM" [ref=e2407]
+          - cell "5" [ref=e2408]
+        - row "Chintalapudi 132 kV Eluru SS-132KV-CHPD 1" [ref=e2409] [cursor=pointer]:
+          - cell "Chintalapudi" [ref=e2410]
+          - cell "132 kV" [ref=e2411]:
+            - generic [ref=e2412]: 132 kV
+          - cell "Eluru" [ref=e2413]
+          - cell "SS-132KV-CHPD" [ref=e2414]
+          - cell "1" [ref=e2415]
+        - row "Eluru 132 kV Eluru SS-132KV-ELRU 3" [ref=e2416] [cursor=pointer]:
+          - cell "Eluru" [ref=e2417]
+          - cell "132 kV" [ref=e2418]:
+            - generic [ref=e2419]: 132 kV
+          - cell "Eluru" [ref=e2420]
+          - cell "SS-132KV-ELRU" [ref=e2421]
+          - cell "3" [ref=e2422]
+        - row "Jangareddy Gudem 132 kV Eluru SS-132KV-JRGM 2" [ref=e2423] [cursor=pointer]:
+          - cell "Jangareddy Gudem" [ref=e2424]
+          - cell "132 kV" [ref=e2425]:
+            - generic [ref=e2426]: 132 kV
+          - cell "Eluru" [ref=e2427]
+          - cell "SS-132KV-JRGM" [ref=e2428]
+          - cell "2" [ref=e2429]
+        - row "Kamavarapukota 132 kV Eluru SS-132KV-KVKT 3" [ref=e2430] [cursor=pointer]:
+          - cell "Kamavarapukota" [ref=e2431]
+          - cell "132 kV" [ref=e2432]:
+            - generic [ref=e2433]: 132 kV
+          - cell "Eluru" [ref=e2434]
+          - cell "SS-132KV-KVKT" [ref=e2435]
+          - cell "3" [ref=e2436]
+        - row "Kovvuru 132 kV Eluru SS-132KV-KVRU 2" [ref=e2437] [cursor=pointer]:
+          - cell "Kovvuru" [ref=e2438]
+          - cell "132 kV" [ref=e2439]:
+            - generic [ref=e2440]: 132 kV
+          - cell "Eluru" [ref=e2441]
+          - cell "SS-132KV-KVRU" [ref=e2442]
+          - cell "2" [ref=e2443]
+        - row "Nidadavolu 132 kV Eluru SS-132KV-NDDV 7" [ref=e2444] [cursor=pointer]:
+          - cell "Nidadavolu" [ref=e2445]
+          - cell "132 kV" [ref=e2446]:
+            - generic [ref=e2447]: 132 kV
+          - cell "Eluru" [ref=e2448]
+          - cell "SS-132KV-NDDV" [ref=e2449]
+          - cell "7" [ref=e2450]
+        - row "Nallajerla 132 kV Eluru SS-132KV-NLJL 3" [ref=e2451] [cursor=pointer]:
+          - cell "Nallajerla" [ref=e2452]
+          - cell "132 kV" [ref=e2453]:
+            - generic [ref=e2454]: 132 kV
+          - cell "Eluru" [ref=e2455]
+          - cell "SS-132KV-NLJL" [ref=e2456]
+          - cell "3" [ref=e2457]
+        - row "Narasapuram 132 kV Eluru SS-132KV-NSPM 2" [ref=e2458] [cursor=pointer]:
+          - cell "Narasapuram" [ref=e2459]
+          - cell "132 kV" [ref=e2460]:
+            - generic [ref=e2461]: 132 kV
+          - cell "Eluru" [ref=e2462]
+          - cell "SS-132KV-NSPM" [ref=e2463]
+          - cell "2" [ref=e2464]
+        - row "Pedavegi 132 kV Eluru SS-132KV-PDVG 2" [ref=e2465] [cursor=pointer]:
+          - cell "Pedavegi" [ref=e2466]
+          - cell "132 kV" [ref=e2467]:
+            - generic [ref=e2468]: 132 kV
+          - cell "Eluru" [ref=e2469]
+          - cell "SS-132KV-PDVG" [ref=e2470]
+          - cell "2" [ref=e2471]
+        - row "Penugonda 132 kV Eluru SS-132KV-PNGD 2" [ref=e2472] [cursor=pointer]:
+          - cell "Penugonda" [ref=e2473]
+          - cell "132 kV" [ref=e2474]:
+            - generic [ref=e2475]: 132 kV
+          - cell "Eluru" [ref=e2476]
+          - cell "SS-132KV-PNGD" [ref=e2477]
+          - cell "2" [ref=e2478]
+        - row "Pt Pally 132 kV Eluru SS-132KV-PTPL 3" [ref=e2479] [cursor=pointer]:
+          - cell "Pt Pally" [ref=e2480]
+          - cell "132 kV" [ref=e2481]:
+            - generic [ref=e2482]: 132 kV
+          - cell "Eluru" [ref=e2483]
+          - cell "SS-132KV-PTPL" [ref=e2484]
+          - cell "3" [ref=e2485]
+        - row "Saggonda 132 kV Eluru SS-132KV-SGND 2" [ref=e2486] [cursor=pointer]:
+          - cell "Saggonda" [ref=e2487]
+          - cell "132 kV" [ref=e2488]:
+            - generic [ref=e2489]: 132 kV
+          - cell "Eluru" [ref=e2490]
+          - cell "SS-132KV-SGND" [ref=e2491]
+          - cell "2" [ref=e2492]
+        - row "Tanuku 132 kV Eluru SS-132KV-TNKU 2" [ref=e2493] [cursor=pointer]:
+          - cell "Tanuku" [ref=e2494]
+          - cell "132 kV" [ref=e2495]:
+            - generic [ref=e2496]: 132 kV
+          - cell "Eluru" [ref=e2497]
+          - cell "SS-132KV-TNKU" [ref=e2498]
+          - cell "2" [ref=e2499]
+        - row "Yernagudem 132 kV Eluru SS-132KV-YRNG 1" [ref=e2500] [cursor=pointer]:
+          - cell "Yernagudem" [ref=e2501]
+          - cell "132 kV" [ref=e2502]:
+            - generic [ref=e2503]: 132 kV
+          - cell "Eluru" [ref=e2504]
+          - cell "SS-132KV-YRNG" [ref=e2505]
+          - cell "1" [ref=e2506]
+        - row "Andhra Sugars 132 kV Eluru ASGR 1" [ref=e2507] [cursor=pointer]:
+          - cell "Andhra Sugars" [ref=e2508]
+          - cell "132 kV" [ref=e2509]:
+            - generic [ref=e2510]: 132 kV
+          - cell "Eluru" [ref=e2511]
+          - cell "ASGR" [ref=e2512]
+          - cell "1" [ref=e2513]
+        - row "Ravali Spinners 132 kV Eluru RSPL 2" [ref=e2514] [cursor=pointer]:
+          - cell "Ravali Spinners" [ref=e2515]
+          - cell "132 kV" [ref=e2516]:
+            - generic [ref=e2517]: 132 kV
+          - cell "Eluru" [ref=e2518]
+          - cell "RSPL" [ref=e2519]
+          - cell "2" [ref=e2520]
+        - row "Tadepalli Rly SS 132 kV Eluru TPGM_RTSS 1" [ref=e2521] [cursor=pointer]:
+          - cell "Tadepalli Rly SS" [ref=e2522]
+          - cell "132 kV" [ref=e2523]:
+            - generic [ref=e2524]: 132 kV
+          - cell "Eluru" [ref=e2525]
+          - cell "TPGM_RTSS" [ref=e2526]
+          - cell "1" [ref=e2527]
+        - row "Jaypee Sugars 132 kV Eluru TJSL 1" [ref=e2528] [cursor=pointer]:
+          - cell "Jaypee Sugars" [ref=e2529]
+          - cell "132 kV" [ref=e2530]:
+            - generic [ref=e2531]: 132 kV
+          - cell "Eluru" [ref=e2532]
+          - cell "TJSL" [ref=e2533]
+          - cell "1" [ref=e2534]
+        - row "VRK Sugars 132 kV Eluru VRKS 1" [ref=e2535] [cursor=pointer]:
+          - cell "VRK Sugars" [ref=e2536]
+          - cell "132 kV" [ref=e2537]:
+            - generic [ref=e2538]: 132 kV
+          - cell "Eluru" [ref=e2539]
+          - cell "VRKS" [ref=e2540]
+          - cell "1" [ref=e2541]
+        - row "Vatlur Rly SS 132 kV Eluru VTLR_RTSS 1" [ref=e2542] [cursor=pointer]:
+          - cell "Vatlur Rly SS" [ref=e2543]
+          - cell "132 kV" [ref=e2544]:
+            - generic [ref=e2545]: 132 kV
+          - cell "Eluru" [ref=e2546]
+          - cell "VTLR_RTSS" [ref=e2547]
+          - cell "1" [ref=e2548]
+        - row "Amalapuram 132 kV Rajahmundry SS-132KV-ALPM 3" [ref=e2549] [cursor=pointer]:
+          - cell "Amalapuram" [ref=e2550]
+          - cell "132 kV" [ref=e2551]:
+            - generic [ref=e2552]: 132 kV
+          - cell "Rajahmundry" [ref=e2553]
+          - cell "SS-132KV-ALPM" [ref=e2554]
+          - cell "3" [ref=e2555]
+        - row "Biccavolu 132 kV Rajahmundry SS-132KV-BCVL 1" [ref=e2556] [cursor=pointer]:
+          - cell "Biccavolu" [ref=e2557]
+          - cell "132 kV" [ref=e2558]:
+            - generic [ref=e2559]: 132 kV
+          - cell "Rajahmundry" [ref=e2560]
+          - cell "SS-132KV-BCVL" [ref=e2561]
+          - cell "1" [ref=e2562]
+        - row "Editha 132 kV Rajahmundry SS-132KV-EDTA 2" [ref=e2563] [cursor=pointer]:
+          - cell "Editha" [ref=e2564]
+          - cell "132 kV" [ref=e2565]:
+            - generic [ref=e2566]: 132 kV
+          - cell "Rajahmundry" [ref=e2567]
+          - cell "SS-132KV-EDTA" [ref=e2568]
+          - cell "2" [ref=e2569]
+        - row "Gollapalem 132 kV Rajahmundry SS-132KV-GLPM 1" [ref=e2570] [cursor=pointer]:
+          - cell "Gollapalem" [ref=e2571]
+          - cell "132 kV" [ref=e2572]:
+            - generic [ref=e2573]: 132 kV
+          - cell "Rajahmundry" [ref=e2574]
+          - cell "SS-132KV-GLPM" [ref=e2575]
+          - cell "1" [ref=e2576]
+        - row "Kondaguntur 132 kV Rajahmundry SS-132KV-KDGR 3" [ref=e2577] [cursor=pointer]:
+          - cell "Kondaguntur" [ref=e2578]
+          - cell "132 kV" [ref=e2579]:
+            - generic [ref=e2580]: 132 kV
+          - cell "Rajahmundry" [ref=e2581]
+          - cell "SS-132KV-KDGR" [ref=e2582]
+          - cell "3" [ref=e2583]
+        - row "Kothapeta 132 kV Rajahmundry SS-132KV-KTPT 2" [ref=e2584] [cursor=pointer]:
+          - cell "Kothapeta" [ref=e2585]
+          - cell "132 kV" [ref=e2586]:
+            - generic [ref=e2587]: 132 kV
+          - cell "Rajahmundry" [ref=e2588]
+          - cell "SS-132KV-KTPT" [ref=e2589]
+          - cell "2" [ref=e2590]
+        - row "Mummidivaram 132 kV Rajahmundry SS-132KV-MDRM 2" [ref=e2591] [cursor=pointer]:
+          - cell "Mummidivaram" [ref=e2592]
+          - cell "132 kV" [ref=e2593]:
+            - generic [ref=e2594]: 132 kV
+          - cell "Rajahmundry" [ref=e2595]
+          - cell "SS-132KV-MDRM" [ref=e2596]
+          - cell "2" [ref=e2597]
+        - row "Mallaiahpeta 132 kV Rajahmundry SS-132KV-MLPT 2" [ref=e2598] [cursor=pointer]:
+          - cell "Mallaiahpeta" [ref=e2599]
+          - cell "132 kV" [ref=e2600]:
+            - generic [ref=e2601]: 132 kV
+          - cell "Rajahmundry" [ref=e2602]
+          - cell "SS-132KV-MLPT" [ref=e2603]
+          - cell "2" [ref=e2604]
+        - row "Peddapuram 132 kV Rajahmundry SS-132KV-PDPM 8" [ref=e2605] [cursor=pointer]:
+          - cell "Peddapuram" [ref=e2606]
+          - cell "132 kV" [ref=e2607]:
+            - generic [ref=e2608]: 132 kV
+          - cell "Rajahmundry" [ref=e2609]
+          - cell "SS-132KV-PDPM" [ref=e2610]
+          - cell "8" [ref=e2611]
+        - row "Pratapnagar 132 kV Rajahmundry SS-132KV-PPNR 2" [ref=e2612] [cursor=pointer]:
+          - cell "Pratapnagar" [ref=e2613]
+          - cell "132 kV" [ref=e2614]:
+            - generic [ref=e2615]: 132 kV
+          - cell "Rajahmundry" [ref=e2616]
+          - cell "SS-132KV-PPNR" [ref=e2617]
+          - cell "2" [ref=e2618]
+        - row "Pithapuram 132 kV Rajahmundry SS-132KV-PPRM 2" [ref=e2619] [cursor=pointer]:
+          - cell "Pithapuram" [ref=e2620]
+          - cell "132 kV" [ref=e2621]:
+            - generic [ref=e2622]: 132 kV
+          - cell "Rajahmundry" [ref=e2623]
+          - cell "SS-132KV-PPRM" [ref=e2624]
+          - cell "2" [ref=e2625]
+        - row "Prathipadu 132 kV Rajahmundry SS-132KV-PTPD 3" [ref=e2626] [cursor=pointer]:
+          - cell "Prathipadu" [ref=e2627]
+          - cell "132 kV" [ref=e2628]:
+            - generic [ref=e2629]: 132 kV
+          - cell "Rajahmundry" [ref=e2630]
+          - cell "SS-132KV-PTPD" [ref=e2631]
+          - cell "3" [ref=e2632]
+        - row "Ramachandrapuram 132 kV Rajahmundry SS-132KV-RCPM 5" [ref=e2633] [cursor=pointer]:
+          - cell "Ramachandrapuram" [ref=e2634]
+          - cell "132 kV" [ref=e2635]:
+            - generic [ref=e2636]: 132 kV
+          - cell "Rajahmundry" [ref=e2637]
+          - cell "SS-132KV-RCPM" [ref=e2638]
+          - cell "5" [ref=e2639]
+        - row "Rajanagaram 132 kV Rajahmundry SS-132KV-RJNM 2" [ref=e2640] [cursor=pointer]:
+          - cell "Rajanagaram" [ref=e2641]
+          - cell "132 kV" [ref=e2642]:
+            - generic [ref=e2643]: 132 kV
+          - cell "Rajahmundry" [ref=e2644]
+          - cell "SS-132KV-RJNM" [ref=e2645]
+          - cell "2" [ref=e2646]
+        - row "Razole 132 kV Rajahmundry SS-132KV-RZLE 4" [ref=e2647] [cursor=pointer]:
+          - cell "Razole" [ref=e2648]
+          - cell "132 kV" [ref=e2649]:
+            - generic [ref=e2650]: 132 kV
+          - cell "Rajahmundry" [ref=e2651]
+          - cell "SS-132KV-RZLE" [ref=e2652]
+          - cell "4" [ref=e2653]
+        - row "Silkroad Sugars 132 kV Rajahmundry SS-132KV-SRSS 2" [ref=e2654] [cursor=pointer]:
+          - cell "Silkroad Sugars" [ref=e2655]
+          - cell "132 kV" [ref=e2656]:
+            - generic [ref=e2657]: 132 kV
+          - cell "Rajahmundry" [ref=e2658]
+          - cell "SS-132KV-SRSS" [ref=e2659]
+          - cell "2" [ref=e2660]
+        - row "Yanam 132 kV Rajahmundry SS-132KV-YANM 1" [ref=e2661] [cursor=pointer]:
+          - cell "Yanam" [ref=e2662]
+          - cell "132 kV" [ref=e2663]:
+            - generic [ref=e2664]: 132 kV
+          - cell "Rajahmundry" [ref=e2665]
+          - cell "SS-132KV-YANM" [ref=e2666]
+          - cell "1" [ref=e2667]
+        - row "Samalkota Rly SS 132 kV Rajahmundry SLKT_RTSS 1" [ref=e2668] [cursor=pointer]:
+          - cell "Samalkota Rly SS" [ref=e2669]
+          - cell "132 kV" [ref=e2670]:
+            - generic [ref=e2671]: 132 kV
+          - cell "Rajahmundry" [ref=e2672]
+          - cell "SLKT_RTSS" [ref=e2673]
+          - cell "1" [ref=e2674]
+        - row "RAK Ceramics 132 kV Rajahmundry RAKC 1" [ref=e2675] [cursor=pointer]:
+          - cell "RAK Ceramics" [ref=e2676]
+          - cell "132 kV" [ref=e2677]:
+            - generic [ref=e2678]: 132 kV
+          - cell "Rajahmundry" [ref=e2679]
+          - cell "RAKC" [ref=e2680]
+          - cell "1" [ref=e2681]
+        - row "Coramandal 132 kV Rajahmundry CIL 1" [ref=e2682] [cursor=pointer]:
+          - cell "Coramandal" [ref=e2683]
+          - cell "132 kV" [ref=e2684]:
+            - generic [ref=e2685]: 132 kV
+          - cell "Rajahmundry" [ref=e2686]
+          - cell "CIL" [ref=e2687]
+          - cell "1" [ref=e2688]
+        - row "Sarvaraya Sugars 132 kV Rajahmundry SSSL 1" [ref=e2689] [cursor=pointer]:
+          - cell "Sarvaraya Sugars" [ref=e2690]
+          - cell "132 kV" [ref=e2691]:
+            - generic [ref=e2692]: 132 kV
+          - cell "Rajahmundry" [ref=e2693]
+          - cell "SSSL" [ref=e2694]
+          - cell "1" [ref=e2695]
+        - row "RVK Power 132 kV Rajahmundry RVKP 1" [ref=e2696] [cursor=pointer]:
+          - cell "RVK Power" [ref=e2697]
+          - cell "132 kV" [ref=e2698]:
+            - generic [ref=e2699]: 132 kV
+          - cell "Rajahmundry" [ref=e2700]
+          - cell "RVKP" [ref=e2701]
+          - cell "1" [ref=e2702]
+        - row "Srivatsa 132 kV Rajahmundry Srivatsa 1" [ref=e2703] [cursor=pointer]:
+          - cell "Srivatsa" [ref=e2704]
+          - cell "132 kV" [ref=e2705]:
+            - generic [ref=e2706]: 132 kV
+          - cell "Rajahmundry" [ref=e2707]
+          - cell "Srivatsa" [ref=e2708]
+          - cell "1" [ref=e2709]
+        - row "Nava Bharat 132 kV Rajahmundry NBL 1" [ref=e2710] [cursor=pointer]:
+          - cell "Nava Bharat" [ref=e2711]
+          - cell "132 kV" [ref=e2712]:
+            - generic [ref=e2713]: 132 kV
+          - cell "Rajahmundry" [ref=e2714]
+          - cell "NBL" [ref=e2715]
+          - cell "1" [ref=e2716]
+        - row "AP paper 132 kV Rajahmundry APPM 1" [ref=e2717] [cursor=pointer]:
+          - cell "AP paper" [ref=e2718]
+          - cell "132 kV" [ref=e2719]:
+            - generic [ref=e2720]: 132 kV
+          - cell "Rajahmundry" [ref=e2721]
+          - cell "APPM" [ref=e2722]
+          - cell "1" [ref=e2723]
+        - row "Nagarjuna Fertilizers 132 kV Rajahmundry NFCL 1" [ref=e2724] [cursor=pointer]:
+          - cell "Nagarjuna Fertilizers" [ref=e2725]
+          - cell "132 kV" [ref=e2726]:
+            - generic [ref=e2727]: 132 kV
+          - cell "Rajahmundry" [ref=e2728]
+          - cell "NFCL" [ref=e2729]
+          - cell "1" [ref=e2730]
+        - row "Bommuru Rly SS 132 kV Rajahmundry BMRU_RTSS 1" [ref=e2731] [cursor=pointer]:
+          - cell "Bommuru Rly SS" [ref=e2732]
+          - cell "132 kV" [ref=e2733]:
+            - generic [ref=e2734]: 132 kV
+          - cell "Rajahmundry" [ref=e2735]
+          - cell "BMRU_RTSS" [ref=e2736]
+          - cell "1" [ref=e2737]
+        - row "Chilakapalem 132 kV Srikakulam SS-132KV-CKPM 2" [ref=e2738] [cursor=pointer]:
+          - cell "Chilakapalem" [ref=e2739]
+          - cell "132 kV" [ref=e2740]:
+            - generic [ref=e2741]: 132 kV
+          - cell "Srikakulam" [ref=e2742]
+          - cell "SS-132KV-CKPM" [ref=e2743]
+          - cell "2" [ref=e2744]
+        - row "Ichapuram 132 kV Srikakulam SS-132KV-ICPM 1" [ref=e2745] [cursor=pointer]:
+          - cell "Ichapuram" [ref=e2746]
+          - cell "132 kV" [ref=e2747]:
+            - generic [ref=e2748]: 132 kV
+          - cell "Srikakulam" [ref=e2749]
+          - cell "SS-132KV-ICPM" [ref=e2750]
+          - cell "1" [ref=e2751]
+        - row "Narasannapeta 132 kV Srikakulam SS-132KV-NSPT 2" [ref=e2752] [cursor=pointer]:
+          - cell "Narasannapeta" [ref=e2753]
+          - cell "132 kV" [ref=e2754]:
+            - generic [ref=e2755]: 132 kV
+          - cell "Srikakulam" [ref=e2756]
+          - cell "SS-132KV-NSPT" [ref=e2757]
+          - cell "2" [ref=e2758]
+        - row "Pydibheemavaram 132 kV Srikakulam SS-132KV-PBVM 4" [ref=e2759] [cursor=pointer]:
+          - cell "Pydibheemavaram" [ref=e2760]
+          - cell "132 kV" [ref=e2761]:
+            - generic [ref=e2762]: 132 kV
+          - cell "Srikakulam" [ref=e2763]
+          - cell "SS-132KV-PBVM" [ref=e2764]
+          - cell "4" [ref=e2765]
+        - row "Palakonda 132 kV Srikakulam SS-132KV-PLKD 3" [ref=e2766] [cursor=pointer]:
+          - cell "Palakonda" [ref=e2767]
+          - cell "132 kV" [ref=e2768]:
+            - generic [ref=e2769]: 132 kV
+          - cell "Srikakulam" [ref=e2770]
+          - cell "SS-132KV-PLKD" [ref=e2771]
+          - cell "3" [ref=e2772]
+        - row "Palasa 132 kV Srikakulam SS-132KV-PLSA 3" [ref=e2773] [cursor=pointer]:
+          - cell "Palasa" [ref=e2774]
+          - cell "132 kV" [ref=e2775]:
+            - generic [ref=e2776]: 132 kV
+          - cell "Srikakulam" [ref=e2777]
+          - cell "SS-132KV-PLSA" [ref=e2778]
+          - cell "3" [ref=e2779]
+        - row "Ponduru 132 kV Srikakulam SS-132KV-PNDR 1" [ref=e2780] [cursor=pointer]:
+          - cell "Ponduru" [ref=e2781]
+          - cell "132 kV" [ref=e2782]:
+            - generic [ref=e2783]: 132 kV
+          - cell "Srikakulam" [ref=e2784]
+          - cell "SS-132KV-PNDR" [ref=e2785]
+          - cell "1" [ref=e2786]
+        - row "Pathapatnam 132 kV Srikakulam SS-132KV-PTPM 1" [ref=e2787] [cursor=pointer]:
+          - cell "Pathapatnam" [ref=e2788]
+          - cell "132 kV" [ref=e2789]:
+            - generic [ref=e2790]: 132 kV
+          - cell "Srikakulam" [ref=e2791]
+          - cell "SS-132KV-PTPM" [ref=e2792]
+          - cell "1" [ref=e2793]
+        - row "Rajam 132 kV Srikakulam SS-132KV-RJAM 1" [ref=e2794] [cursor=pointer]:
+          - cell "Rajam" [ref=e2795]
+          - cell "132 kV" [ref=e2796]:
+            - generic [ref=e2797]: 132 kV
+          - cell "Srikakulam" [ref=e2798]
+          - cell "SS-132KV-RJAM" [ref=e2799]
+          - cell "1" [ref=e2800]
+        - row "Srikakulam 132 kV Srikakulam SS-132KV-SKLM 1" [ref=e2801] [cursor=pointer]:
+          - cell "Srikakulam" [ref=e2802]
+          - cell "132 kV" [ref=e2803]:
+            - generic [ref=e2804]: 132 kV
+          - cell "Srikakulam" [ref=e2805]
+          - cell "SS-132KV-SKLM" [ref=e2806]
+          - cell "1" [ref=e2807]
+        - row "Bobbili 132 kV Vizianagaram SS-132KV-BBLI 6" [ref=e2808] [cursor=pointer]:
+          - cell "Bobbili" [ref=e2809]
+          - cell "132 kV" [ref=e2810]:
+            - generic [ref=e2811]: 132 kV
+          - cell "Vizianagaram" [ref=e2812]
+          - cell "SS-132KV-BBLI" [ref=e2813]
+          - cell "6" [ref=e2814]
+        - row "Gold Star 132 kV Vizianagaram SS-132KV-GOLD 2" [ref=e2815] [cursor=pointer]:
+          - cell "Gold Star" [ref=e2816]
+          - cell "132 kV" [ref=e2817]:
+            - generic [ref=e2818]: 132 kV
+          - cell "Vizianagaram" [ref=e2819]
+          - cell "SS-132KV-GOLD" [ref=e2820]
+          - cell "2" [ref=e2821]
+        - row "Garbham 132 kV Vizianagaram SS-132KV-GRBM 2" [ref=e2822] [cursor=pointer]:
+          - cell "Garbham" [ref=e2823]
+          - cell "132 kV" [ref=e2824]:
+            - generic [ref=e2825]: 132 kV
+          - cell "Vizianagaram" [ref=e2826]
+          - cell "SS-132KV-GRBM" [ref=e2827]
+          - cell "2" [ref=e2828]
+        - row "Kothavalasa 132 kV Vizianagaram SS-132KV-KTVS 2" [ref=e2829] [cursor=pointer]:
+          - cell "Kothavalasa" [ref=e2830]
+          - cell "132 kV" [ref=e2831]:
+            - generic [ref=e2832]: 132 kV
+          - cell "Vizianagaram" [ref=e2833]
+          - cell "SS-132KV-KTVS" [ref=e2834]
+          - cell "2" [ref=e2835]
+        - row "Mor[Sw.Stn] 132 kV Vizianagaram SS-132KV-MORS 2" [ref=e2836] [cursor=pointer]:
+          - cell "Mor[Sw.Stn]" [ref=e2837]
+          - cell "132 kV" [ref=e2838]:
+            - generic [ref=e2839]: 132 kV
+          - cell "Vizianagaram" [ref=e2840]
+          - cell "SS-132KV-MORS" [ref=e2841]
+          - cell "2" [ref=e2842]
+        - row "Parvathipuram 132 kV Vizianagaram SS-132KV-PVPM 1" [ref=e2843] [cursor=pointer]:
+          - cell "Parvathipuram" [ref=e2844]
+          - cell "132 kV" [ref=e2845]:
+            - generic [ref=e2846]: 132 kV
+          - cell "Vizianagaram" [ref=e2847]
+          - cell "SS-132KV-PVPM" [ref=e2848]
+          - cell "1" [ref=e2849]
+        - row "Salur 132 kV Vizianagaram SS-132KV-SALR 1" [ref=e2850] [cursor=pointer]:
+          - cell "Salur" [ref=e2851]
+          - cell "132 kV" [ref=e2852]:
+            - generic [ref=e2853]: 132 kV
+          - cell "Vizianagaram" [ref=e2854]
+          - cell "SS-132KV-SALR" [ref=e2855]
+          - cell "1" [ref=e2856]
+        - row "T.B.Vara 132 kV Vizianagaram SS-132KV-TBVR 6" [ref=e2857] [cursor=pointer]:
+          - cell "T.B.Vara" [ref=e2858]
+          - cell "132 kV" [ref=e2859]:
+            - generic [ref=e2860]: 132 kV
+          - cell "Vizianagaram" [ref=e2861]
+          - cell "SS-132KV-TBVR" [ref=e2862]
+          - cell "6" [ref=e2863]
+        - row "Vizianagaram[Vontithadi] 132 kV Vizianagaram SS-132KV-VNTD 3" [ref=e2864] [cursor=pointer]:
+          - cell "Vizianagaram[Vontithadi]" [ref=e2865]
+          - cell "132 kV" [ref=e2866]:
+            - generic [ref=e2867]: 132 kV
+          - cell "Vizianagaram" [ref=e2868]
+          - cell "SS-132KV-VNTD" [ref=e2869]
+          - cell "3" [ref=e2870]
+        - row "Vizianagaram RTSS 132 kV — VZNM_ RTSS 1" [ref=e2871] [cursor=pointer]:
+          - cell "Vizianagaram RTSS" [ref=e2872]
+          - cell "132 kV" [ref=e2873]:
+            - generic [ref=e2874]: 132 kV
+          - cell "—" [ref=e2875]
+          - cell "VZNM_ RTSS" [ref=e2876]
+          - cell "1" [ref=e2877]
+        - row "Aurobindo Solar 132 kV — Auro Solar PS 1" [ref=e2878] [cursor=pointer]:
+          - cell "Aurobindo Solar" [ref=e2879]
+          - cell "132 kV" [ref=e2880]:
+            - generic [ref=e2881]: 132 kV
+          - cell "—" [ref=e2882]
+          - cell "Auro Solar PS" [ref=e2883]
+          - cell "1" [ref=e2884]
+        - row "Aurobindho Pharma 132 kV — Auro Pharma 1" [ref=e2885] [cursor=pointer]:
+          - cell "Aurobindho Pharma" [ref=e2886]
+          - cell "132 kV" [ref=e2887]:
+            - generic [ref=e2888]: 132 kV
+          - cell "—" [ref=e2889]
+          - cell "Auro Pharma" [ref=e2890]
+          - cell "1" [ref=e2891]
+        - row "Andhra Ferro 132 kV — JFAL 1" [ref=e2892] [cursor=pointer]:
+          - cell "Andhra Ferro" [ref=e2893]
+          - cell "132 kV" [ref=e2894]:
+            - generic [ref=e2895]: 132 kV
+          - cell "—" [ref=e2896]
+          - cell "JFAL" [ref=e2897]
+          - cell "1" [ref=e2898]
+        - row "Richmond Power 132 kV — RPPL 0" [ref=e2899] [cursor=pointer]:
+          - cell "Richmond Power" [ref=e2900]
+          - cell "132 kV" [ref=e2901]:
+            - generic [ref=e2902]: 132 kV
+          - cell "—" [ref=e2903]
+          - cell "RPPL" [ref=e2904]
+          - cell "0" [ref=e2905]
+        - row "Facor Alloys 132 kV — FAL 2" [ref=e2906] [cursor=pointer]:
+          - cell "Facor Alloys" [ref=e2907]
+          - cell "132 kV" [ref=e2908]:
+            - generic [ref=e2909]: 132 kV
+          - cell "—" [ref=e2910]
+          - cell "FAL" [ref=e2911]
+          - cell "2" [ref=e2912]
+        - row "Andhra Ferro 132 kV — AFAL 1" [ref=e2913] [cursor=pointer]:
+          - cell "Andhra Ferro" [ref=e2914]
+          - cell "132 kV" [ref=e2915]:
+            - generic [ref=e2916]: 132 kV
+          - cell "—" [ref=e2917]
+          - cell "AFAL" [ref=e2918]
+          - cell "1" [ref=e2919]
+        - row "Komatipalli RTSS 132 kV — KMPL_ RTSS 0" [ref=e2920] [cursor=pointer]:
+          - cell "Komatipalli RTSS" [ref=e2921]
+          - cell "132 kV" [ref=e2922]:
+            - generic [ref=e2923]: 132 kV
+          - cell "—" [ref=e2924]
+          - cell "KMPL_ RTSS" [ref=e2925]
+          - cell "0" [ref=e2926]
+        - row "Impex metal 132 kV — Impex 1" [ref=e2927] [cursor=pointer]:
+          - cell "Impex metal" [ref=e2928]
+          - cell "132 kV" [ref=e2929]:
+            - generic [ref=e2930]: 132 kV
+          - cell "—" [ref=e2931]
+          - cell "Impex" [ref=e2932]
+          - cell "1" [ref=e2933]
+        - row "Berry alloys 132 kV — Berry Alloys 1" [ref=e2934] [cursor=pointer]:
+          - cell "Berry alloys" [ref=e2935]
+          - cell "132 kV" [ref=e2936]:
+            - generic [ref=e2937]: 132 kV
+          - cell "—" [ref=e2938]
+          - cell "Berry Alloys" [ref=e2939]
+          - cell "1" [ref=e2940]
+        - row "NCS Sugars 132 kV — NCS Sugars 1" [ref=e2941] [cursor=pointer]:
+          - cell "NCS Sugars" [ref=e2942]
+          - cell "132 kV" [ref=e2943]:
+            - generic [ref=e2944]: 132 kV
+          - cell "—" [ref=e2945]
+          - cell "NCS Sugars" [ref=e2946]
+          - cell "1" [ref=e2947]
+        - row "Naupada RTSS 132 kV — NPDRTSS 1" [ref=e2948] [cursor=pointer]:
+          - cell "Naupada RTSS" [ref=e2949]
+          - cell "132 kV" [ref=e2950]:
+            - generic [ref=e2951]: 132 kV
+          - cell "—" [ref=e2952]
+          - cell "NPDRTSS" [ref=e2953]
+          - cell "1" [ref=e2954]
+        - row "BARUVA RTSS 132 kV — BRVRTSS 1" [ref=e2955] [cursor=pointer]:
+          - cell "BARUVA RTSS" [ref=e2956]
+          - cell "132 kV" [ref=e2957]:
+            - generic [ref=e2958]: 132 kV
+          - cell "—" [ref=e2959]
+          - cell "BRVRTSS" [ref=e2960]
+          - cell "1" [ref=e2961]
+        - row "PARRY'S 132 kV — PARRY'S 1" [ref=e2962] [cursor=pointer]:
+          - cell "PARRY'S" [ref=e2963]
+          - cell "132 kV" [ref=e2964]:
+            - generic [ref=e2965]: 132 kV
+          - cell "—" [ref=e2966]
+          - cell "PARRY'S" [ref=e2967]
+          - cell "1" [ref=e2968]
+        - row "Anandapuram 132 kV Visakhapatnam SS-132KV-ADPM 2" [ref=e2969] [cursor=pointer]:
+          - cell "Anandapuram" [ref=e2970]
+          - cell "132 kV" [ref=e2971]:
+            - generic [ref=e2972]: 132 kV
+          - cell "Visakhapatnam" [ref=e2973]
+          - cell "SS-132KV-ADPM" [ref=e2974]
+          - cell "2" [ref=e2975]
+        - row "Araku 132 kV Visakhapatnam SS-132KV-ARKU 5" [ref=e2976] [cursor=pointer]:
+          - cell "Araku" [ref=e2977]
+          - cell "132 kV" [ref=e2978]:
+            - generic [ref=e2979]: 132 kV
+          - cell "Visakhapatnam" [ref=e2980]
+          - cell "SS-132KV-ARKU" [ref=e2981]
+          - cell "5" [ref=e2982]
+        - row "Chodavaram 132 kV Visakhapatnam SS-132KV-CDVM 0" [ref=e2983] [cursor=pointer]:
+          - cell "Chodavaram" [ref=e2984]
+          - cell "132 kV" [ref=e2985]:
+            - generic [ref=e2986]: 132 kV
+          - cell "Visakhapatnam" [ref=e2987]
+          - cell "SS-132KV-CDVM" [ref=e2988]
+          - cell "0" [ref=e2989]
+        - row "Common Point 132 kV Visakhapatnam SS-132KV-CMPT 2" [ref=e2990] [cursor=pointer]:
+          - cell "Common Point" [ref=e2991]
+          - cell "132 kV" [ref=e2992]:
+            - generic [ref=e2993]: 132 kV
+          - cell "Visakhapatnam" [ref=e2994]
+          - cell "SS-132KV-CMPT" [ref=e2995]
+          - cell "2" [ref=e2996]
+        - row "Dgnp 132 kV Visakhapatnam SS-132KV-DGNP 2" [ref=e2997] [cursor=pointer]:
+          - cell "Dgnp" [ref=e2998]
+          - cell "132 kV" [ref=e2999]:
+            - generic [ref=e3000]: 132 kV
+          - cell "Visakhapatnam" [ref=e3001]
+          - cell "SS-132KV-DGNP" [ref=e3002]
+          - cell "2" [ref=e3003]
+        - row "Koruprolu 132 kV Visakhapatnam SS-132KV-KPRL 6" [ref=e3004] [cursor=pointer]:
+          - cell "Koruprolu" [ref=e3005]
+          - cell "132 kV" [ref=e3006]:
+            - generic [ref=e3007]: 132 kV
+          - cell "Visakhapatnam" [ref=e3008]
+          - cell "SS-132KV-KPRL" [ref=e3009]
+          - cell "6" [ref=e3010]
+        - row "Kasimkota 132 kV Visakhapatnam SS-132KV-KSMK 1" [ref=e3011] [cursor=pointer]:
+          - cell "Kasimkota" [ref=e3012]
+          - cell "132 kV" [ref=e3013]:
+            - generic [ref=e3014]: 132 kV
+          - cell "Visakhapatnam" [ref=e3015]
+          - cell "SS-132KV-KSMK" [ref=e3016]
+          - cell "1" [ref=e3017]
+        - row "Malkapuram 132 kV Visakhapatnam SS-132KV-MLKP 1" [ref=e3018] [cursor=pointer]:
+          - cell "Malkapuram" [ref=e3019]
+          - cell "132 kV" [ref=e3020]:
+            - generic [ref=e3021]: 132 kV
+          - cell "Visakhapatnam" [ref=e3022]
+          - cell "SS-132KV-MLKP" [ref=e3023]
+          - cell "1" [ref=e3024]
+        - row "Narsingbilli 132 kV Visakhapatnam SS-132KV-NGBL 3" [ref=e3025] [cursor=pointer]:
+          - cell "Narsingbilli" [ref=e3026]
+          - cell "132 kV" [ref=e3027]:
+            - generic [ref=e3028]: 132 kV
+          - cell "Visakhapatnam" [ref=e3029]
+          - cell "SS-132KV-NGBL" [ref=e3030]
+          - cell "3" [ref=e3031]
+        - row "Naval Wharf 132 kV Visakhapatnam SS-132KV-NLWF 9" [ref=e3032] [cursor=pointer]:
+          - cell "Naval Wharf" [ref=e3033]
+          - cell "132 kV" [ref=e3034]:
+            - generic [ref=e3035]: 132 kV
+          - cell "Visakhapatnam" [ref=e3036]
+          - cell "SS-132KV-NLWF" [ref=e3037]
+          - cell "9" [ref=e3038]
+        - row "Narsipatnam 132 kV Visakhapatnam SS-132KV-NRPM 1" [ref=e3039] [cursor=pointer]:
+          - cell "Narsipatnam" [ref=e3040]
+          - cell "132 kV" [ref=e3041]:
+            - generic [ref=e3042]: 132 kV
+          - cell "Visakhapatnam" [ref=e3043]
+          - cell "SS-132KV-NRPM" [ref=e3044]
+          - cell "1" [ref=e3045]
+        - row "Nakkavanipalem 132 kV Visakhapatnam SS-132KV-NVPM 2" [ref=e3046] [cursor=pointer]:
+          - cell "Nakkavanipalem" [ref=e3047]
+          - cell "132 kV" [ref=e3048]:
+            - generic [ref=e3049]: 132 kV
+          - cell "Visakhapatnam" [ref=e3050]
+          - cell "SS-132KV-NVPM" [ref=e3051]
+          - cell "2" [ref=e3052]
+        - row "Paderu 132 kV Visakhapatnam SS-132KV-PADR 1" [ref=e3053] [cursor=pointer]:
+          - cell "Paderu" [ref=e3054]
+          - cell "132 kV" [ref=e3055]:
+            - generic [ref=e3056]: 132 kV
+          - cell "Visakhapatnam" [ref=e3057]
+          - cell "SS-132KV-PADR" [ref=e3058]
+          - cell "1" [ref=e3059]
+        - row "Payakaraopeta 132 kV Visakhapatnam SS-132KV-PKPT 3" [ref=e3060] [cursor=pointer]:
+          - cell "Payakaraopeta" [ref=e3061]
+          - cell "132 kV" [ref=e3062]:
+            - generic [ref=e3063]: 132 kV
+          - cell "Visakhapatnam" [ref=e3064]
+          - cell "SS-132KV-PKPT" [ref=e3065]
+          - cell "3" [ref=e3066]
+        - row "Peda Waltair 132 kV Visakhapatnam SS-132KV-PWLT 1" [ref=e3067] [cursor=pointer]:
+          - cell "Peda Waltair" [ref=e3068]
+          - cell "132 kV" [ref=e3069]:
+            - generic [ref=e3070]: 132 kV
+          - cell "Visakhapatnam" [ref=e3071]
+          - cell "SS-132KV-PWLT" [ref=e3072]
+          - cell "1" [ref=e3073]
+        - row "Simhachalam 132 kV Visakhapatnam SS-132KV-SMCM 8" [ref=e3074] [cursor=pointer]:
+          - cell "Simhachalam" [ref=e3075]
+          - cell "132 kV" [ref=e3076]:
+            - generic [ref=e3077]: 132 kV
+          - cell "Visakhapatnam" [ref=e3078]
+          - cell "SS-132KV-SMCM" [ref=e3079]
+          - cell "8" [ref=e3080]
+        - row "Vizag Port 132 kV Visakhapatnam SS-132KV-VPRT 2" [ref=e3081] [cursor=pointer]:
+          - cell "Vizag Port" [ref=e3082]
+          - cell "132 kV" [ref=e3083]:
+            - generic [ref=e3084]: 132 kV
+          - cell "Visakhapatnam" [ref=e3085]
+          - cell "SS-132KV-VPRT" [ref=e3086]
+          - cell "2" [ref=e3087]
+        - row "Vizag Special Economic Zone 132 kV Visakhapatnam SS-132KV-VSEZ 3" [ref=e3088] [cursor=pointer]:
+          - cell "Vizag Special Economic Zone" [ref=e3089]
+          - cell "132 kV" [ref=e3090]:
+            - generic [ref=e3091]: 132 kV
+          - cell "Visakhapatnam" [ref=e3092]
+          - cell "SS-132KV-VSEZ" [ref=e3093]
+          - cell "3" [ref=e3094]
+        - row "Machkund 132 kV Visakhapatnam Machkund 1" [ref=e3095] [cursor=pointer]:
+          - cell "Machkund" [ref=e3096]
+          - cell "132 kV" [ref=e3097]:
+            - generic [ref=e3098]: 132 kV
+          - cell "Visakhapatnam" [ref=e3099]
+          - cell "Machkund" [ref=e3100]
+          - cell "1" [ref=e3101]
+        - row "Similiguda RTSS 132 kV Visakhapatnam Similiguda RTSS 2" [ref=e3102] [cursor=pointer]:
+          - cell "Similiguda RTSS" [ref=e3103]
+          - cell "132 kV" [ref=e3104]:
+            - generic [ref=e3105]: 132 kV
+          - cell "Visakhapatnam" [ref=e3106]
+          - cell "Similiguda RTSS" [ref=e3107]
+          - cell "2" [ref=e3108]
+        - row "Tyda RTSS 132 kV Visakhapatnam Tyda RTSS 1" [ref=e3109] [cursor=pointer]:
+          - cell "Tyda RTSS" [ref=e3110]
+          - cell "132 kV" [ref=e3111]:
+            - generic [ref=e3112]: 132 kV
+          - cell "Visakhapatnam" [ref=e3113]
+          - cell "Tyda RTSS" [ref=e3114]
+          - cell "1" [ref=e3115]
+        - row "Duvvada RTSS 132 kV Visakhapatnam Duvvada RTSS 1" [ref=e3116] [cursor=pointer]:
+          - cell "Duvvada RTSS" [ref=e3117]
+          - cell "132 kV" [ref=e3118]:
+            - generic [ref=e3119]: 132 kV
+          - cell "Visakhapatnam" [ref=e3120]
+          - cell "Duvvada RTSS" [ref=e3121]
+          - cell "1" [ref=e3122]
+        - row "S Kota RTSS 132 kV Visakhapatnam S Kota RTSS 1" [ref=e3123] [cursor=pointer]:
+          - cell "S Kota RTSS" [ref=e3124]
+          - cell "132 kV" [ref=e3125]:
+            - generic [ref=e3126]: 132 kV
+          - cell "Visakhapatnam" [ref=e3127]
+          - cell "S Kota RTSS" [ref=e3128]
+          - cell "1" [ref=e3129]
+        - row "ACC 132 kV Visakhapatnam ACC 1" [ref=e3130] [cursor=pointer]:
+          - cell "ACC" [ref=e3131]
+          - cell "132 kV" [ref=e3132]:
+            - generic [ref=e3133]: 132 kV
+          - cell "Visakhapatnam" [ref=e3134]
+          - cell "ACC" [ref=e3135]
+          - cell "1" [ref=e3136]
+        - row "Simhachalam RTSS 132 kV Visakhapatnam Simhachalam RTSS 1" [ref=e3137] [cursor=pointer]:
+          - cell "Simhachalam RTSS" [ref=e3138]
+          - cell "132 kV" [ref=e3139]:
+            - generic [ref=e3140]: 132 kV
+          - cell "Visakhapatnam" [ref=e3141]
+          - cell "Simhachalam RTSS" [ref=e3142]
+          - cell "1" [ref=e3143]
+        - row "LVS Power 132 kV Visakhapatnam LVS Power 1" [ref=e3144] [cursor=pointer]:
+          - cell "LVS Power" [ref=e3145]
+          - cell "132 kV" [ref=e3146]:
+            - generic [ref=e3147]: 132 kV
+          - cell "Visakhapatnam" [ref=e3148]
+          - cell "LVS Power" [ref=e3149]
+          - cell "1" [ref=e3150]
+        - row "ESSAR 132 kV Visakhapatnam ESSAR 2" [ref=e3151] [cursor=pointer]:
+          - cell "ESSAR" [ref=e3152]
+          - cell "132 kV" [ref=e3153]:
+            - generic [ref=e3154]: 132 kV
+          - cell "Visakhapatnam" [ref=e3155]
+          - cell "ESSAR" [ref=e3156]
+          - cell "2" [ref=e3157]
+        - row "RCL 132 kV Visakhapatnam RCL 2" [ref=e3158] [cursor=pointer]:
+          - cell "RCL" [ref=e3159]
+          - cell "132 kV" [ref=e3160]:
+            - generic [ref=e3161]: 132 kV
+          - cell "Visakhapatnam" [ref=e3162]
+          - cell "RCL" [ref=e3163]
+          - cell "2" [ref=e3164]
+        - row "HSL 132 kV Visakhapatnam HSL 1" [ref=e3165] [cursor=pointer]:
+          - cell "HSL" [ref=e3166]
+          - cell "132 kV" [ref=e3167]:
+            - generic [ref=e3168]: 132 kV
+          - cell "Visakhapatnam" [ref=e3169]
+          - cell "HSL" [ref=e3170]
+          - cell "1" [ref=e3171]
+        - row "HPCL 132 kV Visakhapatnam HPCL 1" [ref=e3172] [cursor=pointer]:
+          - cell "HPCL" [ref=e3173]
+          - cell "132 kV" [ref=e3174]:
+            - generic [ref=e3175]: 132 kV
+          - cell "Visakhapatnam" [ref=e3176]
+          - cell "HPCL" [ref=e3177]
+          - cell "1" [ref=e3178]
+        - row "APCL 132 kV Visakhapatnam APCL 1" [ref=e3179] [cursor=pointer]:
+          - cell "APCL" [ref=e3180]
+          - cell "132 kV" [ref=e3181]:
+            - generic [ref=e3182]: 132 kV
+          - cell "Visakhapatnam" [ref=e3183]
+          - cell "APCL" [ref=e3184]
+          - cell "1" [ref=e3185]
+        - row "RAMCO 132 kV Visakhapatnam RAMCO 1" [ref=e3186] [cursor=pointer]:
+          - cell "RAMCO" [ref=e3187]
+          - cell "132 kV" [ref=e3188]:
+            - generic [ref=e3189]: 132 kV
+          - cell "Visakhapatnam" [ref=e3190]
+          - cell "RAMCO" [ref=e3191]
+          - cell "1" [ref=e3192]
+        - row "MYHOME 132 kV Visakhapatnam MYHOME 1" [ref=e3193] [cursor=pointer]:
+          - cell "MYHOME" [ref=e3194]
+          - cell "132 kV" [ref=e3195]:
+            - generic [ref=e3196]: 132 kV
+          - cell "Visakhapatnam" [ref=e3197]
+          - cell "MYHOME" [ref=e3198]
+          - cell "1" [ref=e3199]
+        - row "Divis 132 kV Visakhapatnam Divis 1" [ref=e3200] [cursor=pointer]:
+          - cell "Divis" [ref=e3201]
+          - cell "132 kV" [ref=e3202]:
+            - generic [ref=e3203]: 132 kV
+          - cell "Visakhapatnam" [ref=e3204]
+          - cell "Divis" [ref=e3205]
+          - cell "1" [ref=e3206]
+        - row "Gorapur RTSS 132 kV Visakhapatnam Gorapur RTSS 1" [ref=e3207] [cursor=pointer]:
+          - cell "Gorapur RTSS" [ref=e3208]
+          - cell "132 kV" [ref=e3209]:
+            - generic [ref=e3210]: 132 kV
+          - cell "Visakhapatnam" [ref=e3211]
+          - cell "Gorapur RTSS" [ref=e3212]
+          - cell "1" [ref=e3213]
+        - row "Sundaram Alloys 132 kV Visakhapatnam Sundaram Alloys 1" [ref=e3214] [cursor=pointer]:
+          - cell "Sundaram Alloys" [ref=e3215]
+          - cell "132 kV" [ref=e3216]:
+            - generic [ref=e3217]: 132 kV
+          - cell "Visakhapatnam" [ref=e3218]
+          - cell "Sundaram Alloys" [ref=e3219]
+          - cell "1" [ref=e3220]
+        - row "Sanvira 132 kV Visakhapatnam Sanvira 1" [ref=e3221] [cursor=pointer]:
+          - cell "Sanvira" [ref=e3222]
+          - cell "132 kV" [ref=e3223]:
+            - generic [ref=e3224]: 132 kV
+          - cell "Visakhapatnam" [ref=e3225]
+          - cell "Sanvira" [ref=e3226]
+          - cell "1" [ref=e3227]
+        - row "Maithan Alloys 132 kV Visakhapatnam Maithan Alloys 1" [ref=e3228] [cursor=pointer]:
+          - cell "Maithan Alloys" [ref=e3229]
+          - cell "132 kV" [ref=e3230]:
+            - generic [ref=e3231]: 132 kV
+          - cell "Visakhapatnam" [ref=e3232]
+          - cell "Maithan Alloys" [ref=e3233]
+          - cell "1" [ref=e3234]
+        - row "BARC 132 kV Visakhapatnam BARC 1" [ref=e3235] [cursor=pointer]:
+          - cell "BARC" [ref=e3236]
+          - cell "132 kV" [ref=e3237]:
+            - generic [ref=e3238]: 132 kV
+          - cell "Visakhapatnam" [ref=e3239]
+          - cell "BARC" [ref=e3240]
+          - cell "1" [ref=e3241]
+        - row "Anakapalli RTSS 132 kV Visakhapatnam Anakapalli RTSS 0" [ref=e3242] [cursor=pointer]:
+          - cell "Anakapalli RTSS" [ref=e3243]
+          - cell "132 kV" [ref=e3244]:
+            - generic [ref=e3245]: 132 kV
+          - cell "Visakhapatnam" [ref=e3246]
+          - cell "Anakapalli RTSS" [ref=e3247]
+          - cell "0" [ref=e3248]
+        - row "Autonagar 132 kV Vijayawada SS-132KV-ATNR 2" [ref=e3249] [cursor=pointer]:
+          - cell "Autonagar" [ref=e3250]
+          - cell "132 kV" [ref=e3251]:
+            - generic [ref=e3252]: 132 kV
+          - cell "Vijayawada" [ref=e3253]
+          - cell "SS-132KV-ATNR" [ref=e3254]
+          - cell "2" [ref=e3255]
+        - row "Avanigadda 132 kV Vijayawada SS-132KV-AVGD 1" [ref=e3256] [cursor=pointer]:
+          - cell "Avanigadda" [ref=e3257]
+          - cell "132 kV" [ref=e3258]:
+            - generic [ref=e3259]: 132 kV
+          - cell "Vijayawada" [ref=e3260]
+          - cell "SS-132KV-AVGD" [ref=e3261]
+          - cell "1" [ref=e3262]
+        - row "Bhavanipuram 132 kV Vijayawada SS-132KV-BVPM 2" [ref=e3263] [cursor=pointer]:
+          - cell "Bhavanipuram" [ref=e3264]
+          - cell "132 kV" [ref=e3265]:
+            - generic [ref=e3266]: 132 kV
+          - cell "Vijayawada" [ref=e3267]
+          - cell "SS-132KV-BVPM" [ref=e3268]
+          - cell "2" [ref=e3269]
+        - row "Chigurukota 132 kV Vijayawada SS-132KV-CRKT 2" [ref=e3270] [cursor=pointer]:
+          - cell "Chigurukota" [ref=e3271]
+          - cell "132 kV" [ref=e3272]:
+            - generic [ref=e3273]: 132 kV
+          - cell "Vijayawada" [ref=e3274]
+          - cell "SS-132KV-CRKT" [ref=e3275]
+          - cell "2" [ref=e3276]
+        - row "Gangoor 132 kV Vijayawada SS-132KV-GNGR 2" [ref=e3277] [cursor=pointer]:
+          - cell "Gangoor" [ref=e3278]
+          - cell "132 kV" [ref=e3279]:
+            - generic [ref=e3280]: 132 kV
+          - cell "Vijayawada" [ref=e3281]
+          - cell "SS-132KV-GNGR" [ref=e3282]
+          - cell "2" [ref=e3283]
+        - row "Kambhampadu 132 kV Vijayawada SS-132KV-KMPD 1" [ref=e3284] [cursor=pointer]:
+          - cell "Kambhampadu" [ref=e3285]
+          - cell "132 kV" [ref=e3286]:
+            - generic [ref=e3287]: 132 kV
+          - cell "Vijayawada" [ref=e3288]
+          - cell "SS-132KV-KMPD" [ref=e3289]
+          - cell "1" [ref=e3290]
+        - row "Kanumolu 132 kV Vijayawada SS-132KV-KNML 8" [ref=e3291] [cursor=pointer]:
+          - cell "Kanumolu" [ref=e3292]
+          - cell "132 kV" [ref=e3293]:
+            - generic [ref=e3294]: 132 kV
+          - cell "Vijayawada" [ref=e3295]
+          - cell "SS-132KV-KNML" [ref=e3296]
+          - cell "8" [ref=e3297]
+        - row "Machilipatnam 132 kV Vijayawada SS-132KV-MCPM 2" [ref=e3298] [cursor=pointer]:
+          - cell "Machilipatnam" [ref=e3299]
+          - cell "132 kV" [ref=e3300]:
+            - generic [ref=e3301]: 132 kV
+          - cell "Vijayawada" [ref=e3302]
+          - cell "SS-132KV-MCPM" [ref=e3303]
+          - cell "2" [ref=e3304]
+        - row "Nandigama 132 kV Vijayawada SS-132KV-NDGM 2" [ref=e3305] [cursor=pointer]:
+          - cell "Nandigama" [ref=e3306]
+          - cell "132 kV" [ref=e3307]:
+            - generic [ref=e3308]: 132 kV
+          - cell "Vijayawada" [ref=e3309]
+          - cell "SS-132KV-NDGM" [ref=e3310]
+          - cell "2" [ref=e3311]
+        - row "Pamarru 132 kV Vijayawada SS-132KV-PMRU 5" [ref=e3312] [cursor=pointer]:
+          - cell "Pamarru" [ref=e3313]
+          - cell "132 kV" [ref=e3314]:
+            - generic [ref=e3315]: 132 kV
+          - cell "Vijayawada" [ref=e3316]
+          - cell "SS-132KV-PMRU" [ref=e3317]
+          - cell "5" [ref=e3318]
+        - row "Rangannagudem 132 kV Vijayawada SS-132KV-RGDM 2" [ref=e3319] [cursor=pointer]:
+          - cell "Rangannagudem" [ref=e3320]
+          - cell "132 kV" [ref=e3321]:
+            - generic [ref=e3322]: 132 kV
+          - cell "Vijayawada" [ref=e3323]
+          - cell "SS-132KV-RGDM" [ref=e3324]
+          - cell "2" [ref=e3325]
+        - row "Vijayawada 132 kV Vijayawada SS-132KV-VJWD 1" [ref=e3326] [cursor=pointer]:
+          - cell "Vijayawada" [ref=e3327]
+          - cell "132 kV" [ref=e3328]:
+            - generic [ref=e3329]: 132 kV
+          - cell "Vijayawada" [ref=e3330]
+          - cell "SS-132KV-VJWD" [ref=e3331]
+          - cell "1" [ref=e3332]
+        - row "RVK 132 kV Vijayawada RVK Plant 1" [ref=e3333] [cursor=pointer]:
+          - cell "RVK" [ref=e3334]
+          - cell "132 kV" [ref=e3335]:
+            - generic [ref=e3336]: 132 kV
+          - cell "Vijayawada" [ref=e3337]
+          - cell "RVK Plant" [ref=e3338]
+          - cell "1" [ref=e3339]
+        - row "RTSS_GDWD 132 kV Vijayawada RTSS_GDWD 1" [ref=e3340] [cursor=pointer]:
+          - cell "RTSS_GDWD" [ref=e3341]
+          - cell "132 kV" [ref=e3342]:
+            - generic [ref=e3343]: 132 kV
+          - cell "Vijayawada" [ref=e3344]
+          - cell "RTSS_GDWD" [ref=e3345]
+          - cell "1" [ref=e3346]
+        - row "SRIBA 132 kV Vijayawada SRIBA plant 1" [ref=e3347] [cursor=pointer]:
+          - cell "SRIBA" [ref=e3348]
+          - cell "132 kV" [ref=e3349]:
+            - generic [ref=e3350]: 132 kV
+          - cell "Vijayawada" [ref=e3351]
+          - cell "SRIBA plant" [ref=e3352]
+          - cell "1" [ref=e3353]
+        - row "Ultratech 132 kV Vijayawada Ultratech cement 1" [ref=e3354] [cursor=pointer]:
+          - cell "Ultratech" [ref=e3355]
+          - cell "132 kV" [ref=e3356]:
+            - generic [ref=e3357]: 132 kV
+          - cell "Vijayawada" [ref=e3358]
+          - cell "Ultratech cement" [ref=e3359]
+          - cell "1" [ref=e3360]
+        - row "Ramco 132 kV Vijayawada Ramco cement 1" [ref=e3361] [cursor=pointer]:
+          - cell "Ramco" [ref=e3362]
+          - cell "132 kV" [ref=e3363]:
+            - generic [ref=e3364]: 132 kV
+          - cell "Vijayawada" [ref=e3365]
+          - cell "Ramco cement" [ref=e3366]
+          - cell "1" [ref=e3367]
+        - row "Bapatla 132 kV Guntur SS-132KV-BPTL 3" [ref=e3368] [cursor=pointer]:
+          - cell "Bapatla" [ref=e3369]
+          - cell "132 kV" [ref=e3370]:
+            - generic [ref=e3371]: 132 kV
+          - cell "Guntur" [ref=e3372]
+          - cell "SS-132KV-BPTL" [ref=e3373]
+          - cell "3" [ref=e3374]
+        - row "Chakraypalem 132 kV Guntur SS-132KV-CHKP 1" [ref=e3375] [cursor=pointer]:
+          - cell "Chakraypalem" [ref=e3376]
+          - cell "132 kV" [ref=e3377]:
+            - generic [ref=e3378]: 132 kV
+          - cell "Guntur" [ref=e3379]
+          - cell "SS-132KV-CHKP" [ref=e3380]
+          - cell "1" [ref=e3381]
+        - row "Chilakaluripet 132 kV Guntur SS-132KV-CLPT 4" [ref=e3382] [cursor=pointer]:
+          - cell "Chilakaluripet" [ref=e3383]
+          - cell "132 kV" [ref=e3384]:
+            - generic [ref=e3385]: 132 kV
+          - cell "Guntur" [ref=e3386]
+          - cell "SS-132KV-CLPT" [ref=e3387]
+          - cell "4" [ref=e3388]
+        - row "Gujjanagundla 132 kV Guntur SS-132KV-GJGL 1" [ref=e3389] [cursor=pointer]:
+          - cell "Gujjanagundla" [ref=e3390]
+          - cell "132 kV" [ref=e3391]:
+            - generic [ref=e3392]: 132 kV
+          - cell "Guntur" [ref=e3393]
+          - cell "SS-132KV-GJGL" [ref=e3394]
+          - cell "1" [ref=e3395]
+        - row "Guntur 132 kV Guntur SS-132KV-GNTR 4" [ref=e3396] [cursor=pointer]:
+          - cell "Guntur" [ref=e3397]
+          - cell "132 kV" [ref=e3398]:
+            - generic [ref=e3399]: 132 kV
+          - cell "Guntur" [ref=e3400]
+          - cell "SS-132KV-GNTR" [ref=e3401]
+          - cell "4" [ref=e3402]
+        - row "Karampudi 132 kV Guntur SS-132KV-KRPD 2" [ref=e3403] [cursor=pointer]:
+          - cell "Karampudi" [ref=e3404]
+          - cell "132 kV" [ref=e3405]:
+            - generic [ref=e3406]: 132 kV
+          - cell "Guntur" [ref=e3407]
+          - cell "SS-132KV-KRPD" [ref=e3408]
+          - cell "2" [ref=e3409]
+        - row "Macherla 132 kV Guntur SS-132KV-MCRL 5" [ref=e3410] [cursor=pointer]:
+          - cell "Macherla" [ref=e3411]
+          - cell "132 kV" [ref=e3412]:
+            - generic [ref=e3413]: 132 kV
+          - cell "Guntur" [ref=e3414]
+          - cell "SS-132KV-MCRL" [ref=e3415]
+          - cell "5" [ref=e3416]
+        - row "Marripalem 132 kV Guntur SS-132KV-MRPM 2" [ref=e3417] [cursor=pointer]:
+          - cell "Marripalem" [ref=e3418]
+          - cell "132 kV" [ref=e3419]:
+            - generic [ref=e3420]: 132 kV
+          - cell "Guntur" [ref=e3421]
+          - cell "SS-132KV-MRPM" [ref=e3422]
+          - cell "2" [ref=e3423]
+        - row "Nallapadu 132 kV Guntur SS-132KV-NLPD 2" [ref=e3424] [cursor=pointer]:
+          - cell "Nallapadu" [ref=e3425]
+          - cell "132 kV" [ref=e3426]:
+            - generic [ref=e3427]: 132 kV
+          - cell "Guntur" [ref=e3428]
+          - cell "SS-132KV-NLPD" [ref=e3429]
+          - cell "2" [ref=e3430]
+        - row "Piduguralla 132 kV Guntur SS-132KV-PDGL 5" [ref=e3431] [cursor=pointer]:
+          - cell "Piduguralla" [ref=e3432]
+          - cell "132 kV" [ref=e3433]:
+            - generic [ref=e3434]: 132 kV
+          - cell "Guntur" [ref=e3435]
+          - cell "SS-132KV-PDGL" [ref=e3436]
+          - cell "5" [ref=e3437]
+        - row "Ponnur 132 kV Guntur SS-132KV-PONR 1" [ref=e3438] [cursor=pointer]:
+          - cell "Ponnur" [ref=e3439]
+          - cell "132 kV" [ref=e3440]:
+            - generic [ref=e3441]: 132 kV
+          - cell "Guntur" [ref=e3442]
+          - cell "SS-132KV-PONR" [ref=e3443]
+          - cell "1" [ref=e3444]
+        - row "Repalle 132 kV Guntur SS-132KV-RPLE 2" [ref=e3445] [cursor=pointer]:
+          - cell "Repalle" [ref=e3446]
+          - cell "132 kV" [ref=e3447]:
+            - generic [ref=e3448]: 132 kV
+          - cell "Guntur" [ref=e3449]
+          - cell "SS-132KV-RPLE" [ref=e3450]
+          - cell "2" [ref=e3451]
+        - row "Rentapalla 132 kV Guntur SS-132KV-RTPL 3" [ref=e3452] [cursor=pointer]:
+          - cell "Rentapalla" [ref=e3453]
+          - cell "132 kV" [ref=e3454]:
+            - generic [ref=e3455]: 132 kV
+          - cell "Guntur" [ref=e3456]
+          - cell "SS-132KV-RTPL" [ref=e3457]
+          - cell "3" [ref=e3458]
+        - row "Tadepalli 132 kV Guntur SS-132KV-TDPL 5" [ref=e3459] [cursor=pointer]:
+          - cell "Tadepalli" [ref=e3460]
+          - cell "132 kV" [ref=e3461]:
+            - generic [ref=e3462]: 132 kV
+          - cell "Guntur" [ref=e3463]
+          - cell "SS-132KV-TDPL" [ref=e3464]
+          - cell "5" [ref=e3465]
+        - row "Tangeda 132 kV Guntur SS-132KV-TNGD 2" [ref=e3466] [cursor=pointer]:
+          - cell "Tangeda" [ref=e3467]
+          - cell "132 kV" [ref=e3468]:
+            - generic [ref=e3469]: 132 kV
+          - cell "Guntur" [ref=e3470]
+          - cell "SS-132KV-TNGD" [ref=e3471]
+          - cell "2" [ref=e3472]
+        - row "Tenali 132 kV Guntur SS-132KV-TNLI 4" [ref=e3473] [cursor=pointer]:
+          - cell "Tenali" [ref=e3474]
+          - cell "132 kV" [ref=e3475]:
+            - generic [ref=e3476]: 132 kV
+          - cell "Guntur" [ref=e3477]
+          - cell "SS-132KV-TNLI" [ref=e3478]
+          - cell "4" [ref=e3479]
+        - row "Veldurthi(Uppalpadu) 132 kV Guntur SS-132KV-VLDT 1" [ref=e3480] [cursor=pointer]:
+          - cell "Veldurthi(Uppalpadu)" [ref=e3481]
+          - cell "132 kV" [ref=e3482]:
+            - generic [ref=e3483]: 132 kV
+          - cell "Guntur" [ref=e3484]
+          - cell "SS-132KV-VLDT" [ref=e3485]
+          - cell "1" [ref=e3486]
+        - row "Vinukonda 132 kV Guntur SS-132KV-VNKD 2" [ref=e3487] [cursor=pointer]:
+          - cell "Vinukonda" [ref=e3488]
+          - cell "132 kV" [ref=e3489]:
+            - generic [ref=e3490]: 132 kV
+          - cell "Guntur" [ref=e3491]
+          - cell "SS-132KV-VNKD" [ref=e3492]
+          - cell "2" [ref=e3493]
+        - row "Yadavalli [Pothavaram] 132 kV Guntur SS-132KV-YDVL 1" [ref=e3494] [cursor=pointer]:
+          - cell "Yadavalli [Pothavaram]" [ref=e3495]
+          - cell "132 kV" [ref=e3496]:
+            - generic [ref=e3497]: 132 kV
+          - cell "Guntur" [ref=e3498]
+          - cell "SS-132KV-YDVL" [ref=e3499]
+          - cell "1" [ref=e3500]
+        - row "PCIL 132 kV Guntur PCIL 1" [ref=e3501] [cursor=pointer]:
+          - cell "PCIL" [ref=e3502]
+          - cell "132 kV" [ref=e3503]:
+            - generic [ref=e3504]: 132 kV
+          - cell "Guntur" [ref=e3505]
+          - cell "PCIL" [ref=e3506]
+          - cell "1" [ref=e3507]
+        - row "Savalyapuram RTSS 132 kV Guntur Savalyapuram RTSS 1" [ref=e3508] [cursor=pointer]:
+          - cell "Savalyapuram RTSS" [ref=e3509]
+          - cell "132 kV" [ref=e3510]:
+            - generic [ref=e3511]: 132 kV
+          - cell "Guntur" [ref=e3512]
+          - cell "Savalyapuram RTSS" [ref=e3513]
+          - cell "1" [ref=e3514]
+        - row "Sattenapalli RTSS 132 kV Guntur Sattenapalli RTSS 1" [ref=e3515] [cursor=pointer]:
+          - cell "Sattenapalli RTSS" [ref=e3516]
+          - cell "132 kV" [ref=e3517]:
+            - generic [ref=e3518]: 132 kV
+          - cell "Guntur" [ref=e3519]
+          - cell "Sattenapalli RTSS" [ref=e3520]
+          - cell "1" [ref=e3521]
+        - row "CCCPL 132 kV Guntur CCCPL 0" [ref=e3522] [cursor=pointer]:
+          - cell "CCCPL" [ref=e3523]
+          - cell "132 kV" [ref=e3524]:
+            - generic [ref=e3525]: 132 kV
+          - cell "Guntur" [ref=e3526]
+          - cell "CCCPL" [ref=e3527]
+          - cell "0" [ref=e3528]
+        - row "Nallapadu RTSS 132 kV Guntur Nallapadu RTSS 1" [ref=e3529] [cursor=pointer]:
+          - cell "Nallapadu RTSS" [ref=e3530]
+          - cell "132 kV" [ref=e3531]:
+            - generic [ref=e3532]: 132 kV
+          - cell "Guntur" [ref=e3533]
+          - cell "Nallapadu RTSS" [ref=e3534]
+          - cell "1" [ref=e3535]
+        - row "Tenali RTSS 132 kV Guntur Tenali RTSS 1" [ref=e3536] [cursor=pointer]:
+          - cell "Tenali RTSS" [ref=e3537]
+          - cell "132 kV" [ref=e3538]:
+            - generic [ref=e3539]: 132 kV
+          - cell "Guntur" [ref=e3540]
+          - cell "Tenali RTSS" [ref=e3541]
+          - cell "1" [ref=e3542]
+        - row "Krishna Canal RTSS 132 kV Guntur Krishna Canal RTSS 1" [ref=e3543] [cursor=pointer]:
+          - cell "Krishna Canal RTSS" [ref=e3544]
+          - cell "132 kV" [ref=e3545]:
+            - generic [ref=e3546]: 132 kV
+          - cell "Guntur" [ref=e3547]
+          - cell "Krishna Canal RTSS" [ref=e3548]
+          - cell "1" [ref=e3549]
+        - row "KCP 132 kV Guntur KCP 1" [ref=e3550] [cursor=pointer]:
+          - cell "KCP" [ref=e3551]
+          - cell "132 kV" [ref=e3552]:
+            - generic [ref=e3553]: 132 kV
+          - cell "Guntur" [ref=e3554]
+          - cell "KCP" [ref=e3555]
+          - cell "1" [ref=e3556]
+        - row "Andhra Cements 132 kV Guntur Andhra Cements 1" [ref=e3557] [cursor=pointer]:
+          - cell "Andhra Cements" [ref=e3558]
+          - cell "132 kV" [ref=e3559]:
+            - generic [ref=e3560]: 132 kV
+          - cell "Guntur" [ref=e3561]
+          - cell "Andhra Cements" [ref=e3562]
+          - cell "1" [ref=e3563]
+        - row "Addanki 132 kV ongole SS-132KV-ADNK 1" [ref=e3564] [cursor=pointer]:
+          - cell "Addanki" [ref=e3565]
+          - cell "132 kV" [ref=e3566]:
+            - generic [ref=e3567]: 132 kV
+          - cell "ongole" [ref=e3568]
+          - cell "SS-132KV-ADNK" [ref=e3569]
+          - cell "1" [ref=e3570]
+        - row "Chirala 132 kV ongole SS-132KV-CHRL 1" [ref=e3571] [cursor=pointer]:
+          - cell "Chirala" [ref=e3572]
+          - cell "132 kV" [ref=e3573]:
+            - generic [ref=e3574]: 132 kV
+          - cell "ongole" [ref=e3575]
+          - cell "SS-132KV-CHRL" [ref=e3576]
+          - cell "1" [ref=e3577]
+        - row "Cumbum 132 kV ongole SS-132KV-CMBM 3" [ref=e3578] [cursor=pointer]:
+          - cell "Cumbum" [ref=e3579]
+          - cell "132 kV" [ref=e3580]:
+            - generic [ref=e3581]: 132 kV
+          - cell "ongole" [ref=e3582]
+          - cell "SS-132KV-CMBM" [ref=e3583]
+          - cell "3" [ref=e3584]
+        - row "Darsi 132 kV ongole SS-132KV-DRSI 1" [ref=e3585] [cursor=pointer]:
+          - cell "Darsi" [ref=e3586]
+          - cell "132 kV" [ref=e3587]:
+            - generic [ref=e3588]: 132 kV
+          - cell "ongole" [ref=e3589]
+          - cell "SS-132KV-DRSI" [ref=e3590]
+          - cell "1" [ref=e3591]
+        - row "Giddalur 132 kV ongole SS-132KV-GDLR 1" [ref=e3592] [cursor=pointer]:
+          - cell "Giddalur" [ref=e3593]
+          - cell "132 kV" [ref=e3594]:
+            - generic [ref=e3595]: 132 kV
+          - cell "ongole" [ref=e3596]
+          - cell "SS-132KV-GDLR" [ref=e3597]
+          - cell "1" [ref=e3598]
+        - row "Inkollu 132 kV ongole SS-132KV-INKL 2" [ref=e3599] [cursor=pointer]:
+          - cell "Inkollu" [ref=e3600]
+          - cell "132 kV" [ref=e3601]:
+            - generic [ref=e3602]: 132 kV
+          - cell "ongole" [ref=e3603]
+          - cell "SS-132KV-INKL" [ref=e3604]
+          - cell "2" [ref=e3605]
+        - row "Kandukur 132 kV ongole SS-132KV-KDKR 2" [ref=e3606] [cursor=pointer]:
+          - cell "Kandukur" [ref=e3607]
+          - cell "132 kV" [ref=e3608]:
+            - generic [ref=e3609]: 132 kV
+          - cell "ongole" [ref=e3610]
+          - cell "SS-132KV-KDKR" [ref=e3611]
+          - cell "2" [ref=e3612]
+        - row "Kanigiri 132 kV ongole SS-132KV-KNGR 3" [ref=e3613] [cursor=pointer]:
+          - cell "Kanigiri" [ref=e3614]
+          - cell "132 kV" [ref=e3615]:
+            - generic [ref=e3616]: 132 kV
+          - cell "ongole" [ref=e3617]
+          - cell "SS-132KV-KNGR" [ref=e3618]
+          - cell "3" [ref=e3619]
+        - row "Kesinenipalli 132 kV ongole SS-132KV-KSPL 4" [ref=e3620] [cursor=pointer]:
+          - cell "Kesinenipalli" [ref=e3621]
+          - cell "132 kV" [ref=e3622]:
+            - generic [ref=e3623]: 132 kV
+          - cell "ongole" [ref=e3624]
+          - cell "SS-132KV-KSPL" [ref=e3625]
+          - cell "4" [ref=e3626]
+        - row "Lingasamudram 132 kV ongole SS-132KV-LGSM 1" [ref=e3627] [cursor=pointer]:
+          - cell "Lingasamudram" [ref=e3628]
+          - cell "132 kV" [ref=e3629]:
+            - generic [ref=e3630]: 132 kV
+          - cell "ongole" [ref=e3631]
+          - cell "SS-132KV-LGSM" [ref=e3632]
+          - cell "1" [ref=e3633]
+        - row "Medarametla 132 kV ongole SS-132KV-MDMT 4" [ref=e3634] [cursor=pointer]:
+          - cell "Medarametla" [ref=e3635]
+          - cell "132 kV" [ref=e3636]:
+            - generic [ref=e3637]: 132 kV
+          - cell "ongole" [ref=e3638]
+          - cell "SS-132KV-MDMT" [ref=e3639]
+          - cell "4" [ref=e3640]
+        - row "Marturu 132 kV ongole SS-132KV-MRTR 2" [ref=e3641] [cursor=pointer]:
+          - cell "Marturu" [ref=e3642]
+          - cell "132 kV" [ref=e3643]:
+            - generic [ref=e3644]: 132 kV
+          - cell "ongole" [ref=e3645]
+          - cell "SS-132KV-MRTR" [ref=e3646]
+          - cell "2" [ref=e3647]
+        - row "Ongole 132 kV ongole SS-132KV-OGLE 2" [ref=e3648] [cursor=pointer]:
+          - cell "Ongole" [ref=e3649]
+          - cell "132 kV" [ref=e3650]:
+            - generic [ref=e3651]: 132 kV
+          - cell "ongole" [ref=e3652]
+          - cell "SS-132KV-OGLE" [ref=e3653]
+          - cell "2" [ref=e3654]
+        - row "Pamuru 132 kV ongole SS-132KV-PAMR 1" [ref=e3655] [cursor=pointer]:
+          - cell "Pamuru" [ref=e3656]
+          - cell "132 kV" [ref=e3657]:
+            - generic [ref=e3658]: 132 kV
+          - cell "ongole" [ref=e3659]
+          - cell "SS-132KV-PAMR" [ref=e3660]
+          - cell "1" [ref=e3661]
+        - row "Pedda Dornala 132 kV ongole SS-132KV-PDRN 2" [ref=e3662] [cursor=pointer]:
+          - cell "Pedda Dornala" [ref=e3663]
+          - cell "132 kV" [ref=e3664]:
+            - generic [ref=e3665]: 132 kV
+          - cell "ongole" [ref=e3666]
+          - cell "SS-132KV-PDRN" [ref=e3667]
+          - cell "2" [ref=e3668]
+        - row "Tangutur 132 kV ongole SS-132KV-TGTR 2" [ref=e3669] [cursor=pointer]:
+          - cell "Tangutur" [ref=e3670]
+          - cell "132 kV" [ref=e3671]:
+            - generic [ref=e3672]: 132 kV
+          - cell "ongole" [ref=e3673]
+          - cell "SS-132KV-TGTR" [ref=e3674]
+          - cell "2" [ref=e3675]
+        - row "Yerragondapalem 132 kV ongole SS-132KV-YGPL 2" [ref=e3676] [cursor=pointer]:
+          - cell "Yerragondapalem" [ref=e3677]
+          - cell "132 kV" [ref=e3678]:
+            - generic [ref=e3679]: 132 kV
+          - cell "ongole" [ref=e3680]
+          - cell "SS-132KV-YGPL" [ref=e3681]
+          - cell "2" [ref=e3682]
+        - row "Ongole RTSS 132 kV ongole Ongole RTSS 1" [ref=e3683] [cursor=pointer]:
+          - cell "Ongole RTSS" [ref=e3684]
+          - cell "132 kV" [ref=e3685]:
+            - generic [ref=e3686]: 132 kV
+          - cell "ongole" [ref=e3687]
+          - cell "Ongole RTSS" [ref=e3688]
+          - cell "1" [ref=e3689]
+        - row "Teamec 132 kV ongole Teamec 1" [ref=e3690] [cursor=pointer]:
+          - cell "Teamec" [ref=e3691]
+          - cell "132 kV" [ref=e3692]:
+            - generic [ref=e3693]: 132 kV
+          - cell "ongole" [ref=e3694]
+          - cell "Teamec" [ref=e3695]
+          - cell "1" [ref=e3696]
+        - row "GKRTSS 132 kV ongole GKRTSS 1" [ref=e3697] [cursor=pointer]:
+          - cell "GKRTSS" [ref=e3698]
+          - cell "132 kV" [ref=e3699]:
+            - generic [ref=e3700]: 132 kV
+          - cell "ongole" [ref=e3701]
+          - cell "GKRTSS" [ref=e3702]
+          - cell "1" [ref=e3703]
+        - row "Adurupalli 132 kV Nellore SS-132KV-ADPL 3" [ref=e3704] [cursor=pointer]:
+          - cell "Adurupalli" [ref=e3705]
+          - cell "132 kV" [ref=e3706]:
+            - generic [ref=e3707]: 132 kV
+          - cell "Nellore" [ref=e3708]
+          - cell "SS-132KV-ADPL" [ref=e3709]
+          - cell "3" [ref=e3710]
+        - row "Alluru 132 kV Nellore SS-132KV-ALUR 2" [ref=e3711] [cursor=pointer]:
+          - cell "Alluru" [ref=e3712]
+          - cell "132 kV" [ref=e3713]:
+            - generic [ref=e3714]: 132 kV
+          - cell "Nellore" [ref=e3715]
+          - cell "SS-132KV-ALUR" [ref=e3716]
+          - cell "2" [ref=e3717]
+        - row "Atmakur(N) 132 kV Nellore SS-132KV-ATMK 2" [ref=e3718] [cursor=pointer]:
+          - cell "Atmakur(N)" [ref=e3719]
+          - cell "132 kV" [ref=e3720]:
+            - generic [ref=e3721]: 132 kV
+          - cell "Nellore" [ref=e3722]
+          - cell "SS-132KV-ATMK" [ref=e3723]
+          - cell "2" [ref=e3724]
+        - row "Brahmadevam 132 kV Nellore SS-132KV-BDVM 4" [ref=e3725] [cursor=pointer]:
+          - cell "Brahmadevam" [ref=e3726]
+          - cell "132 kV" [ref=e3727]:
+            - generic [ref=e3728]: 132 kV
+          - cell "Nellore" [ref=e3729]
+          - cell "SS-132KV-BDVM" [ref=e3730]
+          - cell "4" [ref=e3731]
+        - row "Chendodu 132 kV Nellore SS-132KV-CHND 1" [ref=e3732] [cursor=pointer]:
+          - cell "Chendodu" [ref=e3733]
+          - cell "132 kV" [ref=e3734]:
+            - generic [ref=e3735]: 132 kV
+          - cell "Nellore" [ref=e3736]
+          - cell "SS-132KV-CHND" [ref=e3737]
+          - cell "1" [ref=e3738]
+        - row "Gudur 132 kV Nellore SS-132KV-GDUR 5" [ref=e3739] [cursor=pointer]:
+          - cell "Gudur" [ref=e3740]
+          - cell "132 kV" [ref=e3741]:
+            - generic [ref=e3742]: 132 kV
+          - cell "Nellore" [ref=e3743]
+          - cell "SS-132KV-GDUR" [ref=e3744]
+          - cell "5" [ref=e3745]
+        - row "Kavali 132 kV Nellore SS-132KV-KVLI 3" [ref=e3746] [cursor=pointer]:
+          - cell "Kavali" [ref=e3747]
+          - cell "132 kV" [ref=e3748]:
+            - generic [ref=e3749]: 132 kV
+          - cell "Nellore" [ref=e3750]
+          - cell "SS-132KV-KVLI" [ref=e3751]
+          - cell "3" [ref=e3752]
+        - row "Menakur 132 kV Nellore SS-132KV-MNKR 3" [ref=e3753] [cursor=pointer]:
+          - cell "Menakur" [ref=e3754]
+          - cell "132 kV" [ref=e3755]:
+            - generic [ref=e3756]: 132 kV
+          - cell "Nellore" [ref=e3757]
+          - cell "SS-132KV-MNKR" [ref=e3758]
+          - cell "3" [ref=e3759]
+        - row "Naidupet 132 kV Nellore SS-132KV-NDPT 5" [ref=e3760] [cursor=pointer]:
+          - cell "Naidupet" [ref=e3761]
+          - cell "132 kV" [ref=e3762]:
+            - generic [ref=e3763]: 132 kV
+          - cell "Nellore" [ref=e3764]
+          - cell "SS-132KV-NDPT" [ref=e3765]
+          - cell "5" [ref=e3766]
+        - row "Nellore Thermal Station 132 kV Nellore SS-132KV-NTSS 4" [ref=e3767] [cursor=pointer]:
+          - cell "Nellore Thermal Station" [ref=e3768]
+          - cell "132 kV" [ref=e3769]:
+            - generic [ref=e3770]: 132 kV
+          - cell "Nellore" [ref=e3771]
+          - cell "SS-132KV-NTSS" [ref=e3772]
+          - cell "4" [ref=e3773]
+        - row "N.V.Gardens 132 kV Nellore SS-132KV-NVGN 2" [ref=e3774] [cursor=pointer]:
+          - cell "N.V.Gardens" [ref=e3775]
+          - cell "132 kV" [ref=e3776]:
+            - generic [ref=e3777]: 132 kV
+          - cell "Nellore" [ref=e3778]
+          - cell "SS-132KV-NVGN" [ref=e3779]
+          - cell "2" [ref=e3780]
+        - row "Rapur 132 kV Nellore SS-132KV-RAPR 1" [ref=e3781] [cursor=pointer]:
+          - cell "Rapur" [ref=e3782]
+          - cell "132 kV" [ref=e3783]:
+            - generic [ref=e3784]: 132 kV
+          - cell "Nellore" [ref=e3785]
+          - cell "SS-132KV-RAPR" [ref=e3786]
+          - cell "1" [ref=e3787]
+        - row "Sriharikota 132 kV Nellore SS-132KV-SHKT 1" [ref=e3788] [cursor=pointer]:
+          - cell "Sriharikota" [ref=e3789]
+          - cell "132 kV" [ref=e3790]:
+            - generic [ref=e3791]: 132 kV
+          - cell "Nellore" [ref=e3792]
+          - cell "SS-132KV-SHKT" [ref=e3793]
+          - cell "1" [ref=e3794]
+        - row "Udayagiri 132 kV Nellore SS-132KV-UDGR 1" [ref=e3795] [cursor=pointer]:
+          - cell "Udayagiri" [ref=e3796]
+          - cell "132 kV" [ref=e3797]:
+            - generic [ref=e3798]: 132 kV
+          - cell "Nellore" [ref=e3799]
+          - cell "SS-132KV-UDGR" [ref=e3800]
+          - cell "1" [ref=e3801]
+        - row "Vinjamur 132 kV Nellore SS-132KV-VJMR 1" [ref=e3802] [cursor=pointer]:
+          - cell "Vinjamur" [ref=e3803]
+          - cell "132 kV" [ref=e3804]:
+            - generic [ref=e3805]: 132 kV
+          - cell "Nellore" [ref=e3806]
+          - cell "SS-132KV-VJMR" [ref=e3807]
+          - cell "1" [ref=e3808]
+        - row "Venkatagiri 132 kV Nellore SS-132KV-VKGR 3" [ref=e3809] [cursor=pointer]:
+          - cell "Venkatagiri" [ref=e3810]
+          - cell "132 kV" [ref=e3811]:
+            - generic [ref=e3812]: 132 kV
+          - cell "Nellore" [ref=e3813]
+          - cell "SS-132KV-VKGR" [ref=e3814]
+          - cell "3" [ref=e3815]
+        - row "KVLI_RTSS 132 kV Nellore KVLI_RTSS 1" [ref=e3816] [cursor=pointer]:
+          - cell "KVLI_RTSS" [ref=e3817]
+          - cell "132 kV" [ref=e3818]:
+            - generic [ref=e3819]: 132 kV
+          - cell "Nellore" [ref=e3820]
+          - cell "KVLI_RTSS" [ref=e3821]
+          - cell "1" [ref=e3822]
+        - row "Krishnapatnam Port 132 kV Nellore SS-132KV-KPPT 1" [ref=e3823] [cursor=pointer]:
+          - cell "Krishnapatnam Port" [ref=e3824]
+          - cell "132 kV" [ref=e3825]:
+            - generic [ref=e3826]: 132 kV
+          - cell "Nellore" [ref=e3827]
+          - cell "SS-132KV-KPPT" [ref=e3828]
+          - cell "1" [ref=e3829]
+        - row "NGPM_RTSS 132 kV Nellore NGPM_RTSS 1" [ref=e3830] [cursor=pointer]:
+          - cell "NGPM_RTSS" [ref=e3831]
+          - cell "132 kV" [ref=e3832]:
+            - generic [ref=e3833]: 132 kV
+          - cell "Nellore" [ref=e3834]
+          - cell "NGPM_RTSS" [ref=e3835]
+          - cell "1" [ref=e3836]
+        - row "Greentech 132 kV Nellore GIPL 1" [ref=e3837] [cursor=pointer]:
+          - cell "Greentech" [ref=e3838]
+          - cell "132 kV" [ref=e3839]:
+            - generic [ref=e3840]: 132 kV
+          - cell "Nellore" [ref=e3841]
+          - cell "GIPL" [ref=e3842]
+          - cell "1" [ref=e3843]
+        - row "HNGIL 132 kV Nellore HNGIL 1" [ref=e3844] [cursor=pointer]:
+          - cell "HNGIL" [ref=e3845]
+          - cell "132 kV" [ref=e3846]:
+            - generic [ref=e3847]: 132 kV
+          - cell "Nellore" [ref=e3848]
+          - cell "HNGIL" [ref=e3849]
+          - cell "1" [ref=e3850]
+        - row "Empee Sugars 132 kV Nellore EMPEE 1" [ref=e3851] [cursor=pointer]:
+          - cell "Empee Sugars" [ref=e3852]
+          - cell "132 kV" [ref=e3853]:
+            - generic [ref=e3854]: 132 kV
+          - cell "Nellore" [ref=e3855]
+          - cell "EMPEE" [ref=e3856]
+          - cell "1" [ref=e3857]
+        - row "EMJAY Steels 132 kV Nellore EMJAY 1" [ref=e3858] [cursor=pointer]:
+          - cell "EMJAY Steels" [ref=e3859]
+          - cell "132 kV" [ref=e3860]:
+            - generic [ref=e3861]: 132 kV
+          - cell "Nellore" [ref=e3862]
+          - cell "EMJAY" [ref=e3863]
+          - cell "1" [ref=e3864]
+        - row "VIKKI Steels 132 kV Nellore VIKKI 1" [ref=e3865] [cursor=pointer]:
+          - cell "VIKKI Steels" [ref=e3866]
+          - cell "132 kV" [ref=e3867]:
+            - generic [ref=e3868]: 132 kV
+          - cell "Nellore" [ref=e3869]
+          - cell "VIKKI" [ref=e3870]
+          - cell "1" [ref=e3871]
+        - row "Sullurpet Rly SS 132 kV Nellore SLPT_RTSS 1" [ref=e3872] [cursor=pointer]:
+          - cell "Sullurpet Rly SS" [ref=e3873]
+          - cell "132 kV" [ref=e3874]:
+            - generic [ref=e3875]: 132 kV
+          - cell "Nellore" [ref=e3876]
+          - cell "SLPT_RTSS" [ref=e3877]
+          - cell "1" [ref=e3878]
+        - row "Venkatagiri Rly SS 132 kV Nellore VKGR_RTSS 1" [ref=e3879] [cursor=pointer]:
+          - cell "Venkatagiri Rly SS" [ref=e3880]
+          - cell "132 kV" [ref=e3881]:
+            - generic [ref=e3882]: 132 kV
+          - cell "Nellore" [ref=e3883]
+          - cell "VKGR_RTSS" [ref=e3884]
+          - cell "1" [ref=e3885]
+        - row "NTS Rly SS 132 kV Nellore NTSS_RTSS 1" [ref=e3886] [cursor=pointer]:
+          - cell "NTS Rly SS" [ref=e3887]
+          - cell "132 kV" [ref=e3888]:
+            - generic [ref=e3889]: 132 kV
+          - cell "Nellore" [ref=e3890]
+          - cell "NTSS_RTSS" [ref=e3891]
+          - cell "1" [ref=e3892]
+        - row "Gudur Rly SS 132 kV Nellore GDUR_RTSS 1" [ref=e3893] [cursor=pointer]:
+          - cell "Gudur Rly SS" [ref=e3894]
+          - cell "132 kV" [ref=e3895]:
+            - generic [ref=e3896]: 132 kV
+          - cell "Nellore" [ref=e3897]
+          - cell "GDUR_RTSS" [ref=e3898]
+          - cell "1" [ref=e3899]
+        - row "Nelcast 132 kV Nellore NLCT 1" [ref=e3900] [cursor=pointer]:
+          - cell "Nelcast" [ref=e3901]
+          - cell "132 kV" [ref=e3902]:
+            - generic [ref=e3903]: 132 kV
+          - cell "Nellore" [ref=e3904]
+          - cell "NLCT" [ref=e3905]
+          - cell "1" [ref=e3906]
+        - row "SEI 132 kV Nellore SEIGF 1" [ref=e3907] [cursor=pointer]:
+          - cell "SEI" [ref=e3908]
+          - cell "132 kV" [ref=e3909]:
+            - generic [ref=e3910]: 132 kV
+          - cell "Nellore" [ref=e3911]
+          - cell "SEIGF" [ref=e3912]
+          - cell "1" [ref=e3913]
+        - row "Penna 132 kV Nellore PENC 1" [ref=e3914] [cursor=pointer]:
+          - cell "Penna" [ref=e3915]
+          - cell "132 kV" [ref=e3916]:
+            - generic [ref=e3917]: 132 kV
+          - cell "Nellore" [ref=e3918]
+          - cell "PENC" [ref=e3919]
+          - cell "1" [ref=e3920]
+        - row "Adurupalli Rly SS 132 kV Nellore ADPL_RTSS 1" [ref=e3921] [cursor=pointer]:
+          - cell "Adurupalli Rly SS" [ref=e3922]
+          - cell "132 kV" [ref=e3923]:
+            - generic [ref=e3924]: 132 kV
+          - cell "Nellore" [ref=e3925]
+          - cell "ADPL_RTSS" [ref=e3926]
+          - cell "1" [ref=e3927]
+  - generic: "Network data: AP-TRANSCO"
