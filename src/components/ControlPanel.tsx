@@ -2,7 +2,8 @@ import { useState } from "react";
 import { VOLTAGES, type GridData, type Voltage } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { VOLTAGE_COLOR } from "../theme/palette.ts";
-import { ChevronDown, LayersIcon, SunIcon, MoonIcon } from "./icons.tsx";
+import { ChevronDown, LayersIcon, SunIcon, MoonIcon, SatelliteIcon } from "./icons.tsx";
+import type { Basemap } from "../state/store.ts";
 
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
   return (
@@ -11,14 +12,14 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange: () =
       aria-checked={checked}
       aria-label={label}
       onClick={onChange}
-      className={`relative h-[18px] w-[32px] shrink-0 rounded-full transition-colors ${
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
         checked ? "bg-accent" : "bg-line"
       }`}
     >
+      {/* Inline transform avoids Tailwind v4's arbitrary translate-x/left collision. */}
       <span
-        className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow transition-transform ${
-          checked ? "translate-x-[16px]" : "translate-x-[2px]"
-        }`}
+        className="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform"
+        style={{ transform: checked ? "translateX(18px)" : "translateX(2px)" }}
       />
     </button>
   );
@@ -121,25 +122,26 @@ export function ControlPanel({ data }: { data: GridData }) {
 
           {/* Basemap */}
           <div className="mt-2 border-t border-line pt-2">
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => setBasemap("light")}
-                aria-pressed={basemap === "light"}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-medium ${
-                  basemap === "light" ? "border-accent bg-surface-3 text-ink" : "border-line text-ink-2 hover:bg-surface-2"
-                }`}
-              >
-                <SunIcon width={14} height={14} /> Light
-              </button>
-              <button
-                onClick={() => setBasemap("dark")}
-                aria-pressed={basemap === "dark"}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-medium ${
-                  basemap === "dark" ? "border-accent bg-surface-3 text-ink" : "border-line text-ink-2 hover:bg-surface-2"
-                }`}
-              >
-                <MoonIcon width={14} height={14} /> Dark
-              </button>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(
+                [
+                  { id: "light", icon: SunIcon, label: "Light" },
+                  { id: "dark", icon: MoonIcon, label: "Dark" },
+                  { id: "satellite", icon: SatelliteIcon, label: "Satellite" },
+                ] as const
+              ).map(({ id, icon: Icon, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setBasemap(id as Basemap)}
+                  aria-pressed={basemap === id}
+                  className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] font-medium ${
+                    basemap === id ? "border-accent bg-surface-3 text-ink" : "border-line text-ink-2 hover:bg-surface-2"
+                  }`}
+                >
+                  <Icon width={15} height={15} />
+                  <span className="leading-none">{label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

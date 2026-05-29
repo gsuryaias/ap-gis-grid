@@ -153,7 +153,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
       minzoom: 8.5,
       layout: {
         "text-field": ["get", "name"],
-        "text-font": ["Open Sans Semibold"],
+        "text-font": ["Open Sans Bold"], // CARTO + satellite glyph servers both provide this
         "text-size": ["interpolate", ["linear"], ["zoom"], 9, 10, 14, 13],
         "text-offset": [0, 1.1],
         "text-anchor": "top",

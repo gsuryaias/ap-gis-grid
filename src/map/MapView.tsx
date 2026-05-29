@@ -56,7 +56,7 @@ export function MapView({ data }: { data: GridData }) {
     const def = BASEMAPS[useAppStore.getState().basemap];
     const map = new MlMap({
       container: containerRef.current,
-      style: def.styleUrl,
+      style: def.style,
       center: [80.4, 15.9],
       zoom: 6,
       attributionControl: false,
@@ -123,7 +123,7 @@ export function MapView({ data }: { data: GridData }) {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     const def = BASEMAPS[basemap];
-    map.setStyle(def.styleUrl);
+    map.setStyle(def.style);
     const onStyle = () => {
       addGridLayers(map, data, basemap);
       applyFilters(map, useAppStore.getState().filters);

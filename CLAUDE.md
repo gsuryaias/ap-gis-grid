@@ -33,7 +33,7 @@ data/raw/Transco.kml ─(ETL)─▶ public/data/*.{geojson,json} ─▶ React + 
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
 | Data | `src/data/` | `types.ts` (canonical types), `load.ts` (fetch via `import.meta.env.BASE_URL`), `selectors.ts` |
 | State | `src/state/store.ts` (Zustand) + `src/url/` | versioned URL-hash sync, selection history (`back()`) |
-| Map | `src/map/` | `MapView.tsx`, `layers.ts` (paint), `basemaps.ts` (CARTO) |
+| Map | `src/map/` | `MapView.tsx`, `layers.ts` (paint), `basemaps.ts` (CARTO light/dark vector + Esri satellite raster) |
 | UI | `src/components/` | SearchBar, DetailPanel, DataTableSheet, SummaryView, DataQualityView, ControlPanel |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
 
@@ -70,6 +70,13 @@ The emitted `public/data/*` files are **committed** so CI/Pages builds don't nee
   `zoomInterp`), don't wrap the interpolate in `["*", …]`.
 - Pin **maplibre-gl `^5`** (v6 is WebGL2/ESM-only breaking), **Tailwind v4** (class-based dark via
   `@custom-variant dark` in `index.css`), latest **@tanstack/react-table v8**.
+- **Tailwind v4 toggle switches**: don't position a thumb with arbitrary `translate-x-[…]` — v4 maps
+  it to the `translate` CSS prop and it collided with `left`. Use an inline `style={{transform}}`
+  (see `ControlPanel.tsx` `Switch`).
+- **Basemaps**: light/dark are CARTO vector style URLs; **satellite is an inline raster style object**
+  (Esri World Imagery) that must include a `glyphs` URL (we reuse CARTO's) or the substation label
+  symbol layer fails. Label font is `Open Sans Bold` (served by CARTO's glyph CDN). Satellite + dark
+  both apply the `.dark` UI class.
 - **Verify on `npm run preview`, not dev** — HMR can desync map/store state while editing.
 
 ## Updating the network data

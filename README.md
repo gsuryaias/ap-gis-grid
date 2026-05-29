@@ -11,7 +11,8 @@ GitHub Pages.
 
 ## Features
 
-- **Map-primary UI** with floating glass panels; light & dark CARTO basemaps (keyless).
+- **Map-primary UI** with floating glass panels; **Light / Dark / Satellite** basemaps
+  (keyless CARTO vector + Esri World Imagery).
 - **Voltage-coded network** — colour (Okabe-Ito, colour-blind safe) paired with redundant line
   width and a dashed style for double-circuit lines, plus a casing halo for legibility.
 - **Typeahead search** across all substations and lines, with disambiguation for same-named
@@ -97,6 +98,9 @@ Vite · React 19 · TypeScript · Tailwind CSS v4 · MapLibre GL JS v5 · Zustan
 
 ## Attribution
 
-- Basemaps © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors,
+- Light/Dark basemaps © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors,
   © [CARTO](https://carto.com/attributions) (keyless, non-commercial fair use).
+- Satellite basemap: Imagery © Esri, Maxar, Earthstar Geographics and the GIS User Community
+  (keyless World Imagery; intended for internal / non-commercial use — see Esri's terms before any
+  commercial use).
 - Network data: AP-TRANSCO.

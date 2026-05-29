@@ -34,6 +34,9 @@ export const SunIcon = (p: P) => (
 export const MoonIcon = (p: P) => (
   <svg {...base(p)}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
 );
+export const SatelliteIcon = (p: P) => (
+  <svg {...base(p)}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" /></svg>
+);
 export const TargetIcon = (p: P) => (
   <svg {...base(p)}><circle cx="12" cy="12" r="8" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" /></svg>
 );

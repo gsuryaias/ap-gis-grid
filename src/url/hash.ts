@@ -6,7 +6,7 @@ const VERSION = 1;
 
 export interface HashState {
   selectedId: string | null;
-  basemap: "light" | "dark";
+  basemap: "light" | "dark" | "satellite";
   voltages: Voltage[];
   circuits: Circuit[];
   showSubstations: boolean;
@@ -50,7 +50,7 @@ export function parseHash(hash: string): Partial<HashState> {
   if (sel) out.selectedId = sel;
 
   const base = p.get("base");
-  if (base === "dark" || base === "light") out.basemap = base;
+  if (base === "dark" || base === "light" || base === "satellite") out.basemap = base;
 
   const volt = p.get("volt");
   if (volt != null) {

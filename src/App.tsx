@@ -56,7 +56,8 @@ export function App() {
   }, [init]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", basemap === "dark");
+    // Dark UI chrome for both the dark basemap and satellite imagery.
+    document.documentElement.classList.toggle("dark", basemap !== "light");
   }, [basemap]);
 
   if (status === "loading") return <Loading />;

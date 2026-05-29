@@ -4,7 +4,7 @@ import type { FilterState } from "../data/selectors.ts";
 import { CIRCUITS, VOLTAGES, type Circuit, type GridData, type Voltage } from "../data/types.ts";
 import { defaultHashState, type HashState } from "../url/hash.ts";
 
-export type Basemap = "light" | "dark";
+export type Basemap = "light" | "dark" | "satellite";
 type Status = "loading" | "ready" | "error";
 
 export interface FlySignal {
