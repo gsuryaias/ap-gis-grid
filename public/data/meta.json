@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-29T18:41:36.268Z",
+  "generatedAt": "2026-05-29T19:14:20.268Z",
   "source": "Transco.kml (AP-TRANSCO, Google Earth export)",
   "counts": {
     "substations": 499,
@@ -9,20 +9,355 @@
     "132": {
       "substations": 349,
       "lines": 477,
-      "lengthKm": 10128.8
+      "lengthKm": 10128.8,
+      "circuitKm": 11869
     },
     "220": {
       "substations": 123,
       "lines": 203,
-      "lengthKm": 8372.6
+      "lengthKm": 8372.6,
+      "circuitKm": 11476.1
     },
     "400": {
       "substations": 27,
       "lines": 35,
-      "lengthKm": 3375.3
+      "lengthKm": 3375.3,
+      "circuitKm": 5302.8
     }
   },
+  "byCircle": {
+    "Tirupathi": {
+      "substations": 53,
+      "lines": 78,
+      "lengthKm": 2476.3,
+      "circuitKm": 3559
+    },
+    "Kurnool": {
+      "substations": 43,
+      "lines": 69,
+      "lengthKm": 2409.6,
+      "circuitKm": 2842.1
+    },
+    "Kadapa": {
+      "substations": 48,
+      "lines": 60,
+      "lengthKm": 1676.1,
+      "circuitKm": 2316
+    },
+    "Visakhapatnam": {
+      "substations": 54,
+      "lines": 77,
+      "lengthKm": 1954,
+      "circuitKm": 2398
+    },
+    "Eluru": {
+      "substations": 34,
+      "lines": 60,
+      "lengthKm": 2111.8,
+      "circuitKm": 2766.5
+    },
+    "Nellore": {
+      "substations": 39,
+      "lines": 48,
+      "lengthKm": 1199.9,
+      "circuitKm": 1572
+    },
+    "Vizianagaram": {
+      "substations": 21,
+      "lines": 30,
+      "lengthKm": 701.9,
+      "circuitKm": 1079.3
+    },
+    "ongole": {
+      "substations": 25,
+      "lines": 33,
+      "lengthKm": 1341.8,
+      "circuitKm": 1668.8
+    },
+    "Guntur": {
+      "substations": 35,
+      "lines": 56,
+      "lengthKm": 2047.5,
+      "circuitKm": 2855.6
+    },
+    "Ananthapuram": {
+      "substations": 67,
+      "lines": 83,
+      "lengthKm": 2521.3,
+      "circuitKm": 3378.5
+    },
+    "Rajahmundry": {
+      "substations": 39,
+      "lines": 55,
+      "lengthKm": 1383.2,
+      "circuitKm": 1678.4
+    },
+    "Vijayawada": {
+      "substations": 25,
+      "lines": 49,
+      "lengthKm": 1537.8,
+      "circuitKm": 1852.8
+    },
+    "Srikakulam": {
+      "substations": 16,
+      "lines": 17,
+      "lengthKm": 515.6,
+      "circuitKm": 680.9
+    }
+  },
+  "matrix": {
+    "132": {
+      "Ananthapuram": {
+        "substations": 35,
+        "lines": 44,
+        "lengthKm": 1252.9,
+        "circuitKm": 1377.4
+      },
+      "Kadapa": {
+        "substations": 30,
+        "lines": 41,
+        "lengthKm": 847.8,
+        "circuitKm": 1004.5
+      },
+      "Kurnool": {
+        "substations": 24,
+        "lines": 38,
+        "lengthKm": 1069.9,
+        "circuitKm": 1117.9
+      },
+      "Tirupathi": {
+        "substations": 42,
+        "lines": 57,
+        "lengthKm": 1105,
+        "circuitKm": 1446.6
+      },
+      "Eluru": {
+        "substations": 21,
+        "lines": 33,
+        "lengthKm": 716.3,
+        "circuitKm": 804.2
+      },
+      "Rajahmundry": {
+        "substations": 27,
+        "lines": 37,
+        "lengthKm": 701.4,
+        "circuitKm": 811.9
+      },
+      "Srikakulam": {
+        "substations": 15,
+        "lines": 16,
+        "lengthKm": 426.9,
+        "circuitKm": 503.5
+      },
+      "Vizianagaram": {
+        "substations": 18,
+        "lines": 25,
+        "lengthKm": 404.6,
+        "circuitKm": 484.7
+      },
+      "Visakhapatnam": {
+        "substations": 40,
+        "lines": 51,
+        "lengthKm": 633.5,
+        "circuitKm": 857.3
+      },
+      "Vijayawada": {
+        "substations": 17,
+        "lines": 32,
+        "lengthKm": 691.6,
+        "circuitKm": 761.6
+      },
+      "Guntur": {
+        "substations": 28,
+        "lines": 39,
+        "lengthKm": 840,
+        "circuitKm": 1065.3
+      },
+      "ongole": {
+        "substations": 20,
+        "lines": 26,
+        "lengthKm": 738.9,
+        "circuitKm": 869.6
+      },
+      "Nellore": {
+        "substations": 32,
+        "lines": 38,
+        "lengthKm": 700,
+        "circuitKm": 764.4
+      }
+    },
+    "220": {
+      "Kurnool": {
+        "substations": 15,
+        "lines": 27,
+        "lengthKm": 1089.1,
+        "circuitKm": 1325.5
+      },
+      "Ananthapuram": {
+        "substations": 30,
+        "lines": 36,
+        "lengthKm": 918.4,
+        "circuitKm": 1301
+      },
+      "Tirupathi": {
+        "substations": 9,
+        "lines": 17,
+        "lengthKm": 918.1,
+        "circuitKm": 1206.1
+      },
+      "Kadapa": {
+        "substations": 16,
+        "lines": 19,
+        "lengthKm": 828.3,
+        "circuitKm": 1311.4
+      },
+      "Vijayawada": {
+        "substations": 6,
+        "lines": 14,
+        "lengthKm": 614.9,
+        "circuitKm": 788.4
+      },
+      "ongole": {
+        "substations": 4,
+        "lines": 6,
+        "lengthKm": 494.4,
+        "circuitKm": 582.1
+      },
+      "Nellore": {
+        "substations": 5,
+        "lines": 9,
+        "lengthKm": 463.2,
+        "circuitKm": 734.1
+      },
+      "Guntur": {
+        "substations": 6,
+        "lines": 13,
+        "lengthKm": 621.5,
+        "circuitKm": 974.4
+      },
+      "Visakhapatnam": {
+        "substations": 10,
+        "lines": 20,
+        "lengthKm": 821.3,
+        "circuitKm": 1037.5
+      },
+      "Vizianagaram": {
+        "substations": 2,
+        "lines": 4,
+        "lengthKm": 182,
+        "circuitKm": 364
+      },
+      "Eluru": {
+        "substations": 12,
+        "lines": 25,
+        "lengthKm": 1060.6,
+        "circuitKm": 1292.6
+      },
+      "Rajahmundry": {
+        "substations": 7,
+        "lines": 12,
+        "lengthKm": 272.2,
+        "circuitKm": 381.5
+      },
+      "Srikakulam": {
+        "substations": 1,
+        "lines": 1,
+        "lengthKm": 88.7,
+        "circuitKm": 177.4
+      }
+    },
+    "400": {
+      "Tirupathi": {
+        "substations": 2,
+        "lines": 4,
+        "lengthKm": 453.2,
+        "circuitKm": 906.3
+      },
+      "Kurnool": {
+        "substations": 4,
+        "lines": 4,
+        "lengthKm": 250.6,
+        "circuitKm": 398.7
+      },
+      "Kadapa": {
+        "substations": 2,
+        "lines": 0,
+        "lengthKm": 0,
+        "circuitKm": 0
+      },
+      "Visakhapatnam": {
+        "substations": 4,
+        "lines": 6,
+        "lengthKm": 499.2,
+        "circuitKm": 503.2
+      },
+      "Eluru": {
+        "substations": 1,
+        "lines": 2,
+        "lengthKm": 334.9,
+        "circuitKm": 669.7
+      },
+      "Nellore": {
+        "substations": 2,
+        "lines": 1,
+        "lengthKm": 36.7,
+        "circuitKm": 73.4
+      },
+      "Vizianagaram": {
+        "substations": 1,
+        "lines": 1,
+        "lengthKm": 115.3,
+        "circuitKm": 230.6
+      },
+      "ongole": {
+        "substations": 1,
+        "lines": 1,
+        "lengthKm": 108.5,
+        "circuitKm": 217.1
+      },
+      "Guntur": {
+        "substations": 1,
+        "lines": 4,
+        "lengthKm": 586,
+        "circuitKm": 815.9
+      },
+      "Ananthapuram": {
+        "substations": 2,
+        "lines": 3,
+        "lengthKm": 350,
+        "circuitKm": 700.1
+      },
+      "Rajahmundry": {
+        "substations": 5,
+        "lines": 6,
+        "lengthKm": 409.6,
+        "circuitKm": 484.9
+      },
+      "Vijayawada": {
+        "substations": 2,
+        "lines": 3,
+        "lengthKm": 231.2,
+        "circuitKm": 302.8
+      }
+    }
+  },
+  "circles": [
+    "Ananthapuram",
+    "Eluru",
+    "Guntur",
+    "Kadapa",
+    "Kurnool",
+    "Nellore",
+    "ongole",
+    "Rajahmundry",
+    "Srikakulam",
+    "Tirupathi",
+    "Vijayawada",
+    "Visakhapatnam",
+    "Vizianagaram"
+  ],
   "totalLengthKm": 21876.7,
+  "totalCircuitKm": 28647.9,
   "bounds": [
     [
       76.49845,

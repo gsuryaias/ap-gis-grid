@@ -20,6 +20,8 @@ export interface Substation {
   ssCode: string | null;
   voltage: Voltage;
   circle: string | null;
+  /** true when circle was spatially inferred (source records Circle only for 132 kV SS). */
+  circleInferred: boolean;
   doc: string | null;
   lng: number;
   lat: number;
@@ -33,6 +35,10 @@ export interface LineFeature {
   voltage: Voltage;
   circuit: Circuit;
   lengthKm: number | null;
+  /** Circuit-km = route length × circuits (SC ×1, DC ×2). */
+  ckm: number | null;
+  /** Circle inferred from a connected substation (lines carry no circle of their own). */
+  circle: string | null;
   connectsSS: string[];
   endpointLabels: [string, string] | null;
   fromSS: { ssId: string; distM: number; confidence: Confidence } | null;

@@ -8,6 +8,7 @@ import { ControlPanel } from "./components/ControlPanel.tsx";
 import { DetailPanel } from "./components/DetailPanel.tsx";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
 import { DataQualityView } from "./components/DataQualityView.tsx";
+import { SummaryView } from "./components/SummaryView.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
 import { TableIcon } from "./components/icons.tsx";
 
@@ -95,6 +96,7 @@ export function App() {
         )}
 
         <DataTableSheet data={data} />
+        <SummaryView data={data} />
         <DataQualityView data={data} />
 
         {/* Data-source credit (basemap credit is the MapLibre attribution control) */}

@@ -53,7 +53,7 @@ function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData })
     <>
       <Field label="Substation code" value={ss.ssCode} />
       <Field label="Full name" value={ss.descriptiveName} />
-      <Field label="Circle" value={ss.circle} />
+      <Field label="Circle" value={ss.circle ? `${ss.circle}${ss.circleInferred ? " (inferred)" : ""}` : null} />
       <Field label="Commissioned" value={ss.doc} />
       <Field label="Coordinates" value={`${ss.lat.toFixed(5)}, ${ss.lng.toFixed(5)}`} />
 
@@ -65,12 +65,12 @@ function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData })
         <p className="px-2 py-1 text-sm text-ink-2">No lines snapped within {data.meta.snapThresholdM} m.</p>
       ) : (
         <div className="-mx-1">
-          {lines.map(({ line, distM }) => (
+          {lines.map(({ line }) => (
             <ConnectionRow
               key={line.id}
               name={line.name}
               voltage={line.voltage}
-              meta={`${line.circuit} · ${formatDist(distM)}`}
+              meta={`${line.circuit} · ${formatKm(line.lengthKm)}`}
               icon={<LineIcon width={14} height={14} />}
               onClick={() => select(line.id, { fly: true })}
             />
@@ -89,7 +89,12 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
     <>
       <Field label="Voltage" value={`${line.voltage} kV`} />
       <Field label="Circuit" value={CIRCUIT_LABEL[line.circuit]} />
-      <Field label="Length" value={formatKm(line.lengthKm)} />
+      <Field label="Route length" value={formatKm(line.lengthKm)} />
+      <Field
+        label="Circuit-km"
+        value={line.ckm != null ? `${formatKm(line.ckm)}${line.circuit === "DC" ? " (2× route)" : ""}` : undefined}
+      />
+      <Field label="Circle" value={line.circle} />
       {(from || to) && <Field label="Route (from name)" value={`${from ?? "?"} → ${to ?? "?"}`} />}
 
       {(line.circuitAmbiguous || line.voltageMismatch) && (
@@ -132,16 +137,29 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
 
 export function DetailPanel({ data }: { data: GridData }) {
   const selectedId = useAppStore((s) => s.selectedId);
+  const history = useAppStore((s) => s.history);
   const select = useAppStore((s) => s.select);
+  const back = useAppStore((s) => s.back);
   const flyTo = useAppStore((s) => s.select);
   const feature = selectedId ? data.byId.get(selectedId) : null;
   if (!feature) return null;
+
+  const prev = history.length ? data.byId.get(history[history.length - 1]) : null;
 
   return (
     <aside
       className="pointer-events-auto flex max-h-full w-[340px] max-w-[92vw] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
       aria-label="Feature details"
     >
+      {prev && (
+        <button
+          onClick={back}
+          className="flex items-center gap-1.5 border-b border-line bg-surface-2/60 px-4 py-1.5 text-left text-xs font-medium text-ink-2 hover:text-ink"
+        >
+          <span aria-hidden className="text-sm leading-none">←</span>
+          <span className="truncate">Back to {prev.name}</span>
+        </button>
+      )}
       <header className="flex items-start gap-2 border-b border-line px-4 py-3">
         <span className="mt-0.5 text-ink-2">
           {isSubstation(feature) ? <SubstationIcon /> : <LineIcon />}

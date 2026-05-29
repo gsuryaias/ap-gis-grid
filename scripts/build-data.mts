@@ -18,6 +18,7 @@ import {
   ALIASES,
   classifyFolder,
   detectNameFlags,
+  haversineMeters,
   parseDescriptionTable,
   parseEndpointLabels,
   pick,
@@ -27,7 +28,6 @@ import {
   type LineFeature,
   type SnapPoint,
   type Substation,
-  type Voltage,
 } from "./etl-lib.ts";
 
 const SNAP_THRESHOLD_M = 500;
@@ -146,11 +146,35 @@ function main(): void {
       ssCode,
       voltage: cls.voltage,
       circle: pick(table, ALIASES.circle),
+      circleInferred: false,
       doc: pick(table, ALIASES.doc),
       lng,
       lat,
       connectedLineIds: [],
     });
+  }
+
+  // Circle inference: the source records 'Circle' only for 132 kV substations, so 400/220 kV
+  // (and any circle-less) substations are assigned the circle of the nearest circle-bearing
+  // substation. Circles are contiguous regions, so this is a sound spatial inference (flagged).
+  const circleBearers = substations.filter((s) => s.circle);
+  let inferredCircles = 0;
+  for (const s of substations) {
+    if (s.circle) continue;
+    let best: (typeof circleBearers)[number] | null = null;
+    let bestDist = Infinity;
+    for (const t of circleBearers) {
+      const d = haversineMeters([s.lng, s.lat], [t.lng, t.lat]);
+      if (d < bestDist) {
+        bestDist = d;
+        best = t;
+      }
+    }
+    if (best) {
+      s.circle = best.circle;
+      s.circleInferred = true;
+      inferredCircles++;
+    }
   }
 
   // ---- Lines ---------------------------------------------------------------
@@ -180,9 +204,14 @@ function main(): void {
     const toSS = snapEndpoint(last, snapPoints, SNAP_THRESHOLD_M);
     const connectsSS = [...new Set([fromSS?.ssId, toSS?.ssId].filter(Boolean) as string[])];
 
+    let circle: string | null = null;
     for (const ssId of connectsSS) {
-      substations.find((s) => s.id === ssId)?.connectedLineIds.push(id);
+      const ss = substations.find((s) => s.id === ssId);
+      ss?.connectedLineIds.push(id);
+      if (!circle && ss?.circle) circle = ss.circle; // inherit circle from a connected SS
     }
+
+    const ckm = lengthKm != null ? Math.round(lengthKm * (circuit === "DC" ? 2 : 1) * 1000) / 1000 : null;
 
     lines.push({
       id,
@@ -191,6 +220,8 @@ function main(): void {
       voltage,
       circuit,
       lengthKm,
+      ckm,
+      circle,
       connectsSS,
       endpointLabels: parseEndpointLabels(cleanName),
       fromSS,
@@ -240,15 +271,48 @@ function main(): void {
   for (const s of substations) acc(s.lng, s.lat);
   for (const pos of lineGeoms.values()) for (const c of pos) acc(c[0], c[1]);
 
-  const byVoltage: Record<string, { substations: number; lines: number; lengthKm: number }> = {};
-  for (const v of [400, 220, 132] as Voltage[]) {
-    byVoltage[v] = {
-      substations: substations.filter((s) => s.voltage === v).length,
-      lines: lines.filter((l) => l.voltage === v).length,
-      lengthKm: Math.round(lines.filter((l) => l.voltage === v).reduce((a, l) => a + (l.lengthKm ?? 0), 0) * 10) / 10,
-    };
+  // ---- Summary aggregation (by voltage, by circle, and the voltage×circle matrix) ----
+  const UNASSIGNED = "Unassigned";
+  const rnd1 = (n: number) => Math.round(n * 10) / 10;
+  interface Agg {
+    substations: number;
+    lines: number;
+    lengthKm: number;
+    circuitKm: number;
   }
-  const totalLengthKm = Math.round(lines.reduce((a, l) => a + (l.lengthKm ?? 0), 0) * 10) / 10;
+  const blank = (): Agg => ({ substations: 0, lines: 0, lengthKm: 0, circuitKm: 0 });
+  const ensure = (m: Record<string, Agg>, k: string): Agg => (m[k] ??= blank());
+
+  const byVoltage: Record<string, Agg> = { 400: blank(), 220: blank(), 132: blank() };
+  const byCircle: Record<string, Agg> = {};
+  const matrix: Record<string, Record<string, Agg>> = { 400: {}, 220: {}, 132: {} };
+
+  for (const s of substations) {
+    const c = s.circle ?? UNASSIGNED;
+    byVoltage[s.voltage].substations++;
+    ensure(byCircle, c).substations++;
+    ensure(matrix[s.voltage], c).substations++;
+  }
+  for (const l of lines) {
+    const c = l.circle ?? UNASSIGNED;
+    const route = l.lengthKm ?? 0;
+    const ckm = l.ckm ?? 0;
+    for (const a of [byVoltage[l.voltage], ensure(byCircle, c), ensure(matrix[l.voltage], c)]) {
+      a.lines++;
+      a.lengthKm += route;
+      a.circuitKm += ckm;
+    }
+  }
+  const roundAgg = (a: Agg): Agg => ({ ...a, lengthKm: rnd1(a.lengthKm), circuitKm: rnd1(a.circuitKm) });
+  for (const v of Object.keys(byVoltage)) byVoltage[v] = roundAgg(byVoltage[v]);
+  for (const c of Object.keys(byCircle)) byCircle[c] = roundAgg(byCircle[c]);
+  for (const v of Object.keys(matrix)) for (const c of Object.keys(matrix[v])) matrix[v][c] = roundAgg(matrix[v][c]);
+
+  const circles = Object.keys(byCircle).sort((a, b) =>
+    a === UNASSIGNED ? 1 : b === UNASSIGNED ? -1 : a.localeCompare(b),
+  );
+  const totalLengthKm = rnd1(lines.reduce((a, l) => a + (l.lengthKm ?? 0), 0));
+  const totalCircuitKm = rnd1(lines.reduce((a, l) => a + (l.ckm ?? 0), 0));
 
   // ---- Adjacency stats -----------------------------------------------------
   const both = lines.filter((l) => l.fromSS && l.toSS).length;
@@ -275,6 +339,7 @@ function main(): void {
           ssCode: s.ssCode,
           voltage: s.voltage,
           circle: s.circle,
+          circleInferred: s.circleInferred,
           doc: s.doc,
           lng: s.lng,
           lat: s.lat,
@@ -299,6 +364,8 @@ function main(): void {
           voltage: l.voltage,
           circuit: l.circuit,
           lengthKm: l.lengthKm,
+          ckm: l.ckm,
+          circle: l.circle,
           connectsSS: l.connectsSS,
           endpointLabels: l.endpointLabels,
           fromSS: l.fromSS,
@@ -332,7 +399,11 @@ function main(): void {
     source: "Transco.kml (AP-TRANSCO, Google Earth export)",
     counts: { substations: substations.length, lines: lines.length },
     byVoltage,
+    byCircle,
+    matrix,
+    circles,
     totalLengthKm,
+    totalCircuitKm,
     bounds: [
       [round5(minLng), round5(minLat)],
       [round5(maxLng), round5(maxLat)],
@@ -344,6 +415,7 @@ function main(): void {
     generatedAt: meta.generatedAt,
     substationSchemas: schemaCounts,
     unknownSchemaSamples,
+    inferredCircles,
     adjacency: {
       method: `geometric endpoint-snapping ≤ ${SNAP_THRESHOLD_M} m`,
       linesBothEndpoints: both,
@@ -377,7 +449,7 @@ function main(): void {
   );
   console.log(
     `[etl] adjacency: both=${both} (${dataQuality.adjacency.pctBoth}%), one=${one}, none=${none}` +
-      ` | total ${totalLengthKm} km` +
+      ` | route ${totalLengthKm} km · circuit ${totalCircuitKm} km · ${circles.length} circles` +
       ` | circuitAmbiguous=${dataQuality.circuitAmbiguousLines.count}` +
       ` voltageMismatch=${dataQuality.voltageMismatchLines.count}` +
       (coordWarnings.length ? ` | ${coordWarnings.length} coord warning(s)` : ""),

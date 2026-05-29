@@ -21,6 +21,7 @@ export interface SubstationProps {
   ssCode: string | null;
   voltage: Voltage;
   circle: string | null;
+  circleInferred: boolean;
   doc: string | null;
   lng: number;
   lat: number;
@@ -35,6 +36,8 @@ export interface LineProps {
   voltage: Voltage;
   circuit: Circuit;
   lengthKm: number | null;
+  ckm: number | null;
+  circle: string | null;
   connectsSS: string[];
   endpointLabels: [string, string] | null;
   fromSS: SnapRef | null;
@@ -45,18 +48,23 @@ export interface LineProps {
 
 export type FeatureProps = SubstationProps | LineProps;
 
-export interface VoltageStat {
+export interface GroupStat {
   substations: number;
   lines: number;
   lengthKm: number;
+  circuitKm: number;
 }
 
 export interface Meta {
   generatedAt: string;
   source: string;
   counts: { substations: number; lines: number };
-  byVoltage: Record<string, VoltageStat>;
+  byVoltage: Record<string, GroupStat>;
+  byCircle: Record<string, GroupStat>;
+  matrix: Record<string, Record<string, GroupStat>>;
+  circles: string[];
   totalLengthKm: number;
+  totalCircuitKm: number;
   bounds: [[number, number], [number, number]];
   snapThresholdM: number;
 }
@@ -65,6 +73,7 @@ export interface DataQuality {
   generatedAt: string;
   substationSchemas: Record<string, number>;
   unknownSchemaSamples: string[];
+  inferredCircles: number;
   adjacency: {
     method: string;
     linesBothEndpoints: number;

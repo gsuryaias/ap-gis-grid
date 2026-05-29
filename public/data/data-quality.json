@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-29T18:41:36.268Z",
+  "generatedAt": "2026-05-29T19:14:20.268Z",
   "substationSchemas": {
     "sap": 350,
     "sscode": 123,
@@ -7,6 +7,7 @@
     "unknown": 0
   },
   "unknownSchemaSamples": [],
+  "inferredCircles": 164,
   "adjacency": {
     "method": "geometric endpoint-snapping ≤ 500 m",
     "linesBothEndpoints": 661,

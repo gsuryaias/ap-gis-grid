@@ -1,10 +1,11 @@
 import type { GridData } from "../data/types.ts";
 import { formatInt } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
-import { InfoIcon } from "./icons.tsx";
+import { InfoIcon, LayersIcon } from "./icons.tsx";
 
 export function BrandHeader({ data }: { data: GridData }) {
   const toggleQuality = useAppStore((s) => s.toggleQuality);
+  const toggleSummary = useAppStore((s) => s.toggleSummary);
   const km = Math.round(data.meta.totalLengthKm);
 
   return (
@@ -20,15 +21,21 @@ export function BrandHeader({ data }: { data: GridData }) {
           <p className="mt-0.5 text-[11px] text-ink-2">Transmission network · 400 / 220 / 132 kV</p>
         </div>
       </div>
-      <div className="mt-2.5 flex items-center justify-between">
-        <p className="text-xs text-ink-2">
-          <span className="font-semibold text-ink">{formatInt(data.meta.counts.substations)}</span> SS ·{" "}
-          <span className="font-semibold text-ink">{formatInt(data.meta.counts.lines)}</span> lines ·{" "}
-          <span className="font-semibold text-ink">{formatInt(km)}</span> km
-        </p>
+      <p className="mt-2.5 text-xs text-ink-2">
+        <span className="font-semibold text-ink">{formatInt(data.meta.counts.substations)}</span> SS ·{" "}
+        <span className="font-semibold text-ink">{formatInt(data.meta.counts.lines)}</span> lines ·{" "}
+        <span className="font-semibold text-ink">{formatInt(km)}</span> km
+      </p>
+      <div className="mt-2 flex gap-1.5">
+        <button
+          onClick={() => toggleSummary(true)}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink hover:bg-surface-2"
+        >
+          <LayersIcon width={13} height={13} /> Summary
+        </button>
         <button
           onClick={() => toggleQuality(true)}
-          className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
         >
           <InfoIcon width={13} height={13} /> Quality
         </button>

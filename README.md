@@ -17,7 +17,10 @@ GitHub Pages.
 - **Typeahead search** across all substations and lines, with disambiguation for same-named
   substations (e.g. the 400 kV vs 220 kV "Chittoor").
 - **Detail panel** showing the normalized MIS attributes plus **inferred substation↔line
-  connections** (with snap distance and confidence).
+  connections** (with route-km and circuit-km), and a back breadcrumb for navigating between
+  connected features.
+- **Summary dashboard** with KPI totals and drill-down disaggregation **by voltage** and **by
+  circle/region** — counts, route-km and **circuit-km** (DC ×2) per group, with isolate-on-map.
 - **Data table** (sortable, filterable) in a bottom sheet, two-way synced with the map.
 - **Layer controls** for voltage levels, substations/lines, and single/double circuits.
 - **Deep links** — selection, basemap, filters and table state are encoded in the URL hash, so any
@@ -52,6 +55,17 @@ static assets.
   (~92% of lines link at both ends, 100% at ≥1). The remaining endpoints are genuine external nodes
   (railway traction, generating stations, out-of-state substations) with no point in the dataset.
   Connections are always shown as **inferred**, never authoritative.
+- **Circuit-km** is derived per line as route length × circuits (SC ×1, DC ×2).
+- **Circle/region** is recorded in the source only for 132 kV substations; 400/220 kV substations
+  (and their lines) are assigned the **nearest circle-bearing substation's circle** (flagged as
+  inferred in the detail panel and the data-quality report).
+
+### Not in the source data
+
+The KML contains **no MVA / transformer-capacity / thermal-rating data** — only codes, voltage,
+circle, commissioning date, coordinates and route length. To add capacities, supply a
+supplementary sheet (keyed by `SS_CODE` / line name) and join it in the ETL; the UI is structured
+to surface those fields wherever present.
 
 ## Develop
 

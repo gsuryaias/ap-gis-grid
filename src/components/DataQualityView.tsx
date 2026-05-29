@@ -49,6 +49,7 @@ export function DataQualityView({ data }: { data: GridData }) {
           <Stat label="Lines · both ends linked" value={`${q.adjacency.pctBoth}%`} hint={`${q.adjacency.linesBothEndpoints} of ${data.meta.counts.lines}`} />
           <Stat label="Lines · ≥1 end linked" value={`${q.adjacency.pctAtLeastOne}%`} hint="rest are external nodes" />
           <Stat label="Circuit-ambiguous names" value={q.circuitAmbiguousLines.count} hint="folder is authoritative" />
+          <Stat label="Inferred circles" value={q.inferredCircles} hint="400/220 kV SS — nearest 132 kV circle" />
         </div>
 
         <details className="mt-4 rounded-xl border border-line">
