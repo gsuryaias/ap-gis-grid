@@ -1,11 +1,22 @@
 import { create } from "zustand";
-import { loadGridData } from "../data/load.ts";
+import { loadGeneration, loadGridData } from "../data/load.ts";
 import type { FilterState } from "../data/selectors.ts";
-import { CIRCUITS, VOLTAGES, type Circuit, type GridData, type Voltage } from "../data/types.ts";
+import {
+  CIRCUITS,
+  ENERGY_TYPES,
+  VOLTAGES,
+  type Circuit,
+  type EnergyType,
+  type GenerationData,
+  type GridData,
+  type Voltage,
+} from "../data/types.ts";
 import { defaultHashState, type HashState } from "../url/hash.ts";
 
 export type Basemap = "light" | "dark" | "satellite";
 type Status = "loading" | "ready" | "error";
+/** Lazy lifecycle for the generation overlay: untouched → fetching → loaded / failed. */
+type GenStatus = "idle" | "loading" | "ready" | "error";
 
 export interface FlySignal {
   id: string;
@@ -27,6 +38,11 @@ interface AppState {
   filters: FilterState;
   flySignal: FlySignal | null;
 
+  // Generation overlay (lazy-loaded)
+  generation: GenerationData | null;
+  genStatus: GenStatus;
+  genError: string | null;
+
   init: () => Promise<void>;
   select: (id: string | null, opts?: { fly?: boolean }) => void;
   back: () => void;
@@ -39,6 +55,8 @@ interface AppState {
   toggleVoltage: (v: Voltage) => void;
   toggleCircuit: (c: Circuit) => void;
   toggleShow: (k: "showSubstations" | "showLines") => void;
+  toggleGeneration: (open?: boolean) => void;
+  toggleGenType: (t: EnergyType) => void;
   applyHash: (h: Partial<HashState>) => void;
   hashState: () => HashState;
 }
@@ -49,6 +67,8 @@ function freshFilters(): FilterState {
     circuits: { SC: true, DC: true },
     showSubstations: true,
     showLines: true,
+    showGeneration: false, // lazy — off until the user opts in
+    genTypes: Object.fromEntries(ENERGY_TYPES.map((t) => [t, true])) as Record<EnergyType, boolean>,
   };
 }
 
@@ -66,6 +86,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   summaryOpen: false,
   filters: freshFilters(),
   flySignal: null,
+
+  generation: null,
+  genStatus: "idle",
+  genError: null,
 
   init: async () => {
     try {
@@ -111,6 +135,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({ filters: { ...s.filters, circuits: { ...s.filters.circuits, [c]: !s.filters.circuits[c] } } })),
   toggleShow: (k) => set((s) => ({ filters: { ...s.filters, [k]: !s.filters[k] } })),
 
+  toggleGeneration: (open) => {
+    const next = open ?? !get().filters.showGeneration;
+    set((s) => ({ filters: { ...s.filters, showGeneration: next } }));
+    // Lazy-fetch the overlay the first time it's switched on; cache thereafter.
+    if (next && get().genStatus === "idle") {
+      set({ genStatus: "loading", genError: null });
+      loadGeneration()
+        .then((generation) => set({ generation, genStatus: "ready" }))
+        .catch((e) =>
+          set({ genStatus: "error", genError: e instanceof Error ? e.message : String(e) }),
+        );
+    }
+  },
+
+  toggleGenType: (t) =>
+    set((s) => ({ filters: { ...s.filters, genTypes: { ...s.filters.genTypes, [t]: !s.filters.genTypes[t] } } })),
+
   applyHash: (h) =>
     set((s) => {
       const voltages = h.voltages
@@ -124,6 +165,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         selectedId && selectedId !== s.selectedId && s.data?.byId.has(selectedId)
           ? { id: selectedId, ts: Date.now() }
           : s.flySignal;
+      const showGeneration = h.showGeneration ?? s.filters.showGeneration;
+      // A deep link with gen=1 must kick off the lazy fetch just like a manual toggle.
+      if (showGeneration && get().genStatus === "idle") {
+        Promise.resolve().then(() => get().toggleGeneration(true));
+      }
       return {
         selectedId,
         history: selectedId === s.selectedId ? s.history : [],
@@ -134,6 +180,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           circuits,
           showSubstations: h.showSubstations ?? s.filters.showSubstations,
           showLines: h.showLines ?? s.filters.showLines,
+          showGeneration,
+          genTypes: s.filters.genTypes,
         },
         flySignal,
       };
@@ -150,6 +198,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       circuits: CIRCUITS.filter((c) => s.filters.circuits[c]),
       showSubstations: s.filters.showSubstations,
       showLines: s.filters.showLines,
+      showGeneration: s.filters.showGeneration,
     };
   },
 }));

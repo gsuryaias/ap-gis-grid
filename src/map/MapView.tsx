@@ -1,20 +1,28 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import maplibregl, { type LngLatBoundsLike, Map as MlMap } from "maplibre-gl";
-import type { GridData } from "../data/types.ts";
+import type { GenerationData, GridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { BASEMAPS } from "./basemaps.ts";
-import { addGridLayers, applyFilters, INTERACTIVE_LAYERS, SRC } from "./layers.ts";
+import { addGenerationLayers, addGridLayers, ALL_INTERACTIVE, applyFilters, INTERACTIVE_LAYERS, LAYER, SRC } from "./layers.ts";
 
-function sourceForId(data: GridData, id: string): string | null {
+function sourceForId(data: GridData, gen: GenerationData | null, id: string): string | null {
+  if (gen?.byId.has(id)) return SRC.generation;
   const f = data.byId.get(id);
   if (!f) return null;
   return f.kind === "line" ? SRC.lines : SRC.substations;
 }
 
-function setFeatState(map: MlMap, data: GridData, id: string | null, key: string, value: boolean): void {
+function setFeatState(
+  map: MlMap,
+  data: GridData,
+  gen: GenerationData | null,
+  id: string | null,
+  key: string,
+  value: boolean,
+): void {
   if (!id) return;
-  const source = sourceForId(data, id);
-  if (!source) return;
+  const source = sourceForId(data, gen, id);
+  if (!source || !map.getSource(source)) return; // generation source may not be added yet
   try {
     map.setFeatureState({ source, id }, { [key]: value });
   } catch {
@@ -22,7 +30,12 @@ function setFeatState(map: MlMap, data: GridData, id: string | null, key: string
   }
 }
 
-function flyToFeature(map: MlMap, data: GridData, id: string): void {
+function flyToFeature(map: MlMap, data: GridData, gen: GenerationData | null, id: string): void {
+  const plant = gen?.byId.get(id);
+  if (plant) {
+    map.flyTo({ center: [plant.lng, plant.lat], zoom: Math.max(map.getZoom(), 11.5), speed: 1.2, essential: true });
+    return;
+  }
   const f = data.byId.get(id);
   if (!f) return;
   if (f.kind === "substation") {
@@ -42,12 +55,47 @@ export function MapView({ data }: { data: GridData }) {
   const readyRef = useRef(false);
   const prevHover = useRef<string | null>(null);
   const prevSelected = useRef<string | null>(null);
+  const genBound = useRef(false);
 
   const basemap = useAppStore((s) => s.basemap);
   const filters = useAppStore((s) => s.filters);
   const selectedId = useAppStore((s) => s.selectedId);
   const hoverId = useAppStore((s) => s.hoverId);
   const flySignal = useAppStore((s) => s.flySignal);
+  const generation = useAppStore((s) => s.generation);
+
+  // Add the generation source/layers (when loaded) and bind its interaction handlers once.
+  // Idempotent: safe to call after the initial load and after every basemap style reload.
+  const mountGeneration = useCallback(
+    (map: MlMap) => {
+      const st = useAppStore.getState();
+      if (!st.generation) return;
+      addGenerationLayers(map, st.generation.fc, st.basemap);
+      applyFilters(map, st.filters);
+      setFeatState(map, data, st.generation, st.selectedId, "selected", true);
+      setFeatState(map, data, st.generation, st.hoverId, "hover", true);
+      if (genBound.current) return; // handlers live on the map, so they survive style reloads
+      const select = st.select;
+      const setHover = st.setHover;
+      map.on("mousemove", LAYER.generation, (ev) => {
+        const f = ev.features?.[0];
+        if (f?.id != null) {
+          setHover(String(f.id));
+          map.getCanvas().style.cursor = "pointer";
+        }
+      });
+      map.on("mouseleave", LAYER.generation, () => {
+        setHover(null);
+        map.getCanvas().style.cursor = "";
+      });
+      map.on("click", LAYER.generation, (ev) => {
+        const f = ev.features?.[0];
+        if (f?.id != null) select(String(f.id));
+      });
+      genBound.current = true;
+    },
+    [data],
+  );
 
   // --- Map lifecycle (once) -------------------------------------------------
   useEffect(() => {
@@ -64,6 +112,7 @@ export function MapView({ data }: { data: GridData }) {
       maxZoom: 16,
     });
     mapRef.current = map;
+    genBound.current = false;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     // CARTO's GL style already carries the mandatory OSM + CARTO attribution, so we let
@@ -99,15 +148,18 @@ export function MapView({ data }: { data: GridData }) {
         });
       }
       map.on("click", (ev) => {
-        const hits = map.queryRenderedFeatures(ev.point, { layers: INTERACTIVE_LAYERS });
+        // Only the interactive layers actually present (generation may not be loaded).
+        const layers = ALL_INTERACTIVE.filter((l) => map.getLayer(l));
+        const hits = map.queryRenderedFeatures(ev.point, { layers });
         if (!hits.length) select(null);
       });
 
       // apply any deep-linked selection / pending fly
       const st = useAppStore.getState();
-      setFeatState(map, data, st.selectedId, "selected", true);
+      setFeatState(map, data, st.generation, st.selectedId, "selected", true);
       prevSelected.current = st.selectedId;
-      if (st.flySignal) flyToFeature(map, data, st.flySignal.id);
+      mountGeneration(map); // no-op unless a gen=1 deep link already finished loading
+      if (st.flySignal) flyToFeature(map, data, st.generation, st.flySignal.id);
     });
 
     return () => {
@@ -116,7 +168,7 @@ export function MapView({ data }: { data: GridData }) {
       map.remove();
       mapRef.current = null;
     };
-  }, [data]);
+  }, [data, mountGeneration]);
 
   // --- Basemap switch -------------------------------------------------------
   useEffect(() => {
@@ -126,13 +178,14 @@ export function MapView({ data }: { data: GridData }) {
     map.setStyle(def.style);
     const onStyle = () => {
       addGridLayers(map, data, basemap);
+      mountGeneration(map); // setStyle drops custom sources/layers — re-add the overlay
       applyFilters(map, useAppStore.getState().filters);
       const st = useAppStore.getState();
-      setFeatState(map, data, st.selectedId, "selected", true);
-      setFeatState(map, data, st.hoverId, "hover", true);
+      setFeatState(map, data, st.generation, st.selectedId, "selected", true);
+      setFeatState(map, data, st.generation, st.hoverId, "hover", true);
     };
     map.once("styledata", onStyle);
-  }, [basemap, data]);
+  }, [basemap, data, mountGeneration]);
 
   // --- Filters --------------------------------------------------------------
   useEffect(() => {
@@ -140,31 +193,37 @@ export function MapView({ data }: { data: GridData }) {
     if (map && readyRef.current) applyFilters(map, filters);
   }, [filters]);
 
+  // --- Generation overlay arrives (lazy) ------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && readyRef.current && generation) mountGeneration(map);
+  }, [generation, mountGeneration]);
+
   // --- Selection highlight --------------------------------------------------
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     if (prevSelected.current && prevSelected.current !== selectedId)
-      setFeatState(map, data, prevSelected.current, "selected", false);
-    setFeatState(map, data, selectedId, "selected", true);
+      setFeatState(map, data, generation, prevSelected.current, "selected", false);
+    setFeatState(map, data, generation, selectedId, "selected", true);
     prevSelected.current = selectedId;
-  }, [selectedId, data]);
+  }, [selectedId, data, generation]);
 
   // --- Hover highlight ------------------------------------------------------
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     if (prevHover.current && prevHover.current !== hoverId)
-      setFeatState(map, data, prevHover.current, "hover", false);
-    setFeatState(map, data, hoverId, "hover", true);
+      setFeatState(map, data, generation, prevHover.current, "hover", false);
+    setFeatState(map, data, generation, hoverId, "hover", true);
     prevHover.current = hoverId;
-  }, [hoverId, data]);
+  }, [hoverId, data, generation]);
 
   // --- Fly-to ---------------------------------------------------------------
   useEffect(() => {
     const map = mapRef.current;
-    if (map && readyRef.current && flySignal) flyToFeature(map, data, flySignal.id);
-  }, [flySignal, data]);
+    if (map && readyRef.current && flySignal) flyToFeature(map, data, generation, flySignal.id);
+  }, [flySignal, data, generation]);
 
   // NB: use h-full/w-full, not `absolute inset-0` — MapLibre's unlayered
   // `.maplibregl-map { position: relative }` overrides Tailwind's layered `.absolute`.

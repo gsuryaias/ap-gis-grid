@@ -16,15 +16,20 @@ import { kmlWithFolders } from "@tmcw/togeojson";
 import type { Feature, FeatureCollection, LineString, Point, Position } from "geojson";
 import {
   ALIASES,
+  classifyEnergy,
   classifyFolder,
   detectNameFlags,
+  ENERGY_TYPES,
   haversineMeters,
   parseDescriptionTable,
   parseEndpointLabels,
+  parseVoltage,
   pick,
   round5,
   snapEndpoint,
   type Circuit,
+  type EnergyType,
+  type GenerationPlant,
   type LineFeature,
   type SnapPoint,
   type Substation,
@@ -83,6 +88,92 @@ function walk(node: TreeNode, cls: ReturnType<typeof classifyFolder>, out: RawFe
   }
   const here = classifyFolder(folderName(node)) ?? cls;
   for (const child of node.children ?? []) walk(child, here, out);
+}
+
+/** Collect every Point Feature in a KML tree, ignoring folder structure. */
+function collectPoints(node: TreeNode, out: TreeNode[]): void {
+  if (node.type === "Feature") {
+    if (node.geometry?.type === "Point") out.push(node);
+    return;
+  }
+  for (const child of node.children ?? []) collectPoints(child, out);
+}
+
+/**
+ * Build the generation-plant overlay from data/raw/generation.kml.
+ * Emitted as its own file (`generation.geojson`) so the app can LAZY-LOAD it — the layer is
+ * never part of the initial transmission payload; it's fetched only when the user enables it.
+ * Plants carry an energy-mix class (Solar / Wind / Thermal / Gas / Hydro / Other).
+ */
+function buildGeneration(outDir: string): void {
+  const genPath = resolve("data/raw/generation.kml");
+  console.log(`[etl] reading ${genPath}`);
+  const xml = readFileSync(genPath, "utf-8");
+  const doc = new DOMParser().parseFromString(xml, "text/xml") as unknown as Document;
+  const tree = kmlWithFolders(doc) as unknown as TreeNode;
+
+  const points: TreeNode[] = [];
+  collectPoints(tree, points);
+  console.log(`[etl] parsed ${points.length} generation plants`);
+
+  const usedIds = new Set<string>();
+  const plants: GenerationPlant[] = [];
+  const byType: Record<string, number> = {};
+
+  for (const feature of points) {
+    const props = feature.properties ?? {};
+    const table = parseDescriptionTable(getDescriptionHtml(props));
+    const coords = (feature.geometry as Point).coordinates;
+    const lng = round5(coords[0]);
+    const lat = round5(coords[1]);
+    const name = (props.name ? String(props.name) : pick(table, ALIASES.genName)) ?? "Unnamed plant";
+    const cleanName = name.replace(/\s+/g, " ").trim();
+
+    const energy = classifyEnergy(pick(table, ALIASES.energyType));
+    // Source voltages are all 400/220/132; fall back to 132 kV if a future row is unparseable.
+    const voltage = parseVoltage(pick(table, ALIASES.voltage)) ?? 132;
+    const capRaw = pick(table, ALIASES.capacity);
+    const capacityMw = capRaw != null && !Number.isNaN(Number(capRaw)) ? Number(capRaw) : null;
+
+    const id = uniqueId(`g-${slug(cleanName)}`, usedIds);
+    byType[energy] = (byType[energy] ?? 0) + 1;
+
+    plants.push({
+      id,
+      kind: "generation",
+      name: cleanName,
+      descriptiveName: pick(table, ALIASES.genDescriptiveName),
+      ssCode: pick(table, ALIASES.genCode),
+      energy,
+      voltage,
+      circle: pick(table, ALIASES.circle),
+      doc: pick(table, ALIASES.doc),
+      capacityMw,
+      lng,
+      lat,
+    });
+  }
+
+  if (plants.length === 0) {
+    console.error("[etl] VALIDATION FAILED: generation.kml produced 0 plants");
+    process.exit(1);
+  }
+
+  const fc: FeatureCollection = {
+    type: "FeatureCollection",
+    features: plants.map(
+      (p): Feature => ({
+        type: "Feature",
+        id: p.id,
+        geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+        properties: { ...p },
+      }),
+    ),
+  };
+
+  writeFileSync(resolve(outDir, "generation.geojson"), JSON.stringify(fc));
+  const mix = ENERGY_TYPES.filter((t) => byType[t]).map((t) => `${t} ${byType[t as EnergyType]}`).join(", ");
+  console.log(`[etl] wrote ${plants.length} generation plants | mix: ${mix}`);
 }
 
 function main(): void {
@@ -454,6 +545,9 @@ function main(): void {
       ` voltageMismatch=${dataQuality.voltageMismatchLines.count}` +
       (coordWarnings.length ? ` | ${coordWarnings.length} coord warning(s)` : ""),
   );
+
+  // ---- Generation overlay (separate, lazy-loaded layer) --------------------
+  buildGeneration(outDir);
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

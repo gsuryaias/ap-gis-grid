@@ -55,3 +55,6 @@ export const ArrowRight = (p: P) => (
 export const WarnIcon = (p: P) => (
   <svg {...base(p)}><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" /></svg>
 );
+export const BoltIcon = (p: P) => (
+  <svg {...base(p)}><path d="M13 2 4.5 13.5a.7.7 0 0 0 .6 1.1H11l-1 7.4 8.5-11.5a.7.7 0 0 0-.6-1.1H12l1-7.4Z" /></svg>
+);

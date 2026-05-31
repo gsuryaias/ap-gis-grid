@@ -1,5 +1,5 @@
-import type { FeatureProps, GridData, LineProps, SubstationProps } from "./types.ts";
-import { isLine, isSubstation } from "./types.ts";
+import type { EnergyType, FeatureProps, GridData, LineProps, SubstationProps } from "./types.ts";
+import { isGeneration, isLine, isSubstation } from "./types.ts";
 
 /** Lines connected to a substation, with the snap distance/confidence for this SS. */
 export interface ConnectedLine {
@@ -31,9 +31,13 @@ export interface FilterState {
   circuits: Record<string, boolean>;
   showSubstations: boolean;
   showLines: boolean;
+  /** Generation overlay (lazy): off by default; per-energy-type visibility once loaded. */
+  showGeneration: boolean;
+  genTypes: Record<EnergyType, boolean>;
 }
 
 export function passesFilter(f: FeatureProps, filters: FilterState): boolean {
+  if (isGeneration(f)) return filters.showGeneration && filters.genTypes[f.energy];
   if (!filters.voltages[f.voltage]) return false;
   if (isSubstation(f)) return filters.showSubstations;
   return filters.showLines && filters.circuits[f.circuit];

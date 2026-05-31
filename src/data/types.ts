@@ -3,9 +3,12 @@ import type { FeatureCollection } from "geojson";
 export type Voltage = 400 | 220 | 132;
 export type Circuit = "SC" | "DC";
 export type Confidence = "high" | "medium" | "low";
+export type EnergyType = "Solar" | "Wind" | "Thermal" | "Gas" | "Hydro" | "Other";
 
 export const VOLTAGES: Voltage[] = [400, 220, 132];
 export const CIRCUITS: Circuit[] = ["SC", "DC"];
+/** Legend/display order for the generation energy mix. */
+export const ENERGY_TYPES: EnergyType[] = ["Thermal", "Gas", "Hydro", "Solar", "Wind", "Other"];
 
 export interface SnapRef {
   ssId: string;
@@ -46,7 +49,27 @@ export interface LineProps {
   voltageMismatch: boolean;
 }
 
-export type FeatureProps = SubstationProps | LineProps;
+/**
+ * A generation plant. Lives in a separate, lazy-loaded overlay (`generation.geojson`) — not part
+ * of the initial transmission payload. `voltage` is the interconnection voltage (reuses the grid
+ * palette); `energy` drives the energy-mix colouring/legend.
+ */
+export interface GenerationProps {
+  id: string;
+  kind: "generation";
+  name: string;
+  descriptiveName: string | null;
+  ssCode: string | null;
+  energy: EnergyType;
+  voltage: Voltage;
+  circle: string | null;
+  doc: string | null;
+  capacityMw: number | null;
+  lng: number;
+  lat: number;
+}
+
+export type FeatureProps = SubstationProps | LineProps | GenerationProps;
 
 export interface GroupStat {
   substations: number;
@@ -113,4 +136,14 @@ export function isSubstation(f: FeatureProps): f is SubstationProps {
 }
 export function isLine(f: FeatureProps): f is LineProps {
   return f.kind === "line";
+}
+export function isGeneration(f: FeatureProps): f is GenerationProps {
+  return f.kind === "generation";
+}
+
+/** Lazy-loaded generation overlay (fetched on first enable, then cached). */
+export interface GenerationData {
+  plants: GenerationProps[];
+  fc: FeatureCollection;
+  byId: Map<string, GenerationProps>;
 }

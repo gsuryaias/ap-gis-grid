@@ -6,6 +6,44 @@ export type Voltage = 400 | 220 | 132;
 export type Circuit = "SC" | "DC";
 export type Confidence = "high" | "medium" | "low";
 
+/** Energy-mix classes for generation plants (canonical; "Hydal" → "Hydro", null/unknown → "Other"). */
+export type EnergyType = "Solar" | "Wind" | "Thermal" | "Gas" | "Hydro" | "Other";
+export const ENERGY_TYPES: EnergyType[] = ["Thermal", "Gas", "Hydro", "Solar", "Wind", "Other"];
+
+export interface GenerationPlant {
+  id: string;
+  kind: "generation";
+  name: string;
+  descriptiveName: string | null;
+  ssCode: string | null;
+  energy: EnergyType;
+  voltage: Voltage;
+  circle: string | null;
+  doc: string | null;
+  capacityMw: number | null;
+  lng: number;
+  lat: number;
+}
+
+/** Map a raw KML "SS Type" cell to a canonical energy class. */
+export function classifyEnergy(raw: string | null | undefined): EnergyType {
+  const t = (raw ?? "").toLowerCase().trim();
+  if (t.includes("solar")) return "Solar";
+  if (t.includes("wind")) return "Wind";
+  if (t.includes("gas")) return "Gas";
+  if (t.includes("hyd")) return "Hydro"; // source spells it "Hydal"
+  if (t.includes("thermal") || t.includes("coal")) return "Thermal";
+  return "Other";
+}
+
+/** Parse a voltage cell like "132KV" / "220 kV" → 400|220|132, or null if not recognised. */
+export function parseVoltage(raw: string | null | undefined): Voltage | null {
+  const m = (raw ?? "").match(/(\d{3})\s*KV/i);
+  if (!m) return null;
+  const v = Number(m[1]);
+  return v === 400 || v === 220 || v === 132 ? (v as Voltage) : null;
+}
+
 export interface FolderClass {
   kind: "substation" | "line";
   voltage: Voltage;
@@ -135,6 +173,13 @@ export const ALIASES = {
   lng: ["GP LANG", "LONGITUDE"], // note: source mis-spells LONG as "LANG"
   lineLength: ["LINE LENGTH"],
   lineName: ["LINE NAME", "220KV LINE NAME", "LINE NAME "],
+  // Generation-plant attributes
+  genName: ["NAME", "SS NAME"],
+  genDescriptiveName: ["NAME OF THE SS", "SUBSTATION NAME"],
+  genCode: ["SAP SS ID", "SS CODE"],
+  energyType: ["SS TYPE", "TYPE"],
+  voltage: ["VOLTAGE"],
+  capacity: ["CAPACITY", "CAPACITY (MW)", "MW"],
 } as const;
 
 /** Classify a folder name like "SS_400KV" / "DC_220KV_Lines". */

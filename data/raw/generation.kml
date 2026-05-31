@@ -1,0 +1,4884 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.opengis.net/kml/2.2 http://schemas.opengis.net/kml/2.2.0/ogckml22.xsd http://www.google.com/kml/ext/2.2 http://code.google.com/apis/kml/schema/kml22gx.xsd">
+<Document id="Generation_SS">
+  <name>Generation_SS</name>
+  <snippet></snippet>
+  <Folder id="FeatureLayer0">
+    <name>Generation_SS</name>
+    <snippet></snippet>
+    <Placemark id="ID_00000">
+      <name>WANEEP SOLAR</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>WANEEP SOLAR</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>11</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>WANEEP SOLAR</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>WANEEP SOLAR</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>WANEEP SOLAR plant</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Tirupathi</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>13.289814</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>79.620627</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 79.62062700000007,13.28981400000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00001">
+      <name>Lower Sileru</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Lower Sileru</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>30</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Lower Sileru</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Lower_Sileru</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Lower Sileru</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>17.867888</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.658265</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Hydal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle01</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.65826500000009,17.86788800000005,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00002">
+      <name>ECOREN</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>ECOREN</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>31</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>ECOREN</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>ECOREN</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>ECOREN</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.821749</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.978618</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.97861800000004,14.82174900000007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00003">
+      <name>Krishnapatnam</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Krishnapatnam</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>3</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Krishnapatnam</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>APGENCO</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Krishnapatnam</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Nellore</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.331759</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>80.121248</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 80.12124800000004,14.33175900000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00004">
+      <name>Welsun</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Welsun</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>33</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Welsun</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Welsun</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Welsun</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.585748</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.220328</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.22032800000005,14.58574800000002,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00005">
+      <name>LVS Power</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>LVS Power</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>34</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>LVS Power</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>LVS Power</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>LVS Power</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Visakhapatnam</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>17.845809</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>83.237507</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 83.23750700000005,17.84580900000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00006">
+      <name>RTPP</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>RTPP</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>4</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>RTPP</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>APGENCO</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>RTPP</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.6962</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.462491</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.46249100000006,14.69620000000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00007">
+      <name>Gandikota Wind</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Gandikota Wind</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>20</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Gandikota Wind</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>GKPS</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Gandikota Wind Power SubStation</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.787033</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.279029</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.27902900000004,14.78703300000006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00008">
+      <name>GMR</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>GMR</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>6</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>GMR</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Generator</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>GMR 400KV Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.927529</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.811688</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.81168800000006,16.92752900000005,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00009">
+      <name>GVK</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>GVK</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>7</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>GVK</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Generator</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>GVK 400KV Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.934315</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.861379</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.86137900000006,16.93431500000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00010">
+      <name>GVK</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>GVK</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>21</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>GVK</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Pvt_Generator</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Vijjeswaram Gas power plant</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.933358</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.860866</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.86086568400003,16.93335822100005,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00011">
+      <name>Srivatsa</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Srivatsa</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>22</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Srivatsa</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Srivatsa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Srivatsa Natural Gas Power Plant</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.461127</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.849427</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.84942700000005,16.46112700000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00012">
+      <name>Azure Solar</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Azure Solar</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>12</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Azure Solar</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>ASPP</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Azure Solar Power park</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>15.023198</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.841277</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.84127700000005,15.02319800000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00013">
+      <name>Aurobindo Solar</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Aurobindo Solar</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>13</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Aurobindo Solar</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Auro Solar PS</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Aurobindo Solar Power Plant</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Srikakulam</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>18.136678</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>83.647763</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 83.64776300000005,18.13667800000007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00014">
+      <name>RTPP</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>RTPP</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>35</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>RTPP</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>RTPP</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>RTPP 220KV Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.703608</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.460174</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.46017400000005,14.70360800000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00015">
+      <name>Dayanidhi Solar</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Dayanidhi Solar</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>14</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Dayanidhi Solar</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Dayanidhi</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Dayanidhi Solar Power pvt.,</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Tirupathi</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>12.872902</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.383508</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.38350800000006,12.87290200000007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00016">
+      <name>Upper Sileru</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Upper Sileru</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>23</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Upper Sileru</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Upper_Sileru</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Upper Sileru Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Visakhapatnam</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>18.036527</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>82.017834</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Hydal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle01</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 82.01783400000005,18.03652700000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00017">
+      <name>VTPS</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>VTPS</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>1</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>VTPS</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>APGENCO</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>VTPS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Vijayawada</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.594205</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>80.543947</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 80.54394700000006,16.59420500000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00018">
+      <name>Gowthami</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Gowthami</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>8</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Gowthami</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Generator</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Gowthami 400KV Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>17.03906</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>82.126445</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 82.12644500000005,17.03906000000006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00019">
+      <name>Srisailam</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Srisailam</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>2</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Srisailam</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>APGENCO</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Srisailam</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kurnool</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.08843</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.904519</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Hydal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle01</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.90451900000005,16.08843000000007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00020">
+      <name>Waneep </name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Waneep </td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>15</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Waneep</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Solar</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Waneep Solar Plant</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Tirupathi</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>13.739583</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.619099</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.61909900000006,13.73958300000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00021">
+      <name>STPP</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>STPP</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>10</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>STPP</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>NTPC</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>STPP 400KV Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Visakhapatnam</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>17.601824</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>83.087488</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 83.08748800000006,17.60182400000002,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00022">
+      <name>Poly Solar </name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Poly Solar </td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>16</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Poly Solar</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Wind</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Poly Solar Wind</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.505435</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.078376</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.07837600000005,14.50543500000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00023">
+      <name>VTPS</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>VTPS</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>24</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>VTPS</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Yard-VTPS</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>VTPS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Vijayawada</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.59534</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>80.537987</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 80.53798700000004,16.59534000000002,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00024">
+      <name>RVK </name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>RVK </td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>27</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>RVK</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>RVK Plant</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>RVK plant yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Vijayawada</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.280303</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.132745</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.13274500000006,16.28030300000006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00025">
+      <name>Kothapalli</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Kothapalli</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>36</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Kothapalli</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.18404</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.12003</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle025</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.12003000000004,14.18404000000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00026">
+      <name>Axis</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Axis</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>17</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Axis</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>AXIS WIND</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>AXIS WIND 220KV SS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.781526</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.42915</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.42915000000005,14.78152600000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00027">
+      <name>Renew (Karadikonda)</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Renew (Karadikonda)</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>1643</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Renew (Karadikonda)</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>220KV Renew/ Karadikonda Solar PS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kurnool</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>15.505384</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.626042</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.62604198400004,15.50538368800005,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00028">
+      <name>Vemulapadu</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Vemulapadu</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>844</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Vemulapadu</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Vemulapadu</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Vemulapadu SS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kurnool</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>15.237653</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.195331</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.19533100000007,15.23765300000002,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00029">
+      <name>Muttala</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Muttala</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>18</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Muttala</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Muttala</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Rayala wind company Muttala SS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.61536</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.367384</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.36738400000007,14.61536000000007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00030">
+      <name>HNPCL</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>HNPCL</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>5</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>HNPCL</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Generator</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>HNPCL 400KV Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Visakhapatnam</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>17.564899</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>83.141986</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 83.14198554500007,17.56489876200004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00031">
+      <name>Konaseema</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Konaseema</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>9</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Konaseema</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Generator</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Konaseema 400KV Yard</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.734878</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.864243</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.86424300000004,16.73487800000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00032">
+      <name>Helios PS</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Helios PS</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>1644</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Helios PS</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>220KV Helios PS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.375358</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.375207</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.37520693000005,14.37535773100007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00033">
+      <name>SEIL Plant-2 </name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>SEIL Plant-2 </td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>845</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>SEIL Plant-2</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>M/S Semcorb (SEIL Plant-2 )</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Nellore</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>23.01.2024</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>400KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.348408</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>80.144031</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 80.14403087800008,14.34840773600007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00034">
+      <name>Jutur (Mythra)</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Jutur (Mythra)</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>1243</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Jutur (Mythra)</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>220KV Jutur Wind PS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kurnool</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>15.454548</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.46036</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.46036013200006,15.45454813600003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00035">
+      <name>N.S.Tailpond</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>N.S.Tailpond</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>42</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>N.S.Tailpond</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>N.S.Tailpond</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Guntur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.625545</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>79.49126</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Hydal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle01</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 79.49126031400004,16.62554549500004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00036">
+      <name>RCL</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>RCL</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>2444</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>RCL</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>RCL</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Rain Calcining</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Visakhapatnam</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>17.714802</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>83.263128</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Thermal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle03</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 83.26312818100007,17.71480222100007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00037">
+      <name>Renew</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Renew</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>2843</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Renew</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>132KV Renew Solar PS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kurnool</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>15.527524</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.266104</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.26610394500005,15.52752404100005,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00038">
+      <name>Vishwatma</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Vishwatma</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>2043</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Vishwatma</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>132KV Vishwatma (Kadivella) Solar PS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kurnool</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>15.67208</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.47867</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.47866979100007,15.67207967700006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00039">
+      <name>SEI</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>SEI</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>43</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>SEI</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>SEIGF</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>SEI Green Flash</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Nellore</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.494152</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>79.587152</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 79.58715200000006,14.49415200000004,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00040">
+      <name>Mylavaram PS1</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Mylavaram PS1</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>44</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Mylavaram PS1</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Mylavaram Solar(PS1)</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.94775</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.23173</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>400KV SS Jammalamadugu</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.23156571900006,14.94771661400006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00041">
+      <name>Theta</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Theta</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>19</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Theta</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Theta</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Theta wind energy</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.588831</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.179513</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.17951300000004,14.58883100000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00042">
+      <name>Enorcon</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Enorcon</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>443</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Enorcon</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Enorcon</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.151952</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.522513</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.52251266600007,14.15195194300003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00043">
+      <name>Ellutla</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Ellutla</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>25</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Ellutla</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Ellutla</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Ellutla Polling Station</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.666677</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.923133</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.92313307900008,14.66667687000006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00044">
+      <name>Suzlon</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Suzlon</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>26</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Suzlon</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>SUZLON</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>SUZLON</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.978251</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.305009</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.30500900000004,14.97825100000006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00045">
+      <name>RVK Power</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>RVK Power</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>28</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>RVK Power</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>RVKP</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>RVK Power Ltd.,</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Rajamahendravaram</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.929024</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.846198</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.84619800000007,16.92902400000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00046">
+      <name> Arohi Solar</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td> Arohi Solar</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>1244</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Arohi Solar</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>13.976866</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.480607</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.48060700000008,13.97686600000003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00047">
+      <name>Molagavalli (Gamesha)</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Molagavalli (Gamesha)</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>2443</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Molagavalli (Gamesha)</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>220KV Molagavalli (Myntra) Wind PS</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kurnool</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>15.371875</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.300277</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.30027654900005,15.37187464900006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00048">
+      <name>Machkund</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Machkund</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>444</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Machkund</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>Machkund</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>132KV Machkund</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Visakhapatnam</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>18.50862</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>82.44175</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Hydal</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>132KV Araku</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle01</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 82.44175000000007,18.50862000000006,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00049">
+      <name>Saipuram (Greenco)</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Saipuram (Greenco)</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>29</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Saipuram (Greenco)</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>GREENKO Saipuram</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.509876</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.209521</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.20952100000005,14.50987600000008,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00050">
+      <name>Ecoren (Ralla)</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Ecoren (Ralla)</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>32</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Ecoren (Ralla)</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>ECOREN</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Ecoren (Ralla) - ( 200+100MW)</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.438121</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.377724</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Wind</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle02</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.37772400000006,14.43812100000002,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00051">
+      <name>Hindupur</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Hindupur</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>843</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Hindupur</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Hindupur</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Anantapur</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>132KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>13.93485</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>77.494053</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 77.49644694600005,13.93424605500007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00052">
+      <name>Vijjeswaram-1</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Vijjeswaram-1</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>40</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Vijjeswaram-1</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Vijjeswaram-1</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Eluru</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.934198</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.724666</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.72466637100007,16.93419786200008,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00053">
+      <name>Vijjeswaram-2</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Vijjeswaram-2</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>41</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Vijjeswaram-2</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Vijjeswaram-2</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Eluru</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>16.935241</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>81.722462</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Gas</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle08</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 81.72246234800008,16.93524074200008,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00054">
+      <name>Mylavaram PS2</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Mylavaram PS2</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>45</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Mylavaram PS2</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Mylavaram Solar(PS2)</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.947956</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.250358</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>400KV SS Jammalamadugu</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.25027881900007,14.94794004200003,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00055">
+      <name>Mylavaram PS3</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Mylavaram PS3</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>2045</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Mylavaram PS3</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Mylavaram Solar(PS3)</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>06.02.2026</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.922875</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.278701</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>400KV SS Jammalamadugu</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.26476232800007,14.92460643800007,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark id="ID_00056">
+      <name>Mylavaram PS4</name>
+      <snippet></snippet>
+      <description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+<td>Mylavaram PS4</td>
+</tr>
+<tr>
+<td>
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+<tr>
+<td>objectid</td>
+<td>39</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name</td>
+<td>Mylavaram PS4</td>
+</tr>
+<tr>
+<td>SAP SS ID</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Name of the SS</td>
+<td>Mylavaram Solar(PS4)</td>
+</tr>
+<tr>
+<td>Circle</td>
+<td>Kadapa</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>DOC</td>
+<td>&lt;Null&gt;</td>
+</tr>
+<tr>
+<td>Voltage</td>
+<td>220KV</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>Lattitude</td>
+<td>14.924607</td>
+</tr>
+<tr>
+<td>Longitude</td>
+<td>78.26477</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>SS Type</td>
+<td>Solar</td>
+</tr>
+<tr>
+<td>shape</td>
+<td>Point</td>
+</tr>
+<tr bgcolor="#D4E4F3">
+<td>connectedss</td>
+<td>400KV SS Jammalamadugu</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>&lt;Null&gt;</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body><script type="text/javascript">
+				function changeImage(attElement, nameElement) {
+				document.getElementById('imageAttachment').src = attElement;
+				document.getElementById('imageName').innerHTML = nameElement;}
+			</script></html>
+]]></description>
+      <styleUrl>#IconStyle00</styleUrl>
+      <Point>
+        <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+        <coordinates> 78.27833043500004,14.92251030200003,0</coordinates>
+      </Point>
+    </Placemark>
+  </Folder>
+  <Style id="IconStyle00">
+    <IconStyle>
+      <scale>1.000000</scale>
+      <Icon><href>Layer0_Symbol_7b3a02b0_0.png</href></Icon>
+    </IconStyle>
+    <LabelStyle>
+      <color>ff0098e6</color>
+      <scale>0.583333</scale>
+    </LabelStyle>
+    <PolyStyle>
+      <color>ff000000</color>
+      <outline>0</outline>
+    </PolyStyle>
+  </Style>
+  <Style id="IconStyle01">
+    <IconStyle>
+      <scale>1.000000</scale>
+      <Icon><href>Layer0_Symbol_43f6e4b0_0.png</href></Icon>
+    </IconStyle>
+    <LabelStyle>
+      <color>ff0098e6</color>
+      <scale>0.583333</scale>
+    </LabelStyle>
+    <PolyStyle>
+      <color>ff000000</color>
+      <outline>0</outline>
+    </PolyStyle>
+  </Style>
+  <Style id="IconStyle02">
+    <IconStyle>
+      <scale>1.000000</scale>
+      <Icon><href>Layer0_Symbol_15344c60_0.png</href></Icon>
+    </IconStyle>
+    <LabelStyle>
+      <color>ff0098e6</color>
+      <scale>0.583333</scale>
+    </LabelStyle>
+    <PolyStyle>
+      <color>ff000000</color>
+      <outline>0</outline>
+    </PolyStyle>
+  </Style>
+  <Style id="IconStyle03">
+    <IconStyle>
+      <scale>1.000000</scale>
+      <Icon><href>Layer0_Symbol_19426280_0.png</href></Icon>
+    </IconStyle>
+    <LabelStyle>
+      <color>ff0098e6</color>
+      <scale>0.583333</scale>
+    </LabelStyle>
+    <PolyStyle>
+      <color>ff000000</color>
+      <outline>0</outline>
+    </PolyStyle>
+  </Style>
+  <Style id="IconStyle08">
+    <IconStyle>
+      <scale>1.000000</scale>
+      <Icon><href>Layer0_Symbol_43f6ef50_0.png</href></Icon>
+    </IconStyle>
+    <LabelStyle>
+      <color>ff0098e6</color>
+      <scale>0.583333</scale>
+    </LabelStyle>
+    <PolyStyle>
+      <color>ff000000</color>
+      <outline>0</outline>
+    </PolyStyle>
+  </Style>
+  <Style id="IconStyle025">
+    <IconStyle>
+      <scale>1.000000</scale>
+      <Icon><href>Layer0_Symbol_43f70f30_0.png</href></Icon>
+    </IconStyle>
+    <LabelStyle>
+      <color>ff0098e6</color>
+      <scale>0.583333</scale>
+    </LabelStyle>
+    <PolyStyle>
+      <color>ff000000</color>
+      <outline>0</outline>
+    </PolyStyle>
+  </Style>
+</Document>
+</kml>
