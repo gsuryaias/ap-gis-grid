@@ -1,9 +1,17 @@
 import { connectedLines, connectedSubstations } from "../data/selectors.ts";
-import { isLine, isSubstation, type GridData, type LineProps, type SubstationProps } from "../data/types.ts";
+import {
+  isGeneration,
+  isLine,
+  isSubstation,
+  type GenerationProps,
+  type GridData,
+  type LineProps,
+  type SubstationProps,
+} from "../data/types.ts";
 import { formatDist, formatKm } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
-import { CIRCUIT_LABEL } from "../theme/palette.ts";
-import { CloseIcon, LineIcon, SubstationIcon, TargetIcon, WarnIcon } from "./icons.tsx";
+import { CIRCUIT_LABEL, ENERGY_COLOR, ENERGY_LABEL } from "../theme/palette.ts";
+import { BoltIcon, CloseIcon, LineIcon, SubstationIcon, TargetIcon, WarnIcon } from "./icons.tsx";
 import { VoltageBadge, VoltageDot } from "./VoltageBadge.tsx";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -135,16 +143,45 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
   );
 }
 
+function GenerationDetail({ plant }: { plant: GenerationProps }) {
+  return (
+    <>
+      <Field
+        label="Energy source"
+        value={
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full ring-1 ring-white/70" style={{ backgroundColor: ENERGY_COLOR[plant.energy] }} />
+            {ENERGY_LABEL[plant.energy]}
+          </span>
+        }
+      />
+      <Field label="Interconnection" value={`${plant.voltage} kV`} />
+      <Field label="Capacity" value={plant.capacityMw != null ? `${plant.capacityMw} MW` : null} />
+      <Field label="Full name" value={plant.descriptiveName} />
+      <Field label="Plant ID" value={plant.ssCode} />
+      <Field label="Circle" value={plant.circle} />
+      <Field label="Commissioned" value={plant.doc} />
+      <Field label="Coordinates" value={`${plant.lat.toFixed(5)}, ${plant.lng.toFixed(5)}`} />
+      <p className="mt-3 text-xs text-ink-2">
+        Generation plant overlay — connectivity to the transmission grid is not modelled.
+      </p>
+    </>
+  );
+}
+
 export function DetailPanel({ data }: { data: GridData }) {
   const selectedId = useAppStore((s) => s.selectedId);
   const history = useAppStore((s) => s.history);
   const select = useAppStore((s) => s.select);
   const back = useAppStore((s) => s.back);
   const flyTo = useAppStore((s) => s.select);
-  const feature = selectedId ? data.byId.get(selectedId) : null;
+  const generation = useAppStore((s) => s.generation);
+  // Generation plants live in the lazily-loaded overlay, not the transmission byId map.
+  const lookup = (id: string) => data.byId.get(id) ?? generation?.byId.get(id) ?? null;
+  const feature = selectedId ? lookup(selectedId) : null;
   if (!feature) return null;
 
-  const prev = history.length ? data.byId.get(history[history.length - 1]) : null;
+  const prev = history.length ? lookup(history[history.length - 1]) : null;
 
   return (
     <aside
@@ -162,13 +199,17 @@ export function DetailPanel({ data }: { data: GridData }) {
       )}
       <header className="flex items-start gap-2 border-b border-line px-4 py-3">
         <span className="mt-0.5 text-ink-2">
-          {isSubstation(feature) ? <SubstationIcon /> : <LineIcon />}
+          {isSubstation(feature) ? <SubstationIcon /> : isGeneration(feature) ? <BoltIcon /> : <LineIcon />}
         </span>
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
             <VoltageBadge voltage={feature.voltage} small />
             <span className="text-[11px] uppercase tracking-wide text-ink-2">
-              {isSubstation(feature) ? "Substation" : `${feature.circuit} line`}
+              {isSubstation(feature)
+                ? "Substation"
+                : isGeneration(feature)
+                  ? `${ENERGY_LABEL[feature.energy]} plant`
+                  : `${feature.circuit} line`}
             </span>
           </div>
           <h2 className="text-[15px] font-semibold leading-snug text-ink">{feature.name}</h2>
@@ -196,6 +237,8 @@ export function DetailPanel({ data }: { data: GridData }) {
           <SubstationDetail ss={feature} data={data} />
         ) : isLine(feature) ? (
           <LineDetail line={feature} data={data} />
+        ) : isGeneration(feature) ? (
+          <GenerationDetail plant={feature} />
         ) : null}
       </div>
     </aside>

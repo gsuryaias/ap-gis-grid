@@ -2,6 +2,8 @@ import type { FeatureCollection } from "geojson";
 import type {
   DataQuality,
   FeatureProps,
+  GenerationData,
+  GenerationProps,
   GridData,
   LineProps,
   Meta,
@@ -37,4 +39,16 @@ export async function loadGridData(): Promise<GridData> {
   for (const l of lines) byId.set(l.id, l);
 
   return { substations, lines, substationsFc, linesFc, byId, meta, quality, searchIndex };
+}
+
+/**
+ * Fetch the generation-plant overlay. Called lazily — only when the user first enables the
+ * layer — so the initial transmission payload stays lean.
+ */
+export async function loadGeneration(): Promise<GenerationData> {
+  const fc = await getJson<FeatureCollection>("generation.geojson");
+  const plants = fc.features.map((f) => f.properties as unknown as GenerationProps);
+  const byId = new Map<string, GenerationProps>();
+  for (const p of plants) byId.set(p.id, p);
+  return { plants, fc, byId };
 }

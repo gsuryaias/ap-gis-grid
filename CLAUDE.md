@@ -5,9 +5,10 @@ Guidance for Claude Code when working in this repository.
 ## What this is
 
 **AP-TRANSCO Grid Atlas** — a static, client-side GIS + MIS lookup for the AP-TRANSCO
-transmission network (400 / 220 / 132 kV lines and substations). No backend, no database, no API
-keys. Source data is a Google-Earth KML; a build-time ETL turns it into clean static assets the
-browser loads. Deploys to GitHub Pages (project site, base `/ap-gis-grid/`).
+transmission network (400 / 220 / 132 kV lines and substations), plus an optional **generation-plant
+overlay** (energy-mix classified). No backend, no database, no API keys. Source data is a Google-Earth
+KML; a build-time ETL turns it into clean static assets the browser loads. Deploys to GitHub Pages
+(project site, base `/ap-gis-grid/`).
 
 ## Commands
 
@@ -25,7 +26,8 @@ After ANY ETL or component change, run `npm run typecheck` (strict, `noUnusedLoc
 ## Architecture
 
 ```
-data/raw/Transco.kml ─(ETL)─▶ public/data/*.{geojson,json} ─▶ React + MapLibre app ─▶ GitHub Pages
+data/raw/Transco.kml    ─┐
+data/raw/generation.kml ─┴(ETL)─▶ public/data/*.{geojson,json} ─▶ React + MapLibre app ─▶ GitHub Pages
 ```
 
 | Layer | Path | Notes |
@@ -38,6 +40,26 @@ data/raw/Transco.kml ─(ETL)─▶ public/data/*.{geojson,json} ─▶ React + 
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
 
 The emitted `public/data/*` files are **committed** so CI/Pages builds don't need the KML.
+
+## Generation overlay (lazy-loaded)
+
+A second, optional layer of **generation plants** classified by energy mix. It is **lazy** by design —
+none of its code path runs until the user enables it.
+
+- **Source / ETL**: `data/raw/generation.kml` → `buildGeneration()` in `build-data.mts` → `public/data/generation.geojson`.
+  Energy class comes from the KML `SS Type` cell via `classifyEnergy()` (canonical
+  `Solar | Wind | Thermal | Gas | Hydro | Other`; source spells hydro "Hydal", `<Null>` → `Other`).
+  IDs are synthetic `g-<slug(name)>`. Validation gate: **57 plants**. Counts (current data):
+  Solar 21, Thermal 11, Wind 10, Gas 9, Hydro 5, Other 1.
+- **Lazy contract**: `loadGridData()` does NOT fetch `generation.geojson`. The store action
+  `toggleGeneration()` fetches it via `loadGeneration()` on first enable, caches it
+  (`genStatus: idle→loading→ready`), and `applyHash` re-triggers it for a `gen=1` deep link. The map
+  source/layers are added by `addGenerationLayers()` only once data arrives (re-added after a basemap
+  style reload, same as the grid layers). Plants are NOT in the initial search index or the data table.
+- **Not in `data.byId`**: plants live in a separate `generation.byId` (store). `DetailPanel` and
+  `MapView` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
+  `energy` drives `ENERGY_COLOR` / the legend. There is **no capacity (MW) data** in the KML
+  (`capacityMw` is always null) and **no grid connectivity** is modelled for plants.
 
 ## Data decisions (don't regress these — they were validated against the real KML)
 
@@ -81,8 +103,9 @@ The emitted `public/data/*` files are **committed** so CI/Pages builds don't nee
 
 ## Updating the network data
 
-Replace `data/raw/Transco.kml` → `npm run build:data` → review `public/data/data-quality.json`
-→ commit + push (the GitHub Action re-runs ETL + tests + build and redeploys).
+Replace `data/raw/Transco.kml` (and/or `data/raw/generation.kml`) → `npm run build:data` → review
+`public/data/data-quality.json` → commit + push (the GitHub Action re-runs ETL + tests + build and
+redeploys). Both KMLs are processed by the one `build:data` run.
 
 ## Deploy
 

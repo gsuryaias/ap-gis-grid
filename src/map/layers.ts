@@ -1,20 +1,26 @@
 import type { ExpressionSpecification, LayerSpecification, Map as MlMap } from "maplibre-gl";
+import type { FeatureCollection } from "geojson";
 import type { FilterState } from "../data/selectors.ts";
-import { VOLTAGES, type GridData } from "../data/types.ts";
-import { VOLTAGE_COLOR } from "../theme/palette.ts";
+import { ENERGY_TYPES, VOLTAGES, type GridData } from "../data/types.ts";
+import { ENERGY_COLOR, VOLTAGE_COLOR } from "../theme/palette.ts";
 import { BASEMAPS, SELECT_HALO } from "./basemaps.ts";
 import type { Basemap } from "../state/store.ts";
 
-export const SRC = { lines: "src-lines", substations: "src-substations" } as const;
+export const SRC = { lines: "src-lines", substations: "src-substations", generation: "src-generation" } as const;
 export const LAYER = {
   linesCasing: "grid-lines-casing",
   linesSC: "grid-lines-sc",
   linesDC: "grid-lines-dc",
   substations: "grid-substations",
   ssLabels: "grid-substation-labels",
+  generation: "grid-generation",
+  genLabels: "grid-generation-labels",
 } as const;
 
+/** Bound at map load — these layers always exist. (Generation is bound separately when lazily added.) */
 export const INTERACTIVE_LAYERS = [LAYER.linesSC, LAYER.linesDC, LAYER.substations];
+/** All clickable layers; filter by existence before querying (generation may not be loaded yet). */
+export const ALL_INTERACTIVE = [...INTERACTIVE_LAYERS, LAYER.generation];
 
 const e = (x: unknown): ExpressionSpecification => x as ExpressionSpecification;
 
@@ -83,6 +89,91 @@ function casingColor(def: (typeof BASEMAPS)[Basemap]): ExpressionSpecification {
     ["boolean", ["feature-state", "hover"], false], def.hoverCasing,
     def.casing,
   ]);
+}
+
+// ---- Generation overlay (lazy) ---------------------------------------------
+const energyColor = e([
+  "match",
+  ["get", "energy"],
+  "Thermal", ENERGY_COLOR.Thermal,
+  "Gas", ENERGY_COLOR.Gas,
+  "Hydro", ENERGY_COLOR.Hydro,
+  "Solar", ENERGY_COLOR.Solar,
+  "Wind", ENERGY_COLOR.Wind,
+  ENERGY_COLOR.Other,
+]);
+
+const GEN_SEL: unknown = [
+  "case",
+  ["boolean", ["feature-state", "selected"], false], 1.5,
+  ["boolean", ["feature-state", "hover"], false], 1.25,
+  1,
+];
+// Plants run a touch larger than substations so the overlay reads as its own layer.
+const genRadius = e([
+  "interpolate", ["linear"], ["zoom"],
+  5, ["*", 4.2, GEN_SEL],
+  10, ["*", 7.5, GEN_SEL],
+  14, ["*", 11, GEN_SEL],
+]);
+
+function buildGenerationLayers(basemap: Basemap): LayerSpecification[] {
+  const def = BASEMAPS[basemap];
+  return [
+    {
+      id: LAYER.generation,
+      type: "circle",
+      source: SRC.generation,
+      paint: {
+        "circle-color": energyColor,
+        "circle-radius": genRadius,
+        // Square-ish read isn't possible with circles, so we lean on a heavy contrasting ring
+        // (plus the distinct energy palette) to separate plants from substation dots.
+        "circle-stroke-color": e([
+          "case",
+          ["boolean", ["feature-state", "selected"], false], SELECT_HALO,
+          def.ssStroke,
+        ]),
+        "circle-stroke-width": e([
+          "case",
+          ["boolean", ["feature-state", "selected"], false], 3.5,
+          ["boolean", ["feature-state", "hover"], false], 2.5,
+          1.8,
+        ]),
+        "circle-opacity": 0.96,
+      },
+    },
+    {
+      id: LAYER.genLabels,
+      type: "symbol",
+      source: SRC.generation,
+      minzoom: 8,
+      layout: {
+        "text-field": ["get", "name"],
+        "text-font": ["Open Sans Bold"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 9, 10, 14, 13],
+        "text-offset": [0, 1.2],
+        "text-anchor": "top",
+        "text-optional": true,
+        "text-allow-overlap": false,
+      },
+      paint: {
+        "text-color": def.labelColor,
+        "text-halo-color": def.labelHalo,
+        "text-halo-width": 1.4,
+      },
+    },
+  ] as LayerSpecification[];
+}
+
+/** Lazily add the generation source + layers (idempotent — safe to call after every style reload). */
+export function addGenerationLayers(map: MlMap, fc: FeatureCollection, basemap: Basemap): void {
+  if (!map.getSource(SRC.generation)) {
+    map.addSource(SRC.generation, { type: "geojson", data: fc, promoteId: "id" });
+  }
+  for (const layer of buildGenerationLayers(basemap)) {
+    if (!map.getLayer(layer.id)) map.addLayer(layer);
+  }
 }
 
 export function buildLayers(basemap: Basemap): LayerSpecification[] {
@@ -206,4 +297,14 @@ export function applyFilters(map: MlMap, filters: FilterState): void {
   set(LAYER.linesDC, filters.showLines && filters.circuits.DC);
   set(LAYER.substations, filters.showSubstations);
   set(LAYER.ssLabels, filters.showSubstations);
+
+  // Generation overlay (only present once lazily added).
+  if (map.getLayer(LAYER.generation)) {
+    const enabledTypes = ENERGY_TYPES.filter((t) => filters.genTypes[t]);
+    const genFilter = e(["in", ["get", "energy"], ["literal", enabledTypes]]);
+    map.setFilter(LAYER.generation, genFilter);
+    map.setFilter(LAYER.genLabels, genFilter);
+    set(LAYER.generation, filters.showGeneration);
+    set(LAYER.genLabels, filters.showGeneration);
+  }
 }

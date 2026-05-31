@@ -125,9 +125,9 @@ export function DataTableSheet({ data }: { data: GridData }) {
   const [tab, setTab] = useState<Tab>("substation");
   const [filter, setFilter] = useState("");
 
-  // Follow the selected feature's kind into the matching tab.
+  // Follow the selected feature's kind into the matching tab (generation isn't a table tab).
   useEffect(() => {
-    if (selectedKind) setTab(selectedKind);
+    if (selectedKind === "substation" || selectedKind === "line") setTab(selectedKind);
   }, [selectedKind]);
 
   if (!open) return null;

@@ -68,15 +68,18 @@ export function App() {
       <div className="relative h-full w-full overflow-hidden">
         <MapView data={data} />
 
-        {/* Top-left control stack */}
-        <div className="pointer-events-none absolute left-3 top-3 z-20 flex w-[268px] max-w-[calc(100vw-1.5rem)] flex-col gap-2.5">
+        {/* Top-left control stack — bounded to the viewport so the Layers panel scrolls
+            internally on short screens instead of overflowing. The panel wrapper flexes into
+            the remaining height and is itself pointer-events-none, so its empty area below the
+            panel stays click-through to the map (only the <section> is interactive). */}
+        <div className="pointer-events-none absolute left-3 top-3 z-20 flex max-h-[calc(100dvh-1.5rem)] w-[268px] max-w-[calc(100vw-1.5rem)] flex-col gap-2.5">
           <div className="pointer-events-auto">
             <BrandHeader data={data} />
           </div>
           <div className="pointer-events-auto">
             <SearchBar data={data} />
           </div>
-          <div className="pointer-events-auto">
+          <div className="pointer-events-none flex min-h-0 flex-1 flex-col">
             <ControlPanel data={data} />
           </div>
         </div>

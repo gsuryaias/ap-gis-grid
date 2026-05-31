@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { FeatureCollection } from "geojson";
 import {
+  classifyEnergy,
   classifyFolder,
   cleanValue,
   detectNameFlags,
@@ -10,6 +11,7 @@ import {
   normalizeKey,
   parseDescriptionTable,
   parseEndpointLabels,
+  parseVoltage,
   round5,
   snapEndpoint,
 } from "./etl-lib.ts";
@@ -74,6 +76,24 @@ describe("etl-lib helpers", () => {
     expect(parseEndpointLabels("220 KV CHITTOOR - TIRUVALAM SC LINE")).toEqual(["Chittoor", "Tiruvalam"]);
   });
 
+  it("classifies generation energy mix (canonical, case-insensitive)", () => {
+    expect(classifyEnergy("Solar")).toBe("Solar");
+    expect(classifyEnergy("Hydal")).toBe("Hydro"); // source mis-spelling
+    expect(classifyEnergy("Gas")).toBe("Gas");
+    expect(classifyEnergy("THERMAL")).toBe("Thermal");
+    expect(classifyEnergy("Wind")).toBe("Wind");
+    expect(classifyEnergy("<Null>")).toBe("Other");
+    expect(classifyEnergy(null)).toBe("Other");
+  });
+
+  it("parses plant voltage to the canonical set", () => {
+    expect(parseVoltage("132KV")).toBe(132);
+    expect(parseVoltage("220 kV")).toBe(220);
+    expect(parseVoltage("400KV")).toBe(400);
+    expect(parseVoltage("66KV")).toBeNull();
+    expect(parseVoltage(null)).toBeNull();
+  });
+
   it("snaps an endpoint to the nearest point within threshold", () => {
     const pts = [{ id: "a", lng: 80, lat: 15 }, { id: "b", lng: 81, lat: 16 }];
     const near = snapEndpoint([80.0009, 15.0], pts, 500);
@@ -114,6 +134,28 @@ describe("emitted data integrity (run `npm run build:data` first)", () => {
       expect(conn.length).toBeLessThanOrEqual(2);
       for (const id of conn) expect(ssIds.has(id)).toBe(true); // every link resolves
       expect((f.geometry as GeoJSON.LineString).coordinates.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  const genReady = existsSync(resolve(dir, "generation.geojson"));
+  it.skipIf(!genReady)("emits a well-formed generation overlay", () => {
+    const gen = read<FeatureCollection>("generation.geojson");
+    expect(gen.features.length).toBe(57);
+
+    const ids = gen.features.map((f) => f.properties?.id as string);
+    expect(new Set(ids).size).toBe(ids.length); // unique
+    for (const id of ids) expect(id.startsWith("g-")).toBe(true); // never bare names
+
+    const ENERGY = ["Solar", "Wind", "Thermal", "Gas", "Hydro", "Other"];
+    for (const f of gen.features) {
+      expect(f.properties?.kind).toBe("generation");
+      expect(ENERGY).toContain(f.properties?.energy);
+      expect([400, 220, 132]).toContain(f.properties?.voltage);
+      const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
+      expect(lng).toBeGreaterThan(76);
+      expect(lng).toBeLessThan(85);
+      expect(lat).toBeGreaterThan(12);
+      expect(lat).toBeLessThan(20);
     }
   });
 });

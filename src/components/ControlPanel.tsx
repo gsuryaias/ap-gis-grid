@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { VOLTAGES, type GridData, type Voltage } from "../data/types.ts";
+import { useMemo, useState } from "react";
+import { ENERGY_TYPES, VOLTAGES, type EnergyType, type GridData, type Voltage } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
-import { VOLTAGE_COLOR } from "../theme/palette.ts";
-import { ChevronDown, LayersIcon, SunIcon, MoonIcon, SatelliteIcon } from "./icons.tsx";
+import { ENERGY_COLOR, ENERGY_LABEL, VOLTAGE_COLOR } from "../theme/palette.ts";
+import { BoltIcon, ChevronDown, LayersIcon, SunIcon, MoonIcon, SatelliteIcon } from "./icons.tsx";
 import type { Basemap } from "../state/store.ts";
 
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
@@ -37,6 +37,62 @@ function Row({ children, onClick }: { children: React.ReactNode; onClick?: () =>
   );
 }
 
+function GenerationSection() {
+  const filters = useAppStore((s) => s.filters);
+  const genStatus = useAppStore((s) => s.genStatus);
+  const genError = useAppStore((s) => s.genError);
+  const generation = useAppStore((s) => s.generation);
+  const { toggleGeneration, toggleGenType } = useAppStore.getState();
+
+  // Per-energy-type plant counts (only once the overlay has loaded).
+  const counts = useMemo(() => {
+    const c = Object.fromEntries(ENERGY_TYPES.map((t) => [t, 0])) as Record<EnergyType, number>;
+    for (const p of generation?.plants ?? []) c[p.energy]++;
+    return c;
+  }, [generation]);
+
+  return (
+    <div className="mt-2 border-t border-line pt-1.5">
+      <Row>
+        <span className="flex items-center gap-2 text-ink">
+          <BoltIcon width={15} height={15} className="text-ink-2" />
+          Generation plants
+        </span>
+        <Switch
+          checked={filters.showGeneration}
+          onChange={() => toggleGeneration()}
+          label="Toggle generation plants"
+        />
+      </Row>
+
+      {filters.showGeneration && (
+        <div className="ml-1 mt-0.5 border-l border-line pl-3">
+          {genStatus === "loading" && (
+            <p className="flex items-center gap-2 py-1 text-xs text-ink-2">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-line border-t-accent" />
+              Loading plants…
+            </p>
+          )}
+          {genStatus === "error" && (
+            <p className="py-1 text-xs text-red-600 dark:text-red-400">Couldn’t load plants. {genError}</p>
+          )}
+          {genStatus === "ready" &&
+            ENERGY_TYPES.filter((t) => counts[t] > 0).map((t) => (
+              <Row key={t}>
+                <span className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full ring-1 ring-white/70" style={{ backgroundColor: ENERGY_COLOR[t] }} />
+                  <span className="font-medium text-ink">{ENERGY_LABEL[t]}</span>
+                  <span className="text-xs text-ink-2">{counts[t]}</span>
+                </span>
+                <Switch checked={filters.genTypes[t]} onChange={() => toggleGenType(t)} label={`Toggle ${t}`} />
+              </Row>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ControlPanel({ data }: { data: GridData }) {
   const [open, setOpen] = useState(true);
   const filters = useAppStore((s) => s.filters);
@@ -44,10 +100,10 @@ export function ControlPanel({ data }: { data: GridData }) {
   const { toggleVoltage, toggleCircuit, toggleShow, setBasemap } = useAppStore.getState();
 
   return (
-    <section className="w-[260px] overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/95 shadow-[var(--shadow-panel)] backdrop-blur">
+    <section className="pointer-events-auto flex min-h-0 w-full flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/95 shadow-[var(--shadow-panel)] backdrop-blur">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-3.5 py-2.5 text-left"
+        className="flex w-full shrink-0 items-center justify-between px-3.5 py-2.5 text-left"
         aria-expanded={open}
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
@@ -57,7 +113,7 @@ export function ControlPanel({ data }: { data: GridData }) {
       </button>
 
       {open && (
-        <div className="border-t border-line px-3.5 pb-3 pt-1">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-line px-3.5 pb-3 pt-1">
           {/* Voltage levels */}
           <div className="py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Voltage</div>
           {VOLTAGES.map((v: Voltage) => {
@@ -119,6 +175,9 @@ export function ControlPanel({ data }: { data: GridData }) {
               <Switch checked={filters.circuits.DC} onChange={() => toggleCircuit("DC")} label="Toggle double-circuit" />
             </Row>
           </div>
+
+          {/* Generation overlay (lazy-loaded on first enable) */}
+          <GenerationSection />
 
           {/* Basemap */}
           <div className="mt-2 border-t border-line pt-2">
