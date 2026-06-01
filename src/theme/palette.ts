@@ -31,6 +31,19 @@ export const ENERGY_COLOR: Record<EnergyType, string> = {
   Other: "#9aa0a6", // grey (unclassified / source null)
 };
 
+// POWERGRID (PGCIL) overlay — a single rose hue for ALL features (lines + substations),
+// regardless of voltage, so the inter-state grid reads as one distinct layer. Deliberately
+// distinct from the voltage palette (orange/blue/green), the energy palette, and the magenta
+// measure tool. HALO is the lighter ring tint for substation strokes / legend swatch ring.
+export const POWERGRID_COLOR = "#e11d48"; // rose-600
+export const POWERGRID_HALO = "#fda4af"; // rose-300
+
+// Two more classes that ride inside the same "Power grid" overlay group. Restrained, mutually
+// distinct hues that don't clash with the voltage palette (orange/blue/green), the energy
+// palette, the rose PowerGrid, or the magenta measure tool. Loads (not backbone) → drawn smaller.
+export const RAILWAY_COLOR = "#7c3aed"; // violet-600 (railway-traction RTSS)
+export const BULKLOAD_COLOR = "#0d9488"; // teal-600 (bulk-load / HT consumer)
+
 export const ENERGY_LABEL: Record<EnergyType, string> = {
   Thermal: "Thermal",
   Gas: "Gas",

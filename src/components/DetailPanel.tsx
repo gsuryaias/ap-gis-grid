@@ -1,18 +1,48 @@
 import { connectedLines, connectedSubstations } from "../data/selectors.ts";
 import {
+  isBulkLoadSubstation,
   isGeneration,
   isLine,
+  isPowerGridLine,
+  isPowerGridSubstation,
+  isRailwaySubstation,
   isSubstation,
+  type BulkLoadSubstationProps,
   type GenerationProps,
   type GridData,
   type LineProps,
+  type PowerGridLineProps,
+  type PowerGridSubstationProps,
+  type RailwaySubstationProps,
   type SubstationProps,
 } from "../data/types.ts";
 import { formatDist, formatKm } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
-import { CIRCUIT_LABEL, ENERGY_COLOR, ENERGY_LABEL } from "../theme/palette.ts";
-import { BoltIcon, CloseIcon, LineIcon, SubstationIcon, TargetIcon, WarnIcon } from "./icons.tsx";
+import {
+  BULKLOAD_COLOR,
+  CIRCUIT_LABEL,
+  ENERGY_COLOR,
+  ENERGY_LABEL,
+  POWERGRID_COLOR,
+  RAILWAY_COLOR,
+} from "../theme/palette.ts";
+import { BoltIcon, CloseIcon, LineIcon, SubstationIcon, TargetIcon, TowerIcon, WarnIcon } from "./icons.tsx";
 import { VoltageBadge, VoltageDot } from "./VoltageBadge.tsx";
+
+/**
+ * Coloured pill for Power-grid-group features — their voltages fall outside the AP-TRANSCO
+ * Voltage union (765 kV PowerGrid, or 0 when a load's source voltage is unparseable).
+ */
+function OverlayBadge({ voltage, color }: { voltage: number; color: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white"
+      style={{ backgroundColor: color }}
+    >
+      {voltage > 0 ? `${voltage} kV` : "—"}
+    </span>
+  );
+}
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   if (value == null || value === "") return null;
@@ -61,6 +91,8 @@ function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData })
     <>
       <Field label="Substation code" value={ss.ssCode} />
       <Field label="Full name" value={ss.descriptiveName} />
+      <Field label="Zone" value={ss.zone} />
+      <Field label="Division" value={ss.division} />
       <Field label="Circle" value={ss.circle ? `${ss.circle}${ss.circleInferred ? " (inferred)" : ""}` : null} />
       <Field label="Commissioned" value={ss.doc} />
       <Field label="Coordinates" value={`${ss.lat.toFixed(5)}, ${ss.lng.toFixed(5)}`} />
@@ -102,8 +134,16 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
         label="Circuit-km"
         value={line.ckm != null ? `${formatKm(line.ckm)}${line.circuit === "DC" ? " (2× route)" : ""}` : undefined}
       />
+      <Field label="Conductor" value={line.conductor} />
+      <Field label="Commissioned" value={line.commissioned} />
       <Field label="Circle" value={line.circle} />
       {(from || to) && <Field label="Route (from name)" value={`${from ?? "?"} → ${to ?? "?"}`} />}
+      {line.externalEndpoints && line.externalEndpoints.length > 0 && (
+        <Field
+          label="External endpoints"
+          value={line.externalEndpoints.map((e) => `${e.name} (${e.category})`).join(", ")}
+        />
+      )}
 
       {(line.circuitAmbiguous || line.voltageMismatch) && (
         <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-100/70 px-2.5 py-2 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
@@ -169,6 +209,71 @@ function GenerationDetail({ plant }: { plant: GenerationProps }) {
   );
 }
 
+function PowerGridNote() {
+  return (
+    <p className="mt-3 text-xs text-ink-2">
+      POWERGRID (PGCIL) national grid overlay — connectivity to the AP-TRANSCO grid is not modelled.
+    </p>
+  );
+}
+
+function PowerGridLineDetail({ line }: { line: PowerGridLineProps }) {
+  return (
+    <>
+      <Field label="Voltage" value={`${line.voltage} kV`} />
+      <Field label="Service status" value={line.service} />
+      <Field label="Route length" value={formatKm(line.lengthKm)} />
+      <Field label="Line" value={line.name} />
+      <PowerGridNote />
+    </>
+  );
+}
+
+function PowerGridSubstationDetail({ ss }: { ss: PowerGridSubstationProps }) {
+  return (
+    <>
+      <Field label="Full name" value={ss.fullName} />
+      <Field label="Voltage" value={`${ss.voltage} kV`} />
+      <Field label="Coordinates" value={`${ss.lat.toFixed(5)}, ${ss.lng.toFixed(5)}`} />
+      <PowerGridNote />
+    </>
+  );
+}
+
+function RailwaySubstationDetail({ ss }: { ss: RailwaySubstationProps }) {
+  return (
+    <>
+      <Field label="Name" value={ss.displayName ?? ss.name} />
+      <Field label="Voltage" value={ss.voltage > 0 ? `${ss.voltage} kV` : null} />
+      <Field label="Connected SS" value={ss.connectedSs} />
+      <Field label="Capacity" value={ss.mva != null ? `${ss.mva} MVA` : null} />
+      <Field label="Circle" value={ss.circle} />
+      <Field label="District" value={ss.district} />
+      <Field label="Coordinates" value={`${ss.lat.toFixed(5)}, ${ss.lng.toFixed(5)}`} />
+      <p className="mt-3 text-xs text-ink-2">
+        Railway traction substation — connection to the AP-TRANSCO grid is indicative.
+      </p>
+    </>
+  );
+}
+
+function BulkLoadSubstationDetail({ ss }: { ss: BulkLoadSubstationProps }) {
+  return (
+    <>
+      <Field label="Voltage" value={ss.voltage > 0 ? `${ss.voltage} kV` : null} />
+      <Field label="Consumer type" value={ss.ssType} />
+      <Field label="Connected SS" value={ss.connectedSs} />
+      <Field label="Capacity" value={ss.mva != null ? `${ss.mva} MVA` : null} />
+      <Field label="Circle" value={ss.circle} />
+      <Field label="District" value={ss.district} />
+      <Field label="Coordinates" value={`${ss.lat.toFixed(5)}, ${ss.lng.toFixed(5)}`} />
+      <p className="mt-3 text-xs text-ink-2">
+        Bulk HT consumer — connection to the AP-TRANSCO grid is indicative.
+      </p>
+    </>
+  );
+}
+
 export function DetailPanel({ data }: { data: GridData }) {
   const selectedId = useAppStore((s) => s.selectedId);
   const history = useAppStore((s) => s.history);
@@ -176,8 +281,11 @@ export function DetailPanel({ data }: { data: GridData }) {
   const back = useAppStore((s) => s.back);
   const flyTo = useAppStore((s) => s.select);
   const generation = useAppStore((s) => s.generation);
-  // Generation plants live in the lazily-loaded overlay, not the transmission byId map.
-  const lookup = (id: string) => data.byId.get(id) ?? generation?.byId.get(id) ?? null;
+  const powergrid = useAppStore((s) => s.powergrid);
+  // Overlay features (generation, PowerGrid) live in their own lazily-loaded byId maps,
+  // not the transmission byId map.
+  const lookup = (id: string) =>
+    data.byId.get(id) ?? generation?.byId.get(id) ?? powergrid?.byId.get(id) ?? null;
   const feature = selectedId ? lookup(selectedId) : null;
   if (!feature) return null;
 
@@ -199,17 +307,43 @@ export function DetailPanel({ data }: { data: GridData }) {
       )}
       <header className="flex items-start gap-2 border-b border-line px-4 py-3">
         <span className="mt-0.5 text-ink-2">
-          {isSubstation(feature) ? <SubstationIcon /> : isGeneration(feature) ? <BoltIcon /> : <LineIcon />}
+          {isSubstation(feature) ? (
+            <SubstationIcon />
+          ) : isGeneration(feature) ? (
+            <BoltIcon />
+          ) : isPowerGridSubstation(feature) || isPowerGridLine(feature) ? (
+            <TowerIcon />
+          ) : isRailwaySubstation(feature) || isBulkLoadSubstation(feature) ? (
+            <SubstationIcon />
+          ) : (
+            <LineIcon />
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
-            <VoltageBadge voltage={feature.voltage} small />
+            {isPowerGridLine(feature) || isPowerGridSubstation(feature) ? (
+              <OverlayBadge voltage={feature.voltage} color={POWERGRID_COLOR} />
+            ) : isRailwaySubstation(feature) ? (
+              <OverlayBadge voltage={feature.voltage} color={RAILWAY_COLOR} />
+            ) : isBulkLoadSubstation(feature) ? (
+              <OverlayBadge voltage={feature.voltage} color={BULKLOAD_COLOR} />
+            ) : (
+              <VoltageBadge voltage={feature.voltage} small />
+            )}
             <span className="text-[11px] uppercase tracking-wide text-ink-2">
               {isSubstation(feature)
                 ? "Substation"
                 : isGeneration(feature)
                   ? `${ENERGY_LABEL[feature.energy]} plant`
-                  : `${feature.circuit} line`}
+                  : isPowerGridSubstation(feature)
+                    ? "POWERGRID substation"
+                    : isPowerGridLine(feature)
+                      ? "POWERGRID line"
+                      : isRailwaySubstation(feature)
+                        ? "Railway traction SS"
+                        : isBulkLoadSubstation(feature)
+                          ? "Bulk-load / HT SS"
+                          : `${feature.circuit} line`}
             </span>
           </div>
           <h2 className="text-[15px] font-semibold leading-snug text-ink">{feature.name}</h2>
@@ -239,6 +373,14 @@ export function DetailPanel({ data }: { data: GridData }) {
           <LineDetail line={feature} data={data} />
         ) : isGeneration(feature) ? (
           <GenerationDetail plant={feature} />
+        ) : isPowerGridLine(feature) ? (
+          <PowerGridLineDetail line={feature} />
+        ) : isPowerGridSubstation(feature) ? (
+          <PowerGridSubstationDetail ss={feature} />
+        ) : isRailwaySubstation(feature) ? (
+          <RailwaySubstationDetail ss={feature} />
+        ) : isBulkLoadSubstation(feature) ? (
+          <BulkLoadSubstationDetail ss={feature} />
         ) : null}
       </div>
     </aside>

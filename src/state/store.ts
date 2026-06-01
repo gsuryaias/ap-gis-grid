@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { loadGeneration, loadGridData } from "../data/load.ts";
-import type { FilterState } from "../data/selectors.ts";
+import { loadGeneration, loadGridData, loadPowerGrid } from "../data/load.ts";
+import { PG_CLASSES, type FilterState, type PgClass } from "../data/selectors.ts";
 import type { MeasureMode, MeasureStats } from "../map/measure.ts";
 import {
   CIRCUITS,
@@ -10,13 +10,14 @@ import {
   type EnergyType,
   type GenerationData,
   type GridData,
+  type PowerGridData,
   type Voltage,
 } from "../data/types.ts";
 import { defaultHashState, type HashState } from "../url/hash.ts";
 
 export type Basemap = "light" | "dark" | "satellite";
 type Status = "loading" | "ready" | "error";
-/** Lazy lifecycle for the generation overlay: untouched → fetching → loaded / failed. */
+/** Lazy lifecycle for an optional overlay: untouched → fetching → loaded / failed. */
 type GenStatus = "idle" | "loading" | "ready" | "error";
 
 export interface FlySignal {
@@ -44,6 +45,11 @@ interface AppState {
   genStatus: GenStatus;
   genError: string | null;
 
+  // POWERGRID (PGCIL) overlay (lazy-loaded)
+  powergrid: PowerGridData | null;
+  pgStatus: GenStatus;
+  pgError: string | null;
+
   // Measurement tool (transient — never persisted to the URL hash)
   measureMode: MeasureMode | null;
   measureStats: MeasureStats | null;
@@ -63,6 +69,8 @@ interface AppState {
   toggleShow: (k: "showSubstations" | "showLines") => void;
   toggleGeneration: (open?: boolean) => void;
   toggleGenType: (t: EnergyType) => void;
+  togglePowerGrid: (open?: boolean) => void;
+  togglePgClass: (c: PgClass) => void;
   setMeasureMode: (m: MeasureMode | null) => void;
   clearMeasure: () => void;
   setMeasureStats: (s: MeasureStats | null) => void;
@@ -78,6 +86,8 @@ function freshFilters(): FilterState {
     showLines: true,
     showGeneration: false, // lazy — off until the user opts in
     genTypes: Object.fromEntries(ENERGY_TYPES.map((t) => [t, true])) as Record<EnergyType, boolean>,
+    showPowerGrid: false, // lazy — off until the user opts in
+    pgClasses: Object.fromEntries(PG_CLASSES.map((c) => [c, true])) as Record<PgClass, boolean>,
   };
 }
 
@@ -99,6 +109,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   generation: null,
   genStatus: "idle",
   genError: null,
+
+  powergrid: null,
+  pgStatus: "idle",
+  pgError: null,
 
   measureMode: null,
   measureStats: null,
@@ -165,6 +179,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleGenType: (t) =>
     set((s) => ({ filters: { ...s.filters, genTypes: { ...s.filters.genTypes, [t]: !s.filters.genTypes[t] } } })),
 
+  togglePowerGrid: (open) => {
+    const next = open ?? !get().filters.showPowerGrid;
+    set((s) => ({ filters: { ...s.filters, showPowerGrid: next } }));
+    // Lazy-fetch the overlay the first time it's switched on; cache thereafter.
+    if (next && get().pgStatus === "idle") {
+      set({ pgStatus: "loading", pgError: null });
+      loadPowerGrid()
+        .then((powergrid) => set({ powergrid, pgStatus: "ready" }))
+        .catch((e) =>
+          set({ pgStatus: "error", pgError: e instanceof Error ? e.message : String(e) }),
+        );
+    }
+  },
+
+  togglePgClass: (c) =>
+    set((s) => ({ filters: { ...s.filters, pgClasses: { ...s.filters.pgClasses, [c]: !s.filters.pgClasses[c] } } })),
+
   // Passing the active mode again toggles the tool off; clears any prior readout on every change.
   setMeasureMode: (m) => set((s) => ({ measureMode: s.measureMode === m ? null : m, measureStats: null })),
   clearMeasure: () => set((s) => ({ measureClearNonce: s.measureClearNonce + 1, measureStats: null })),
@@ -188,6 +219,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (showGeneration && get().genStatus === "idle") {
         Promise.resolve().then(() => get().toggleGeneration(true));
       }
+      const showPowerGrid = h.showPowerGrid ?? s.filters.showPowerGrid;
+      // A deep link with pg=1 must kick off the lazy fetch just like a manual toggle.
+      if (showPowerGrid && get().pgStatus === "idle") {
+        Promise.resolve().then(() => get().togglePowerGrid(true));
+      }
       return {
         selectedId,
         history: selectedId === s.selectedId ? s.history : [],
@@ -200,6 +236,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           showLines: h.showLines ?? s.filters.showLines,
           showGeneration,
           genTypes: s.filters.genTypes,
+          showPowerGrid,
+          pgClasses: s.filters.pgClasses,
         },
         flySignal,
       };
@@ -217,6 +255,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       showSubstations: s.filters.showSubstations,
       showLines: s.filters.showLines,
       showGeneration: s.filters.showGeneration,
+      showPowerGrid: s.filters.showPowerGrid,
     };
   },
 }));

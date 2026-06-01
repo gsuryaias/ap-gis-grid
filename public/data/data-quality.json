@@ -1,254 +1,236 @@
 {
-  "generatedAt": "2026-05-31T07:23:54.408Z",
+  "generatedAt": "2026-06-01T16:56:31.165Z",
+  "notes": [
+    "Source migrated from the Google-Earth KML to the authoritative AP-TRANSCO Gridmap ESRI shapefiles.",
+    "Circle / voltage are now authoritative from the source layers, so inferredCircles = 0 and there are no circuit/voltage-mismatch flags.",
+    "The \"(P)\" token in line names is a naming token, NOT a \"proposed\" flag (most such lines carry real past commissioning dates).",
+    "Substation `circle` is the source numeric circle CODE (0 = unassigned → null); use `zone`/`division` for human-readable groupings. Line `circle` is a circle NAME."
+  ],
   "substationSchemas": {
-    "sap": 350,
-    "sscode": 123,
-    "legacy400": 27,
-    "unknown": 0
+    "aptranscoShapefile": 376
   },
   "unknownSchemaSamples": [],
-  "inferredCircles": 164,
+  "idsSynthesizedFromName": 51,
+  "inferredCircles": 0,
   "adjacency": {
-    "method": "geometric endpoint-snapping ≤ 500 m",
-    "linesBothEndpoints": 661,
-    "linesOneEndpoint": 54,
-    "linesNoEndpoint": 0,
-    "pctBoth": 92.4,
-    "pctAtLeastOne": 100,
+    "method": "geometric endpoint-snapping ≤ 1000 m (TRANSCO SS centroids)",
+    "linesBothEndpoints": 845,
+    "linesOneEndpoint": 334,
+    "linesNoEndpoint": 11,
+    "pctBoth": 71,
+    "pctAtLeastOne": 99.1,
+    "linesWithExternalEndpoint": 292,
     "unmatchedSamples": [
       {
-        "id": "l-005",
-        "name": "400KV KALAPAKA -ASUPAKA",
+        "id": "l-0000",
+        "name": "400KV Kadapa- Chittor SC line TM, LILO(PGCL)-1",
+        "endpoints": [
+          "Kadapa",
+          "1"
+        ]
+      },
+      {
+        "id": "l-0001",
+        "name": "400KV Sri Perambadur- Chittor SC line TM, LILO(PGCL)-2",
+        "endpoints": [
+          "Sri Perambadur",
+          "2"
+        ]
+      },
+      {
+        "id": "l-0006",
+        "name": "400KV Kalapaka- Asupaka DC/SC Line (TM)",
         "endpoints": [
           "Kalapaka",
           "Asupaka"
         ]
       },
       {
-        "id": "l-006",
-        "name": "400KV Kalpaka- Khammam DC/ SC Line",
+        "id": "l-0009",
+        "name": "400KV Kalapaka- Khammam DC/SC Line (TM)",
         "endpoints": [
-          "Kalpaka",
+          "Kalapaka",
           "Khammam"
         ]
       },
       {
-        "id": "l-013",
-        "name": "400 KV VTS-Suryapeta-Malkaram DC Line",
+        "id": "l-0012",
+        "name": "400KV Kalapaka- STPP Ckt-2 DC/SC Line (TM)",
         "endpoints": [
-          "Vts",
-          "Malkaram"
+          "Kalapaka",
+          "Stpp"
         ]
       },
       {
-        "id": "l-014",
-        "name": "400KV-URAVAKONDA-VELTOOR-QM DC LINE",
+        "id": "l-0013",
+        "name": "400KV Kalapaka- STPP TMDC Line, Ckt-3",
+        "endpoints": [
+          "Kalapaka",
+          "Stpp Tmdc"
+        ]
+      },
+      {
+        "id": "l-0014",
+        "name": "400KV Kalapaka- STPP TMDC Line, Ckt-4",
+        "endpoints": [
+          "Kalapaka",
+          "Stpp Tmdc"
+        ]
+      },
+      {
+        "id": "l-0018",
+        "name": "400KV Krishnapatnam- Manubolu QM Line (M)",
+        "endpoints": [
+          "Krishnapatnam",
+          "Manubolu"
+        ]
+      },
+      {
+        "id": "l-0019",
+        "name": "400KV Krishnapatnam- Rachagunneri QMDC Line, Ckt-1",
+        "endpoints": [
+          "Krishnapatnam",
+          "Rachagunneri Qmdc"
+        ]
+      },
+      {
+        "id": "l-0020",
+        "name": "400KV Krishnapatnam- Rachagunneri QMDC Line, Ckt-2",
+        "endpoints": [
+          "Krishnapatnam",
+          "Rachagunneri Qmdc"
+        ]
+      },
+      {
+        "id": "l-0021",
+        "name": "400KV KV Kota- Suryapeta QMDC Line, Ckt-1",
+        "endpoints": [
+          "Kv Kota",
+          "Suryapeta Qmdc"
+        ]
+      },
+      {
+        "id": "l-0022",
+        "name": "400KV KV Kota- Suryapeta QMDC Line, Ckt-2",
+        "endpoints": [
+          "Kv Kota",
+          "Suryapeta Qmdc"
+        ]
+      },
+      {
+        "id": "l-0027",
+        "name": "400KV RTPP- Kalikiri TMDC Line, Ckt-1",
+        "endpoints": [
+          "Rtpp",
+          "Kalikiri Tmdc"
+        ]
+      },
+      {
+        "id": "l-0028",
+        "name": "400KV RTPP- Kalikiri TMDC Line, Ckt-2",
+        "endpoints": [
+          "Rtpp",
+          "Kalikiri Tmdc"
+        ]
+      },
+      {
+        "id": "l-0032",
+        "name": "400KV Srisailam- Sattenapalli TMDC Line, Ckt-1",
+        "endpoints": [
+          "Srisailam",
+          "Sattenapalli Tmdc"
+        ]
+      },
+      {
+        "id": "l-0033",
+        "name": "400KV Srisailam- Sattenapalli TMDC Line, Ckt-2",
+        "endpoints": [
+          "Srisailam",
+          "Sattenapalli Tmdc"
+        ]
+      },
+      {
+        "id": "l-0034",
+        "name": "400KV STPP- Vemagiri DC/SC Line (TM)",
+        "endpoints": [
+          "Stpp",
+          "Vemagiri"
+        ]
+      },
+      {
+        "id": "l-0039",
+        "name": "400KV Uravakonda- Veltoor QMDC Line, Ckt-1",
         "endpoints": [
           "Uravakonda",
-          "Veltoor"
+          "Veltoor Qmdc"
         ]
       },
       {
-        "id": "l-020",
-        "name": "400KV Kamavarapukota-Suryapeta Ckt-01",
+        "id": "l-0040",
+        "name": "400KV Uravakonda- Veltoor QMDC Line, Ckt-2",
         "endpoints": [
-          "Kamavarapukota",
-          "Suryapeta"
+          "Uravakonda",
+          "Veltoor Qmdc"
         ]
       },
       {
-        "id": "l-023",
-        "name": "400KV MAHADEVAMANGALAM(CHITTOOR) LILO",
-        "endpoints": null
-      },
-      {
-        "id": "l-036",
-        "name": "220 KV Brahmanakotkur- Wanaparthy DC/SC Line",
+        "id": "l-0041",
+        "name": "400KV Vemagiri- GMR TMDC Line, Ckt-1",
         "endpoints": [
-          "Brahmanakotkur",
-          "Wanaparthy"
+          "Vemagiri",
+          "Gmr Tmdc"
         ]
       },
       {
-        "id": "l-039",
-        "name": "220 KV CHITTOOR - TIRUVALAM SC LINE",
+        "id": "l-0042",
+        "name": "400KV Vemagiri- GMR TMDC Line, Ckt-2",
         "endpoints": [
-          "Chittoor",
-          "Tiruvalam"
+          "Vemagiri",
+          "Gmr Tmdc"
         ]
       },
       {
-        "id": "l-050",
-        "name": "220 KV Rajampeta- Railway Traction (DC/SC)",
+        "id": "l-0045",
+        "name": "400KV Vemagiri- GVK TMDC Line, Ckt-1",
         "endpoints": [
-          "Rajampeta",
-          "Railway Traction"
+          "Vemagiri",
+          "Gvk Tmdc"
         ]
       },
       {
-        "id": "l-064",
-        "name": "220KV-RAGULAPADU-ALLIPURA-CKT-01",
+        "id": "l-0046",
+        "name": "400KV Vemagiri- GVK TMDC Line, Ckt-2",
         "endpoints": [
-          "Ragulapadu",
-          "Allipura"
+          "Vemagiri",
+          "Gvk Tmdc"
         ]
       },
       {
-        "id": "l-072",
-        "name": "220KV Somayajulapalli-RTSS Rangapuram DC SC LINE",
+        "id": "l-0047",
+        "name": "400KV Vemagiri- Konaseema DC/SC Line (TM)",
         "endpoints": [
-          "Somayajulapalli",
-          "Rtss Rangapuram"
+          "Vemagiri",
+          "Konaseema"
         ]
       },
       {
-        "id": "l-075",
-        "name": "220KV Anrak- Anrak Pvt. Ltd",
+        "id": "l-0050",
+        "name": "400KV VTPS- Nunna DC/SC Line (TM)",
         "endpoints": [
-          "Anrak",
-          "Anrak Pvt. Ltd"
-        ]
-      },
-      {
-        "id": "l-085",
-        "name": "220KV Chillakallu-Pulichinthala Line",
-        "endpoints": [
-          "Chillakallu",
-          "Pulichinthala"
-        ]
-      },
-      {
-        "id": "l-086",
-        "name": "220KV Chillakallu-Suryapeta DC/SC Line",
-        "endpoints": [
-          "Chillakallu",
-          "Suryapeta"
-        ]
-      },
-      {
-        "id": "l-106",
-        "name": "220KV LOWER SILERU-KTPS-I LINE",
-        "endpoints": [
-          "Lower Sileru",
-          "I"
-        ]
-      },
-      {
-        "id": "l-107",
-        "name": "220KV LOWER SILERU-KTPS-II LINE",
-        "endpoints": [
-          "Lower Sileru",
-          "Ii"
-        ]
-      },
-      {
-        "id": "l-111",
-        "name": "220KV N.Sagar - Srisailam SC LINE",
-        "endpoints": [
-          "N.Sagar",
-          "Srisailam"
-        ]
-      },
-      {
-        "id": "l-120",
-        "name": "220KV NUNNA-KTPS SC LINE",
-        "endpoints": [
-          "Nunna",
-          "Ktps"
-        ]
-      },
-      {
-        "id": "l-132",
-        "name": "220KV SSS- Girija DC/ SC Line",
-        "endpoints": [
-          "Sss",
-          "Girija"
-        ]
-      },
-      {
-        "id": "l-133",
-        "name": "220KV SullurPet-Gummadipoondi-SC-Line",
-        "endpoints": [
-          "Sullurpet",
-          "Gummadipoondi"
-        ]
-      },
-      {
-        "id": "l-134",
-        "name": "220KV Tallapalli - Challakurthy DC LINE",
-        "endpoints": [
-          "Tallapalli",
-          "Challakurthy"
-        ]
-      },
-      {
-        "id": "l-135",
-        "name": "220KV Tallapalli -N.SAGAR SC LINE",
-        "endpoints": [
-          "Tallapalli",
-          "N.Sagar"
-        ]
-      },
-      {
-        "id": "l-171",
-        "name": "220KV BD Palem- SMAL DC Line",
-        "endpoints": [
-          "Bd Palem",
-          "Smal"
-        ]
-      },
-      {
-        "id": "l-181",
-        "name": "220KV Brandix- Abhijit Ferro Alloys DC Line",
-        "endpoints": [
-          "Brandix",
-          "Abhijit Ferro Alloys"
-        ]
-      },
-      {
-        "id": "l-193",
-        "name": "220KV Lower Sileru -Barsoor DC Line",
-        "endpoints": [
-          "Lower Sileru",
-          "Barsoor"
+          "Vtps",
+          "Nunna"
         ]
       }
     ]
   },
   "circuitAmbiguousLines": {
-    "count": 181,
-    "samples": [
-      "400KV Kalpaka- Khammam DC/ SC Line",
-      "400KV Nunna-Sattenapalli DC Line",
-      "400KV Vemagiri- Nunna DC SC Line",
-      "220 KV Brahmanakotkur- Wanaparthy DC/SC Line",
-      "220 KV Kakinada -VSS DC/SC Line",
-      "220 KV MARKAPUR-SRISALAM DC/SC Line",
-      "220 KV Rajampeta- Railway Traction (DC/SC)",
-      "220KV-SHAPURAM-SUBBARYUNPALLI DC/SC LINE",
-      "220KV Somayajulapalli-RTSS Rangapuram DC SC LINE",
-      "220KV ANRAK- SSS DC/SC Line",
-      "220KV Bhimadole - Vijjeswaram-I SC/ DC LINE",
-      "220KV BMR-SSS DC/SC Line",
-      "220KV Borampally- Theta wind energy DC/SC LINE",
-      "220KV Chillakallu-Suryapeta DC/SC Line",
-      "220KV Duvva- Undi Ckt-02 DC/SC Line"
-    ]
+    "count": 0,
+    "samples": []
   },
   "voltageMismatchLines": {
-    "count": 2,
-    "samples": [
-      "400KV KALIKIRI- 220KV MADANAPALLI DC LINE",
-      "Kandukur(220KV)- Kavali Line"
-    ]
+    "count": 0,
+    "samples": []
   },
-  "droppedDuplicates": [
-    {
-      "name": "Tadimarri",
-      "lng": 77.85369,
-      "lat": 14.56168,
-      "keptId": "s-ss-132kv-tdmr"
-    }
-  ],
+  "droppedDuplicates": [],
   "coordWarnings": []
 }
