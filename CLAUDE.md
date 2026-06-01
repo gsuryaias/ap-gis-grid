@@ -130,9 +130,12 @@ left in the repo but is **no longer a source** (generation still uses `generatio
   `l-<seq>`), never bare names. Deep-link hash + selection key on these IDs.
 - **Adjacency is geometric, against the SS POLYGON** (not the centroid): an endpoint is matched if it
   falls inside the compound (0 m — **80% of endpoints do**) or within ≤ 1000 m of the polygon edge
-  (catches lines drawn slightly short). **~71% both ends, ~99% ≥1 end**; the unmatched ends are
-  genuinely external (cross-state / non-TRANSCO facilities), captured as `externalEndpoints`. Shown as
-  **inferred**. Helpers `pointInPolygons` / `distancePointToPolygons` in `etl-lib.ts`.
+  (catches lines drawn slightly short). Helpers `pointInPolygons` / `distancePointToPolygons`.
+- **Connectivity counts non-TRANSCO endpoints too.** ~71% of lines link TRANSCO-to-TRANSCO, but an end
+  that lands at a non-TRANSCO facility (Generation / Railway-traction / PowerGrid / HT-consumer — from
+  the same Gridmap layers) is a real connection, captured as `externalEndpoints` and snapped the same
+  way. Counting both, **~95% of lines connect at both ends** (`pctBothEndsResolved`); only ~5% have an
+  end beyond 1 km of anything. Connections shown as **inferred**, never authoritative.
 - **Circuit-km** = `lengthKm` (`line_lengt`) × per-circuit multiplier (SC ×1; DC / DC-SC / MC ×2).
 - **Lines are per-circuit (~1190 features)** — `Ckt-1`/`Ckt-2` are separate rows. **"(P)" in a line
   name is NOT "proposed"** — it's a naming token (616/686 such lines have real past commissioning

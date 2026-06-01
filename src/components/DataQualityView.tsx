@@ -46,20 +46,27 @@ export function DataQualityView({ data }: { data: GridData }) {
           <Stat label="Substations" value={data.meta.counts.substations} hint={q.droppedDuplicates.length ? `${q.droppedDuplicates.length} dup removed` : undefined} />
           <Stat label="Lines" value={data.meta.counts.lines} />
           <Stat label="Network length" value={`${Math.round(data.meta.totalLengthKm).toLocaleString("en-IN")} km`} />
-          <Stat label="Lines · both ends linked" value={`${q.adjacency.pctBoth}%`} hint={`${q.adjacency.linesBothEndpoints} of ${data.meta.counts.lines}`} />
-          <Stat label="Lines · ≥1 end linked" value={`${q.adjacency.pctAtLeastOne}%`} hint="rest are external nodes" />
-          <Stat label="Circuit-ambiguous names" value={q.circuitAmbiguousLines.count} hint="folder is authoritative" />
-          <Stat label="Inferred circles" value={q.inferredCircles} hint="400/220 kV SS — nearest 132 kV circle" />
+          <Stat label="Lines · both ends connected" value={`${q.adjacency.pctBothEndsResolved}%`} hint={`incl. external facilities (${q.adjacency.linesBothEndsResolved} of ${data.meta.counts.lines})`} />
+          <Stat label="Lines · both ends at TRANSCO SS" value={`${q.adjacency.pctBoth}%`} hint={`${q.adjacency.linesBothEndpoints} lines`} />
+          <Stat label="Lines · a TRANSCO + external end" value={q.adjacency.linesTranscoPlusExternal} hint="railway / HT / generation / PowerGrid" />
         </div>
 
         <details className="mt-4 rounded-xl border border-line">
           <summary className="cursor-pointer px-3.5 py-2.5 text-sm font-medium text-ink">How connections are inferred</summary>
           <div className="border-t border-line px-3.5 py-3 text-sm text-ink-2">
-            Substation↔line links use <strong className="text-ink">{q.adjacency.method}</strong>: each line's end
-            vertex is matched to the nearest substation. {q.adjacency.pctBoth}% of lines link at both ends; the
-            remaining endpoints are genuine external nodes (railway traction, generating stations, industrial loads
-            or out-of-state substations) that have no point in the dataset. Connections are shown as
-            <em> inferred</em>, never authoritative.
+            Substation↔line links use <strong className="text-ink">{q.adjacency.method}</strong>. Counting both
+            TRANSCO substations and non-TRANSCO facilities (railway traction, HT consumers, generating stations,
+            PowerGrid), <strong className="text-ink">{q.adjacency.pctBothEndsResolved}%</strong> of lines connect at
+            both ends ({q.adjacency.pctBoth}% TRANSCO-to-TRANSCO; {q.adjacency.linesTranscoPlusExternal} TRANSCO-to-external;
+            {" "}{q.adjacency.linesUnresolvedEnd} have an end beyond {data.meta.snapThresholdM} m of anything).
+            {Object.keys(q.adjacency.externalEndpointsByCategory).length > 0 && (
+              <> External ends:{" "}
+                {Object.entries(q.adjacency.externalEndpointsByCategory)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([k, v]) => `${k} ${v}`)
+                  .join(", ")}.</>
+            )}{" "}
+            Connections are shown as <em>inferred</em>, never authoritative.
           </div>
         </details>
 

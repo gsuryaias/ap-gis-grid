@@ -619,6 +619,8 @@ async function main(): Promise<void> {
   let lineSeq = 0;
   let rawLineCount = 0;
   let droppedBadGeom = 0;
+  const adjEnds: Array<["T" | "E" | "N", "T" | "E" | "N"]> = []; // per-line endpoint resolution
+  const extCategory: Record<string, number> = {}; // external endpoints by facility category
 
   for (const { path, voltage } of lineLayers) {
     console.log(`[etl] reading ${path}.shp`);
@@ -659,18 +661,20 @@ async function main(): Promise<void> {
         substations.find((s) => s.id === ssId)?.connectedLineIds.push(id);
       }
 
-      // Display-only non-TRANSCO endpoints: only for endpoints that did NOT snap to a TRANSCO SS.
+      // Non-TRANSCO endpoints: for any end that did NOT snap to a TRANSCO SS, try the facility set
+      // (Generation / Railway / PowerGrid / HT). These ARE real connections — they're what most of
+      // the "unmatched" ends actually terminate at — so we count them toward connectivity below.
+      const fromExt = fromSS ? null : snapExternal(firstR, externalPoints, SNAP_THRESHOLD_M);
+      const toExt = toSS ? null : snapExternal(lastR, externalPoints, SNAP_THRESHOLD_M);
       const externalEndpoints: { name: string; category: string }[] = [];
-      if (!fromSS) {
-        const ext = snapExternal(firstR, externalPoints, SNAP_THRESHOLD_M);
-        if (ext) externalEndpoints.push(ext);
+      if (fromExt) externalEndpoints.push(fromExt);
+      if (toExt && !externalEndpoints.some((e) => e.name === toExt.name && e.category === toExt.category)) {
+        externalEndpoints.push(toExt);
       }
-      if (!toSS) {
-        const ext = snapExternal(lastR, externalPoints, SNAP_THRESHOLD_M);
-        if (ext && !externalEndpoints.some((e) => e.name === ext.name && e.category === ext.category)) {
-          externalEndpoints.push(ext);
-        }
-      }
+      // Per-end connectivity: T = TRANSCO SS, E = external facility, N = nothing within threshold.
+      const endKind = (ss: unknown, ext: unknown) => (ss ? "T" : ext ? "E" : "N");
+      adjEnds.push([endKind(fromSS, fromExt), endKind(toSS, toExt)]);
+      for (const e of [fromExt, toExt]) if (e) extCategory[e.category] = (extCategory[e.category] ?? 0) + 1;
 
       const ckm = lengthKm != null ? Math.round(lengthKm * lineCircuitMultiplier(props.circuit_ty) * 1000) / 1000 : null;
 
@@ -814,11 +818,20 @@ async function main(): Promise<void> {
   const totalCircuitKm = rnd1(lines.reduce((a, l) => a + (l.ckm ?? 0), 0));
 
   // ---- Adjacency stats -----------------------------------------------------
+  // TRANSCO-only view (both endpoints land at a TRANSCO substation):
   const both = lines.filter((l) => l.fromSS && l.toSS).length;
   const one = lines.filter((l) => (l.fromSS ? 1 : 0) + (l.toSS ? 1 : 0) === 1).length;
   const none = lines.length - both - one;
+  // Connectivity-resolved view: count an endpoint as connected if it lands at a TRANSCO SS OR at a
+  // non-TRANSCO facility (Generation / Railway / PowerGrid / HT). Most "missing" TRANSCO ends are
+  // really these — so this is the honest connectivity picture.
+  const isConn = (k: "T" | "E" | "N") => k !== "N";
+  const bothResolved = adjEnds.filter(([a, b]) => isConn(a) && isConn(b)).length;
+  const transcoPlusExternal = adjEnds.filter(([a, b]) => (a === "T" && b === "E") || (a === "E" && b === "T")).length;
+  const bothExternal = adjEnds.filter(([a, b]) => a === "E" && b === "E").length;
+  const unresolvedEither = adjEnds.filter(([a, b]) => a === "N" || b === "N").length; // ≥1 end connects to nothing
   const unmatchedSamples = lines
-    .filter((l) => !l.fromSS || !l.toSS)
+    .filter((_l, i) => adjEnds[i][0] === "N" || adjEnds[i][1] === "N")
     .slice(0, 25)
     .map((l) => ({ id: l.id, name: l.name, endpoints: l.endpointLabels }));
 
@@ -940,6 +953,13 @@ async function main(): Promise<void> {
       pctBoth: Math.round((both / lines.length) * 1000) / 10,
       pctAtLeastOne: Math.round(((both + one) / lines.length) * 1000) / 10,
       linesWithExternalEndpoint: linesWithExternal,
+      // Connectivity-resolved view (TRANSCO SS or non-TRANSCO facility counts as a connection):
+      linesBothEndsResolved: bothResolved,
+      pctBothEndsResolved: Math.round((bothResolved / lines.length) * 1000) / 10,
+      linesTranscoPlusExternal: transcoPlusExternal,
+      linesBothExternal: bothExternal,
+      linesUnresolvedEnd: unresolvedEither,
+      externalEndpointsByCategory: extCategory,
       unmatchedSamples,
     },
     circuitAmbiguousLines: { count: 0, samples: [] as string[] },
@@ -955,10 +975,13 @@ async function main(): Promise<void> {
   writeFileSync(resolve(outDir, "data-quality.json"), JSON.stringify(dataQuality, null, 2));
 
   console.log(`[etl] wrote ${substations.length} substations, ${lines.length} lines`);
+  const extMix = Object.entries(extCategory).map(([k, v]) => `${k} ${v}`).join(", ");
   console.log(
-    `[etl] adjacency: both=${both} (${dataQuality.adjacency.pctBoth}%), one=${one}, none=${none}` +
+    `[etl] adjacency: both-TRANSCO=${both} (${dataQuality.adjacency.pctBoth}%)` +
+      ` | both-ends-resolved=${bothResolved} (${dataQuality.adjacency.pctBothEndsResolved}%)` +
+      ` [+${transcoPlusExternal} TRANSCO+external, ${bothExternal} both-external] | unresolved=${unresolvedEither}` +
       ` | route ${totalLengthKm} km · circuit ${totalCircuitKm} km · ${circles.length} circles` +
-      ` | linesWithExternalEndpoint=${linesWithExternal}` +
+      ` | external ends: ${extMix}` +
       (coordWarnings.length ? ` | ${coordWarnings.length} coord warning(s)` : ""),
   );
 

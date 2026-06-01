@@ -184,6 +184,15 @@ export interface DataQuality {
     linesNoEndpoint: number;
     pctBoth: number;
     pctAtLeastOne: number;
+    linesWithExternalEndpoint: number;
+    /** Lines whose BOTH ends connect to something — a TRANSCO SS or a non-TRANSCO facility. */
+    linesBothEndsResolved: number;
+    pctBothEndsResolved: number;
+    linesTranscoPlusExternal: number;
+    linesBothExternal: number;
+    linesUnresolvedEnd: number;
+    /** External endpoint count by facility category (Generation / Railway / PowerGrid / HT consumer). */
+    externalEndpointsByCategory: Record<string, number>;
     unmatchedSamples: Array<{ id: string; name: string; endpoints: [string, string] | null }>;
   };
   circuitAmbiguousLines: { count: number; samples: string[] };
