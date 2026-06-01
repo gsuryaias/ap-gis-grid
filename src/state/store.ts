@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { loadGeneration, loadGridData } from "../data/load.ts";
 import type { FilterState } from "../data/selectors.ts";
+import type { MeasureMode, MeasureStats } from "../map/measure.ts";
 import {
   CIRCUITS,
   ENERGY_TYPES,
@@ -43,6 +44,11 @@ interface AppState {
   genStatus: GenStatus;
   genError: string | null;
 
+  // Measurement tool (transient — never persisted to the URL hash)
+  measureMode: MeasureMode | null;
+  measureStats: MeasureStats | null;
+  measureClearNonce: number;
+
   init: () => Promise<void>;
   select: (id: string | null, opts?: { fly?: boolean }) => void;
   back: () => void;
@@ -57,6 +63,9 @@ interface AppState {
   toggleShow: (k: "showSubstations" | "showLines") => void;
   toggleGeneration: (open?: boolean) => void;
   toggleGenType: (t: EnergyType) => void;
+  setMeasureMode: (m: MeasureMode | null) => void;
+  clearMeasure: () => void;
+  setMeasureStats: (s: MeasureStats | null) => void;
   applyHash: (h: Partial<HashState>) => void;
   hashState: () => HashState;
 }
@@ -90,6 +99,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   generation: null,
   genStatus: "idle",
   genError: null,
+
+  measureMode: null,
+  measureStats: null,
+  measureClearNonce: 0,
 
   init: async () => {
     try {
@@ -151,6 +164,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleGenType: (t) =>
     set((s) => ({ filters: { ...s.filters, genTypes: { ...s.filters.genTypes, [t]: !s.filters.genTypes[t] } } })),
+
+  // Passing the active mode again toggles the tool off; clears any prior readout on every change.
+  setMeasureMode: (m) => set((s) => ({ measureMode: s.measureMode === m ? null : m, measureStats: null })),
+  clearMeasure: () => set((s) => ({ measureClearNonce: s.measureClearNonce + 1, measureStats: null })),
+  setMeasureStats: (measureStats) => set({ measureStats }),
 
   applyHash: (h) =>
     set((s) => {

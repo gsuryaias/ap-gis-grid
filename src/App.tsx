@@ -5,6 +5,7 @@ import { MapView } from "./map/MapView.tsx";
 import { BrandHeader } from "./components/BrandHeader.tsx";
 import { SearchBar } from "./components/SearchBar.tsx";
 import { ControlPanel } from "./components/ControlPanel.tsx";
+import { MeasureControl } from "./components/MeasureControl.tsx";
 import { DetailPanel } from "./components/DetailPanel.tsx";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
 import { DataQualityView } from "./components/DataQualityView.tsx";
@@ -82,6 +83,11 @@ export function App() {
           <div className="pointer-events-none flex min-h-0 flex-1 flex-col">
             <ControlPanel data={data} />
           </div>
+        </div>
+
+        {/* Measurement tools (top-center — clear of the left control stack and right detail panel) */}
+        <div className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2">
+          <MeasureControl />
         </div>
 
         {/* Detail panel (right) */}

@@ -58,3 +58,12 @@ export const WarnIcon = (p: P) => (
 export const BoltIcon = (p: P) => (
   <svg {...base(p)}><path d="M13 2 4.5 13.5a.7.7 0 0 0 .6 1.1H11l-1 7.4 8.5-11.5a.7.7 0 0 0-.6-1.1H12l1-7.4Z" /></svg>
 );
+export const RulerIcon = (p: P) => (
+  <svg {...base(p)}><path d="M15.5 2.5 21.5 8.5 8.5 21.5 2.5 15.5Z" /><path d="m6.5 11.5 2 2M9.5 8.5l2 2M12.5 5.5l2 2M4.5 13.5l1.5 1.5" /></svg>
+);
+export const AreaIcon = (p: P) => (
+  <svg {...base(p)}><path d="M12 3 21 9.5 17.5 20.5 6.5 20.5 3 9.5Z" /></svg>
+);
+export const TrashIcon = (p: P) => (
+  <svg {...base(p)}><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M18.5 6 17.5 20a2 2 0 0 1-2 2H8.5a2 2 0 0 1-2-2L5.5 6M10 11v6M14 11v6" /></svg>
+);

@@ -35,9 +35,10 @@ data/raw/generation.kml ─┴(ETL)─▶ public/data/*.{geojson,json} ─▶ Re
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
 | Data | `src/data/` | `types.ts` (canonical types), `load.ts` (fetch via `import.meta.env.BASE_URL`), `selectors.ts` |
 | State | `src/state/store.ts` (Zustand) + `src/url/` | versioned URL-hash sync, selection history (`back()`) |
-| Map | `src/map/` | `MapView.tsx`, `layers.ts` (paint), `basemaps.ts` (CARTO light/dark vector + Esri satellite raster) |
-| UI | `src/components/` | SearchBar, DetailPanel, DataTableSheet, SummaryView, DataQualityView, ControlPanel |
+| Map | `src/map/` | `MapView.tsx`, `layers.ts` (paint), `basemaps.ts` (CARTO light/dark vector + Esri satellite raster), `measure.ts` (distance/area tool) |
+| UI | `src/components/` | SearchBar, DetailPanel, DataTableSheet, SummaryView, DataQualityView, ControlPanel, MeasureControl |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
+| Geo | `src/lib/geo.ts` | pure geodesic helpers (haversine length, spherical-excess area) for the measure tool — unit-tested like etl-lib |
 
 The emitted `public/data/*` files are **committed** so CI/Pages builds don't need the KML.
 
@@ -60,6 +61,21 @@ none of its code path runs until the user enables it.
   `MapView` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
   `energy` drives `ENERGY_COLOR` / the legend. There is **no capacity (MW) data** in the KML
   (`capacityMw` is always null) and **no grid connectivity** is modelled for plants.
+
+## Measurement tool
+
+A client-side **distance / area** measure tool (top-centre `MeasureControl` pill). All geodesy is in
+`src/lib/geo.ts` (haversine length, spherical-excess area — no Turf/deps), unit-tested in `geo.test.ts`.
+
+- **Controller**: `src/map/measure.ts` (`MeasureController`) owns a dedicated `src-measure` GeoJSON
+  source + overlay layers (magenta — outside every other palette) and all click/move/dbl-click/keyboard
+  handling. One instance per map, created in `MapView`; `setMode(mode|null)` toggles it. `ensureLayers`
+  is idempotent and **re-run on `styledata`** like the grid/generation layers (setStyle drops them).
+- Click adds vertices, a dashed rubber-band tracks the cursor, **double-click / Enter** finishes,
+  **Esc** clears (or exits if empty), **Backspace** undoes. Live readout published to the store
+  (`measureMode` / `measureStats` — **transient, never in the URL hash**).
+- While a mode is active, `MapView`'s feature hover/select handlers early-return (`isMeasuring()`) and
+  `doubleClickZoom` is disabled, so clicks place points instead of selecting features / zooming.
 
 ## Data decisions (don't regress these — they were validated against the real KML)
 
@@ -99,6 +115,11 @@ none of its code path runs until the user enables it.
   (Esri World Imagery) that must include a `glyphs` URL (we reuse CARTO's) or the substation label
   symbol layer fails. Label font is `Open Sans Bold` (served by CARTO's glyph CDN). Satellite + dark
   both apply the `.dark` UI class.
+- **Satellite deep zoom**: map `maxZoom` is **19**, but the Esri source is capped at `maxzoom: 18`
+  so MapLibre **overzooms** (upscales) the z18 tile for z18→19. Esri serves a *"Map data not yet
+  available"* placeholder (a 200, not a 404 — so no auto-fallback) for missing deep tiles; z18 has
+  broad coverage over AP land while z19 is patchy/rural-absent. Don't raise the source `maxzoom` back
+  to 19 — rural substations would show the placeholder instead of (slightly soft) real imagery.
 - **Verify on `npm run preview`, not dev** — HMR can desync map/store state while editing.
 
 ## Updating the network data
