@@ -26,6 +26,10 @@ export function connectedSubstations(line: LineProps, data: GridData): Substatio
     .filter((f): f is SubstationProps => !!f && isSubstation(f));
 }
 
+/** Per-class sub-toggles inside the "Power grid" overlay group. */
+export type PgClass = "powergrid" | "railway" | "bulkload";
+export const PG_CLASSES: PgClass[] = ["powergrid", "railway", "bulkload"];
+
 export interface FilterState {
   voltages: Record<number, boolean>;
   circuits: Record<string, boolean>;
@@ -34,6 +38,12 @@ export interface FilterState {
   /** Generation overlay (lazy): off by default; per-energy-type visibility once loaded. */
   showGeneration: boolean;
   genTypes: Record<EnergyType, boolean>;
+  /**
+   * "Power grid" overlay group (lazy): master gate, off by default. When enabled it lazy-loads
+   * ALL classes (PowerGrid lines+SS, railway SS, bulk-load SS); `pgClasses` then gates each class.
+   */
+  showPowerGrid: boolean;
+  pgClasses: Record<PgClass, boolean>;
 }
 
 export function passesFilter(f: FeatureProps, filters: FilterState): boolean {

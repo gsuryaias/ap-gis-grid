@@ -12,6 +12,7 @@ export interface HashState {
   showSubstations: boolean;
   showLines: boolean;
   showGeneration: boolean;
+  showPowerGrid: boolean;
   tableOpen: boolean;
 }
 
@@ -23,6 +24,7 @@ export const defaultHashState: HashState = {
   showSubstations: true,
   showLines: true,
   showGeneration: false,
+  showPowerGrid: false,
   tableOpen: false,
 };
 
@@ -38,6 +40,7 @@ export function serializeHash(s: HashState): string {
   if (s.showLines) show.push("ln");
   if (show.length !== 2) p.set("show", show.join(","));
   if (s.showGeneration) p.set("gen", "1");
+  if (s.showPowerGrid) p.set("pg", "1");
   if (s.tableOpen) p.set("tbl", "1");
   return `#${p.toString()}`;
 }
@@ -77,6 +80,7 @@ export function parseHash(hash: string): Partial<HashState> {
   }
 
   out.showGeneration = p.get("gen") === "1";
+  out.showPowerGrid = p.get("pg") === "1";
   out.tableOpen = p.get("tbl") === "1";
   return out;
 }

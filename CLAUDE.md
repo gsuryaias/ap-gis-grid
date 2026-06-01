@@ -5,16 +5,18 @@ Guidance for Claude Code when working in this repository.
 ## What this is
 
 **AP-TRANSCO Grid Atlas** — a static, client-side GIS + MIS lookup for the AP-TRANSCO
-transmission network (400 / 220 / 132 kV lines and substations), plus an optional **generation-plant
-overlay** (energy-mix classified). No backend, no database, no API keys. Source data is a Google-Earth
-KML; a build-time ETL turns it into clean static assets the browser loads. Deploys to GitHub Pages
-(project site, base `/ap-gis-grid/`).
+transmission network (400 / 220 / 132 kV lines and substations), plus optional lazy overlays: a
+**generation-plant overlay** (energy-mix classified) and a **power-grid overlay** (POWERGRID/PGCIL
+765/400 kV inter-state grid + railway-traction & bulk-load HT substations). No backend, no database,
+no API keys. Source data is ESRI shapefiles (core transmission SS + lines, and the power-grid layers)
+plus a Google-Earth KML (generation plants); a build-time ETL turns it into clean static assets the
+browser loads. Deploys to GitHub Pages (project site, base `/ap-gis-grid/`).
 
 ## Commands
 
 ```bash
 npm run dev          # Vite dev server → http://localhost:5173/ap-gis-grid/
-npm run build:data   # ETL: data/raw/Transco.kml → public/data/*.{geojson,json}
+npm run build:data   # ETL: data/raw/gridmap/*.shp + generation.kml → public/data/*.{geojson,json}
 npm run build        # tsc --noEmit && vite build  (production)
 npm run preview       # serve dist/ (use this to verify prod; dev HMR can be flaky for map state)
 npm test             # Vitest: ETL helper unit tests + emitted-data integrity checks
@@ -26,9 +28,13 @@ After ANY ETL or component change, run `npm run typecheck` (strict, `noUnusedLoc
 ## Architecture
 
 ```
-data/raw/Transco.kml    ─┐
-data/raw/generation.kml ─┴(ETL)─▶ public/data/*.{geojson,json} ─▶ React + MapLibre app ─▶ GitHub Pages
+data/raw/Transco.kml      ─┐
+data/raw/generation.kml   ─┤
+data/raw/gridmap/*.shp+dbf ┴(ETL)─▶ public/data/*.{geojson,json} ─▶ React + MapLibre app ─▶ GitHub Pages
 ```
+
+`build:data` reads the shapefiles via the `shapefile` dep (build-time only). All source layers are
+WGS84 (EPSG:4326) — no reprojection.
 
 | Layer | Path | Notes |
 |-------|------|-------|
@@ -62,6 +68,35 @@ none of its code path runs until the user enables it.
   `energy` drives `ENERGY_COLOR` / the legend. There is **no capacity (MW) data** in the KML
   (`capacityMw` is always null) and **no grid connectivity** is modelled for plants.
 
+## Power-grid overlay (lazy-loaded)
+
+A third, optional layer **group** sourced from ESRI shapefiles (`data/raw/gridmap/`, copied — Towers
+and admin-boundary layers excluded). Like the generation overlay it is **lazy**: nothing runs until the
+user enables it. It bundles **three classes** behind one master toggle, each with its own sub-toggle
+(mirrors the generation per-energy-type sub-toggles):
+
+- **POWERGRID (PGCIL)** — the national inter-state grid: `powergrid-lines.geojson` (**54** lines,
+  765/400 kV — note voltages OUTSIDE the 400/220/132 grid palette) + `powergrid-ss.geojson` (**28** SS).
+  Line route length is computed geodesically from geometry (`haversineMeters` sum) — the shapefile has
+  no km field. IDs `pl-<seq>` / `ps-<slug>`.
+- **Railway traction SS** — `railway-ss.geojson` (**62** RTSS points). IDs `rs-<slug>`.
+- **Bulk-load / HT SS** — `bulkload-ss.geojson` (**139** private/industrial HT-consumer points). IDs `bs-<slug>`.
+
+- **Source / ETL**: `buildPowerGrid()` in `build-data.mts` reads all four shapefiles, filters nothing
+  (these layers are already curated), and emits the four geojson. Pure helpers (`cleanPgName`,
+  `normalizeKv`, `parseMva`) live in `etl-lib.ts`. Voltage is a **`number`** (765 supported); a few
+  source rows have unparseable voltage → `0` (UI shows "—"). Validation gate: build fails on 0 features.
+- **Lazy contract**: `loadGridData()` does NOT fetch these. `togglePowerGrid()` fetches all four files
+  via `loadPowerGrid()` (one `Promise.all`) on first enable, caches them (`pgStatus`), and `applyHash`
+  re-triggers for a `pg=1` deep link. Per-class visibility is `filters.pgClasses` (NOT in the URL hash —
+  only the single `pg=1` key, like generation's `genTypes`). Layers added by `addPowerGridLayers()`,
+  re-added on `styledata`.
+- **Not in `data.byId`**: all classes live in a shared `powergrid.byId` (store) with kinds
+  `pg-line | pg-substation | rail-substation | bulk-substation`. Distinct overlay colours (NOT the
+  voltage palette): POWERGRID rose `#e11d48`, Railway violet `#7c3aed`, Bulk-load teal `#0d9488`.
+  Voltage shown as plain text (NOT `VoltageBadge`, which only types 400/220/132). No grid connectivity
+  is modelled (the `connectedSs` string is indicative only).
+
 ## Measurement tool
 
 A client-side **distance / area** measure tool (top-centre `MeasureControl` pill). All geodesy is in
@@ -77,26 +112,46 @@ A client-side **distance / area** measure tool (top-centre `MeasureControl` pill
 - While a mode is active, `MapView`'s feature hover/select handlers early-return (`isMeasuring()`) and
   `doubleClickZoom` is disabled, so clicks place points instead of selecting features / zooming.
 
-## Data decisions (don't regress these — they were validated against the real KML)
+## Data decisions (core network now sourced from the Gridmap ESRI shapefiles)
 
-- **Folder path is authoritative** for voltage (400/220/132) and circuit (SC/DC). Line *names* only
-  set review flags (`circuitAmbiguous`, `voltageMismatch`); 26% of names say "DC/SC".
-- **IDs are synthetic** (`s-<ssCode-slug>`, `l-<seq>`), never bare names — 24 substations share a
-  name with a different facility. Deep-link hash + selection key on these IDs.
-- **Adjacency is geometric**: line endpoints snapped to nearest substation ≤ 500 m (~92% both ends).
-  Shown as **inferred**, never authoritative. Don't switch to name-parsing (~51-65%).
-- **Circuit-km** = route length × circuits (SC ×1, DC ×2), derived in the ETL.
-- **Circle inference**: source records `Circle` only for 132 kV SS; 400/220 kV get the nearest
-  circle-bearing SS's circle (`circleInferred: true`). Don't treat inferred circles as ground truth.
+The core transmission substations + lines were **migrated off `Transco.kml`** onto the authoritative
+Gridmap shapefiles (`data/raw/gridmap/aptransco-ss.*` + `lines-{400,220,132}kv.*`). `Transco.kml` is
+left in the repo but is **no longer a source** (generation still uses `generation.kml`). Decisions:
+
+- **Shapefile fields are authoritative** for voltage and circuit — `voltage` (with the source's
+  `"200"`→**220 kV** typo normalised) and `circuit_ty` (`SC`/`DC`/`DC-SC`→`circuit`, raw kept in
+  `circuitType`). The old folder-path/name parsing and the `circuitAmbiguous`/`voltageMismatch` review
+  flags are retired (set `false`; there's no folder-vs-name conflict to flag anymore).
+- **Substations are TRANSCO-only (376)** from `APTransco SS` (Polygon/MultiPolygon → marker = ring
+  centroid). Non-TRANSCO endpoints are **not** core markers (they'd double-draw the overlays); instead
+  a line records them as display-only `externalEndpoints: {name, category}` (Generation/Railway/
+  PowerGrid/HT), snapped ≤ 500 m to the union of those facility layers.
+- **IDs are synthetic** (`s-<slug(sap_ss_id)>`, synth `s-<slug(name)>-<v>` for the 51 ID-less SS;
+  `l-<seq>`), never bare names. Deep-link hash + selection key on these IDs.
+- **Adjacency is geometric, against the SS POLYGON** (not the centroid): an endpoint is matched if it
+  falls inside the compound (0 m — **80% of endpoints do**) or within ≤ 1000 m of the polygon edge
+  (catches lines drawn slightly short). **~71% both ends, ~99% ≥1 end**; the unmatched ends are
+  genuinely external (cross-state / non-TRANSCO facilities), captured as `externalEndpoints`. Shown as
+  **inferred**. Helpers `pointInPolygons` / `distancePointToPolygons` in `etl-lib.ts`.
+- **Circuit-km** = `lengthKm` (`line_lengt`) × per-circuit multiplier (SC ×1; DC / DC-SC / MC ×2).
+- **Lines are per-circuit (~1190 features)** — `Ckt-1`/`Ckt-2` are separate rows. **"(P)" in a line
+  name is NOT "proposed"** — it's a naming token (616/686 such lines have real past commissioning
+  dates), so there is no proposed-filter. New per-line fields: `conductor`, `commissioned` ("Mon YYYY",
+  1899 sentinel → null), `circuitType`, `zone`, `division`.
 
 ## Data quirks / what's NOT in the source
 
-- **No MVA / transformer-capacity / thermal-rating data** in the KML. To add capacities, supply a
-  sheet keyed by `SS_CODE` / line name and join it in the ETL. (The "MVA" substring hits in the KML
-  are the place-name "Gadda**mva**ripalli".)
-- `Transco-2.kml` is a 33-byte view-state duplicate of `Transco.kml` — ignore it.
-- Counts are fixed: **500 substations parsed → 499 after dropping 1 exact-coord dup (Tadimarri); 715 lines.**
-  The ETL validation gate fails the build if these drift.
+- **`circle` is normalised to the 13 canonical AP-TRANSCO circles** via `canonicalizeCircle()` (keeps
+  the primary token of composites like "Anantapur, Kadapa", folds spelling variants
+  "Thirupathi"/"Tirupati", "Ananthapur"/"Anantapur", "Srikalulam"/"Srikakulam"; drops cross-state
+  second tokens). The SS layer's own `circle` is an opaque numeric code, so each **substation's circle
+  is derived from the majority circle of its connected lines** (and a circle-less line inherits from a
+  connected SS) — one clean namespace for the Summary. `zone` (3) / `division` are the authoritative
+  source groupings.
+- **MVA / transformer-capacity** exists for the overlays (railway/bulk-load `cmd_in_mva`) but the core
+  `APTransco SS` layer has no commissioning date (`doc` is null) and no per-SS capacity.
+- Counts (validation gate, lower-bound asserts): **376 substations, ~1190 lines** (0 dropped in current
+  data). The old fixed 499/715 KML gate is retired.
 
 ## Gotchas / conventions
 
@@ -124,9 +179,13 @@ A client-side **distance / area** measure tool (top-centre `MeasureControl` pill
 
 ## Updating the network data
 
-Replace `data/raw/Transco.kml` (and/or `data/raw/generation.kml`) → `npm run build:data` → review
-`public/data/data-quality.json` → commit + push (the GitHub Action re-runs ETL + tests + build and
-redeploys). Both KMLs are processed by the one `build:data` run.
+Replace the relevant `data/raw/gridmap/*.{shp,dbf,shx,prj,cpg}` layers — `aptransco-ss` +
+`lines-{400,220,132}kv` (core network), `powergrid-*` / `railway-ss` / `bulkload-ss` / `generation-ss`
+(overlays + external-endpoint snapping) — and/or `data/raw/generation.kml` (generation overlay) →
+`npm run build:data` → review `public/data/data-quality.json` → commit + push (the GitHub Action
+re-runs ETL + tests + build and redeploys). All sources are processed by the one `build:data` run. The
+shapefile parser is the `shapefile` dev-dep (build-time only); keep the `gridmap/` raw files committed
+so CI can regenerate. `Transco.kml` is retained for reference but unused.
 
 ## Deploy
 

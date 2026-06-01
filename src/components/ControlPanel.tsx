@@ -1,8 +1,16 @@
 import { useMemo, useState } from "react";
 import { ENERGY_TYPES, VOLTAGES, type EnergyType, type GridData, type Voltage } from "../data/types.ts";
+import type { PgClass } from "../data/selectors.ts";
 import { useAppStore } from "../state/store.ts";
-import { ENERGY_COLOR, ENERGY_LABEL, VOLTAGE_COLOR } from "../theme/palette.ts";
-import { BoltIcon, ChevronDown, LayersIcon, SunIcon, MoonIcon, SatelliteIcon } from "./icons.tsx";
+import {
+  BULKLOAD_COLOR,
+  ENERGY_COLOR,
+  ENERGY_LABEL,
+  POWERGRID_COLOR,
+  RAILWAY_COLOR,
+  VOLTAGE_COLOR,
+} from "../theme/palette.ts";
+import { BoltIcon, ChevronDown, LayersIcon, SunIcon, MoonIcon, SatelliteIcon, TowerIcon } from "./icons.tsx";
 import type { Basemap } from "../state/store.ts";
 
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
@@ -87,6 +95,77 @@ function GenerationSection() {
                 <Switch checked={filters.genTypes[t]} onChange={() => toggleGenType(t)} label={`Toggle ${t}`} />
               </Row>
             ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PowerGridSection() {
+  const filters = useAppStore((s) => s.filters);
+  const pgStatus = useAppStore((s) => s.pgStatus);
+  const pgError = useAppStore((s) => s.pgError);
+  const powergrid = useAppStore((s) => s.powergrid);
+  const { togglePowerGrid, togglePgClass } = useAppStore.getState();
+
+  // Per-class sub-toggle rows (rendered once the group has loaded).
+  const classes: Array<{ key: PgClass; color: string; label: string; count: string }> = powergrid
+    ? [
+        {
+          key: "powergrid",
+          color: POWERGRID_COLOR,
+          label: "POWERGRID (PGCIL)",
+          count: `${powergrid.lines.length} ln · ${powergrid.substations.length} ss`,
+        },
+        { key: "railway", color: RAILWAY_COLOR, label: "Railway traction SS", count: String(powergrid.railway.length) },
+        { key: "bulkload", color: BULKLOAD_COLOR, label: "Bulk-load / HT SS", count: String(powergrid.bulkload.length) },
+      ]
+    : [];
+
+  return (
+    <div className="mt-2 border-t border-line pt-1.5">
+      <Row>
+        <span className="flex items-center gap-2 text-ink">
+          <TowerIcon width={15} height={15} className="text-ink-2" />
+          Other networks
+        </span>
+        <Switch
+          checked={filters.showPowerGrid}
+          onChange={() => togglePowerGrid()}
+          label="Toggle other networks overlay"
+        />
+      </Row>
+
+      {filters.showPowerGrid && (
+        <div className="ml-1 mt-0.5 border-l border-line pl-3">
+          {pgStatus === "loading" && (
+            <p className="flex items-center gap-2 py-1 text-xs text-ink-2">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-line border-t-accent" />
+              Loading networks…
+            </p>
+          )}
+          {pgStatus === "error" && (
+            <p className="py-1 text-xs text-red-600 dark:text-red-400">Couldn’t load networks. {pgError}</p>
+          )}
+          {pgStatus === "ready" && powergrid && (
+            <>
+              {classes.map((c) => (
+                <Row key={c.key}>
+                  <span className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full ring-1 ring-white/70" style={{ backgroundColor: c.color }} />
+                    <span className="font-medium text-ink">{c.label}</span>
+                    <span className="text-xs text-ink-2">{c.count}</span>
+                  </span>
+                  <Switch
+                    checked={filters.pgClasses[c.key]}
+                    onChange={() => togglePgClass(c.key)}
+                    label={`Toggle ${c.label}`}
+                  />
+                </Row>
+              ))}
+              <p className="mt-0.5 text-[11px] leading-snug text-ink-2">POWERGRID 765/400 kV · railway &amp; HT connections</p>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -178,6 +257,9 @@ export function ControlPanel({ data }: { data: GridData }) {
 
           {/* Generation overlay (lazy-loaded on first enable) */}
           <GenerationSection />
+
+          {/* POWERGRID (PGCIL) overlay (lazy-loaded on first enable) */}
+          <PowerGridSection />
 
           {/* Basemap */}
           <div className="mt-2 border-t border-line pt-2">
