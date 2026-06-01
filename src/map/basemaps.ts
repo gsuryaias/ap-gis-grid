@@ -15,7 +15,11 @@ const SATELLITE_STYLE: StyleSpecification = {
       type: "raster",
       tiles: ["https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
-      maxzoom: 19,
+      // Esri serves a "Map data not yet available" placeholder for missing deep tiles
+      // (a 200, not a 404 — so MapLibre can't auto-fall-back). z18 has broad coverage over
+      // AP land while z19 is patchy/rural-absent, so we cap here and let the map overzoom
+      // (upscale) this tile up to its maxZoom of 19 — real imagery everywhere, no placeholders.
+      maxzoom: 18,
       attribution: "Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community",
     },
   },

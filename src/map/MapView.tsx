@@ -4,6 +4,10 @@ import type { GenerationData, GridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { BASEMAPS } from "./basemaps.ts";
 import { addGenerationLayers, addGridLayers, ALL_INTERACTIVE, applyFilters, INTERACTIVE_LAYERS, LAYER, SRC } from "./layers.ts";
+import { MeasureController } from "./measure.ts";
+
+/** Feature hover/selection is suppressed while a measurement tool is active. */
+const isMeasuring = (): boolean => useAppStore.getState().measureMode != null;
 
 function sourceForId(data: GridData, gen: GenerationData | null, id: string): string | null {
   if (gen?.byId.has(id)) return SRC.generation;
@@ -52,6 +56,7 @@ function flyToFeature(map: MlMap, data: GridData, gen: GenerationData | null, id
 export function MapView({ data }: { data: GridData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
+  const measureRef = useRef<MeasureController | null>(null);
   const readyRef = useRef(false);
   const prevHover = useRef<string | null>(null);
   const prevSelected = useRef<string | null>(null);
@@ -63,6 +68,8 @@ export function MapView({ data }: { data: GridData }) {
   const hoverId = useAppStore((s) => s.hoverId);
   const flySignal = useAppStore((s) => s.flySignal);
   const generation = useAppStore((s) => s.generation);
+  const measureMode = useAppStore((s) => s.measureMode);
+  const measureClearNonce = useAppStore((s) => s.measureClearNonce);
 
   // Add the generation source/layers (when loaded) and bind its interaction handlers once.
   // Idempotent: safe to call after the initial load and after every basemap style reload.
@@ -78,6 +85,7 @@ export function MapView({ data }: { data: GridData }) {
       const select = st.select;
       const setHover = st.setHover;
       map.on("mousemove", LAYER.generation, (ev) => {
+        if (isMeasuring()) return;
         const f = ev.features?.[0];
         if (f?.id != null) {
           setHover(String(f.id));
@@ -85,10 +93,12 @@ export function MapView({ data }: { data: GridData }) {
         }
       });
       map.on("mouseleave", LAYER.generation, () => {
+        if (isMeasuring()) return;
         setHover(null);
         map.getCanvas().style.cursor = "";
       });
       map.on("click", LAYER.generation, (ev) => {
+        if (isMeasuring()) return;
         const f = ev.features?.[0];
         if (f?.id != null) select(String(f.id));
       });
@@ -109,10 +119,18 @@ export function MapView({ data }: { data: GridData }) {
       zoom: 6,
       attributionControl: false,
       minZoom: 4,
-      maxZoom: 16,
+      // 19 is Esri World Imagery's native ceiling (sub-metre over AP towns); the CARTO
+      // vector basemaps scale cleanly to it too. Lets users zoom in for site-level detail.
+      maxZoom: 19,
     });
     mapRef.current = map;
     genBound.current = false;
+    const measure = new MeasureController(map, {
+      onStats: (s) => useAppStore.getState().setMeasureStats(s),
+      onExit: () => useAppStore.getState().setMeasureMode(null),
+    });
+    measure.setBasemapGetter(() => useAppStore.getState().basemap);
+    measureRef.current = measure;
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     // CARTO's GL style already carries the mandatory OSM + CARTO attribution, so we let
@@ -132,6 +150,7 @@ export function MapView({ data }: { data: GridData }) {
 
       for (const lid of INTERACTIVE_LAYERS) {
         map.on("mousemove", lid, (ev) => {
+          if (isMeasuring()) return;
           const f = ev.features?.[0];
           if (f?.id != null) {
             setHover(String(f.id));
@@ -139,15 +158,18 @@ export function MapView({ data }: { data: GridData }) {
           }
         });
         map.on("mouseleave", lid, () => {
+          if (isMeasuring()) return;
           setHover(null);
           map.getCanvas().style.cursor = "";
         });
         map.on("click", lid, (ev) => {
+          if (isMeasuring()) return;
           const f = ev.features?.[0];
           if (f?.id != null) select(String(f.id));
         });
       }
       map.on("click", (ev) => {
+        if (isMeasuring()) return; // clicks place measurement vertices, not (de)select
         // Only the interactive layers actually present (generation may not be loaded).
         const layers = ALL_INTERACTIVE.filter((l) => map.getLayer(l));
         const hits = map.queryRenderedFeatures(ev.point, { layers });
@@ -165,6 +187,8 @@ export function MapView({ data }: { data: GridData }) {
     return () => {
       disposed = true;
       readyRef.current = false;
+      measure.destroy();
+      measureRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -179,6 +203,7 @@ export function MapView({ data }: { data: GridData }) {
     const onStyle = () => {
       addGridLayers(map, data, basemap);
       mountGeneration(map); // setStyle drops custom sources/layers — re-add the overlay
+      measureRef.current?.ensureLayers(basemap); // ...same for the measurement overlay
       applyFilters(map, useAppStore.getState().filters);
       const st = useAppStore.getState();
       setFeatState(map, data, st.generation, st.selectedId, "selected", true);
@@ -186,6 +211,15 @@ export function MapView({ data }: { data: GridData }) {
     };
     map.once("styledata", onStyle);
   }, [basemap, data, mountGeneration]);
+
+  // --- Measurement tool -----------------------------------------------------
+  useEffect(() => {
+    if (readyRef.current) measureRef.current?.setMode(measureMode);
+  }, [measureMode]);
+
+  useEffect(() => {
+    if (measureClearNonce) measureRef.current?.clear();
+  }, [measureClearNonce]);
 
   // --- Filters --------------------------------------------------------------
   useEffect(() => {
