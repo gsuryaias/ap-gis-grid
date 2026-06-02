@@ -6,7 +6,9 @@ import { BrandHeader } from "./components/BrandHeader.tsx";
 import { SearchBar } from "./components/SearchBar.tsx";
 import { ControlPanel } from "./components/ControlPanel.tsx";
 import { MeasureControl } from "./components/MeasureControl.tsx";
+import { NearbyControl } from "./components/NearbyControl.tsx";
 import { DetailPanel } from "./components/DetailPanel.tsx";
+import { NearbyPanel } from "./components/NearbyPanel.tsx";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
 import { DataQualityView } from "./components/DataQualityView.tsx";
 import { SummaryView } from "./components/SummaryView.tsx";
@@ -48,6 +50,7 @@ export function App() {
   const basemap = useAppStore((s) => s.basemap);
   const tableOpen = useAppStore((s) => s.tableOpen);
   const toggleTable = useAppStore((s) => s.toggleTable);
+  const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
   const init = useAppStore((s) => s.init);
 
   useHashSync();
@@ -85,14 +88,15 @@ export function App() {
           </div>
         </div>
 
-        {/* Measurement tools (top-center — clear of the left control stack and right detail panel) */}
-        <div className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2">
+        {/* Map tools (top-center). Wraps + bounded so the pills never spill off a narrow screen. */}
+        <div className="pointer-events-none absolute left-1/2 top-3 z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap items-start justify-center gap-2">
           <MeasureControl />
+          <NearbyControl />
         </div>
 
-        {/* Detail panel (right) */}
-        <div className="pointer-events-none absolute right-3 top-3 z-20 max-h-[calc(100%-1.5rem)]">
-          <DetailPanel data={data} />
+        {/* Right panel — the nearby readout pre-empts the detail panel while a query origin is set. */}
+        <div className="pointer-events-none absolute right-3 top-3 z-20 max-h-[calc(100%-1.5rem)] max-w-[calc(100vw-1.5rem)]">
+          {nearbyOrigin ? <NearbyPanel data={data} /> : <DetailPanel data={data} />}
         </div>
 
         {/* Browse-table affordance */}

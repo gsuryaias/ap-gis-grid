@@ -33,6 +33,8 @@ export const PG_CLASSES: PgClass[] = ["powergrid", "railway", "bulkload"];
 export interface FilterState {
   voltages: Record<number, boolean>;
   circuits: Record<string, boolean>;
+  /** Regional slice: when set, only features in this AP-TRANSCO circle are shown (null = all 13). */
+  circle: string | null;
   showSubstations: boolean;
   showLines: boolean;
   /** Generation overlay (lazy): off by default; per-energy-type visibility once loaded. */
@@ -49,6 +51,7 @@ export interface FilterState {
 export function passesFilter(f: FeatureProps, filters: FilterState): boolean {
   if (isGeneration(f)) return filters.showGeneration && filters.genTypes[f.energy];
   if (!filters.voltages[f.voltage]) return false;
+  if (filters.circle && f.circle !== filters.circle) return false;
   if (isSubstation(f)) return filters.showSubstations;
   return filters.showLines && filters.circuits[f.circuit];
 }

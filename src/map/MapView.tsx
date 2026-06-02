@@ -16,8 +16,11 @@ import {
 } from "./layers.ts";
 import { MeasureController } from "./measure.ts";
 
-/** Feature hover/selection is suppressed while a measurement tool is active. */
-const isMeasuring = (): boolean => useAppStore.getState().measureMode != null;
+/** Feature hover/selection is suppressed while a click-capturing tool (measure / nearby) is active. */
+const clickSuppressed = (): boolean => {
+  const s = useAppStore.getState();
+  return s.measureMode != null || s.nearbyMode;
+};
 
 function sourceForId(
   data: GridData,
@@ -105,13 +108,26 @@ function flyToFeature(
   map.fitBounds(b, { padding: 140, maxZoom: 13, duration: 900 });
 }
 
+/** Fit the map to a circle's substations (or the full network bounds when circle is null). */
+function fitToCircle(map: MlMap, data: GridData, circle: string | null): void {
+  if (!circle) {
+    map.fitBounds(data.meta.bounds as LngLatBoundsLike, { padding: 60, duration: 700 });
+    return;
+  }
+  const b = new maplibregl.LngLatBounds();
+  for (const s of data.substations) if (s.circle === circle) b.extend([s.lng, s.lat]);
+  if (!b.isEmpty()) map.fitBounds(b, { padding: 80, maxZoom: 11, duration: 700 });
+}
+
 export function MapView({ data }: { data: GridData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const measureRef = useRef<MeasureController | null>(null);
+  const nearbyMarkerRef = useRef<maplibregl.Marker | null>(null);
   const readyRef = useRef(false);
   const prevHover = useRef<string | null>(null);
   const prevSelected = useRef<string | null>(null);
+  const prevCircle = useRef<string | null>(null);
   const genBound = useRef(false);
   const pgBound = useRef(false);
 
@@ -124,6 +140,9 @@ export function MapView({ data }: { data: GridData }) {
   const powergrid = useAppStore((s) => s.powergrid);
   const measureMode = useAppStore((s) => s.measureMode);
   const measureClearNonce = useAppStore((s) => s.measureClearNonce);
+  const regionCircle = useAppStore((s) => s.filters.circle);
+  const nearbyMode = useAppStore((s) => s.nearbyMode);
+  const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
 
   // Add the generation source/layers (when loaded) and bind its interaction handlers once.
   // Idempotent: safe to call after the initial load and after every basemap style reload.
@@ -139,7 +158,7 @@ export function MapView({ data }: { data: GridData }) {
       const select = st.select;
       const setHover = st.setHover;
       map.on("mousemove", LAYER.generation, (ev) => {
-        if (isMeasuring()) return;
+        if (clickSuppressed()) return;
         const f = ev.features?.[0];
         if (f?.id != null) {
           setHover(String(f.id));
@@ -147,12 +166,12 @@ export function MapView({ data }: { data: GridData }) {
         }
       });
       map.on("mouseleave", LAYER.generation, () => {
-        if (isMeasuring()) return;
+        if (clickSuppressed()) return;
         setHover(null);
         map.getCanvas().style.cursor = "";
       });
       map.on("click", LAYER.generation, (ev) => {
-        if (isMeasuring()) return;
+        if (clickSuppressed()) return;
         const f = ev.features?.[0];
         if (f?.id != null) select(String(f.id));
       });
@@ -177,7 +196,7 @@ export function MapView({ data }: { data: GridData }) {
       const setHover = st.setHover;
       for (const lid of POWERGRID_INTERACTIVE) {
         map.on("mousemove", lid, (ev) => {
-          if (isMeasuring()) return;
+          if (clickSuppressed()) return;
           const f = ev.features?.[0];
           if (f?.id != null) {
             setHover(String(f.id));
@@ -185,12 +204,12 @@ export function MapView({ data }: { data: GridData }) {
           }
         });
         map.on("mouseleave", lid, () => {
-          if (isMeasuring()) return;
+          if (clickSuppressed()) return;
           setHover(null);
           map.getCanvas().style.cursor = "";
         });
         map.on("click", lid, (ev) => {
-          if (isMeasuring()) return;
+          if (clickSuppressed()) return;
           const f = ev.features?.[0];
           if (f?.id != null) select(String(f.id));
         });
@@ -244,7 +263,7 @@ export function MapView({ data }: { data: GridData }) {
 
       for (const lid of INTERACTIVE_LAYERS) {
         map.on("mousemove", lid, (ev) => {
-          if (isMeasuring()) return;
+          if (clickSuppressed()) return;
           const f = ev.features?.[0];
           if (f?.id != null) {
             setHover(String(f.id));
@@ -252,18 +271,24 @@ export function MapView({ data }: { data: GridData }) {
           }
         });
         map.on("mouseleave", lid, () => {
-          if (isMeasuring()) return;
+          if (clickSuppressed()) return;
           setHover(null);
           map.getCanvas().style.cursor = "";
         });
         map.on("click", lid, (ev) => {
-          if (isMeasuring()) return;
+          if (clickSuppressed()) return;
           const f = ev.features?.[0];
           if (f?.id != null) select(String(f.id));
         });
       }
       map.on("click", (ev) => {
-        if (isMeasuring()) return; // clicks place measurement vertices, not (de)select
+        const st2 = useAppStore.getState();
+        if (st2.measureMode != null) return; // the measure controller places vertices on click
+        if (st2.nearbyMode) {
+          // In nearby mode a map click sets the query point (not a selection / deselect).
+          st2.setNearbyOrigin({ lng: ev.lngLat.lng, lat: ev.lngLat.lat, label: "Picked point", fly: false });
+          return;
+        }
         // Only the interactive layers actually present (generation may not be loaded).
         const layers = ALL_INTERACTIVE.filter((l) => map.getLayer(l));
         const hits = map.queryRenderedFeatures(ev.point, { layers });
@@ -274,9 +299,11 @@ export function MapView({ data }: { data: GridData }) {
       const st = useAppStore.getState();
       setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
       prevSelected.current = st.selectedId;
+      prevCircle.current = st.filters.circle;
       mountGeneration(map); // no-op unless a gen=1 deep link already finished loading
       mountPowerGrid(map); // no-op unless a pg=1 deep link already finished loading
       if (st.flySignal) flyToFeature(map, data, st.generation, st.powergrid, st.flySignal.id);
+      else if (st.filters.circle) fitToCircle(map, data, st.filters.circle); // deep-linked region slice
     });
 
     return () => {
@@ -284,6 +311,8 @@ export function MapView({ data }: { data: GridData }) {
       readyRef.current = false;
       measure.destroy();
       measureRef.current = null;
+      nearbyMarkerRef.current?.remove();
+      nearbyMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -317,11 +346,56 @@ export function MapView({ data }: { data: GridData }) {
     if (measureClearNonce) measureRef.current?.clear();
   }, [measureClearNonce]);
 
+  // --- Nearest-substation tool ----------------------------------------------
+  // Crosshair cursor while picking a query point (don't clobber the measure cursor).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (nearbyMode) map.getCanvas().style.cursor = "crosshair";
+    else if (useAppStore.getState().measureMode == null) map.getCanvas().style.cursor = "";
+  }, [nearbyMode]);
+
+  // Ease to a GPS-derived origin ("locate me"); map-pick origins don't move the view.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !nearbyOrigin?.fly) return;
+    map.easeTo({ center: [nearbyOrigin.lng, nearbyOrigin.lat], zoom: Math.max(map.getZoom(), 10), duration: 800 });
+  }, [nearbyOrigin]);
+
+  // Drop a marker at the query origin so "your location" / the picked point is visible on the map.
+  // (Markers are DOM overlays — they survive basemap style reloads, unlike style layers.)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (!nearbyOrigin) {
+      nearbyMarkerRef.current?.remove();
+      nearbyMarkerRef.current = null;
+      return;
+    }
+    const lngLat: [number, number] = [nearbyOrigin.lng, nearbyOrigin.lat];
+    if (nearbyMarkerRef.current) {
+      nearbyMarkerRef.current.setLngLat(lngLat);
+    } else {
+      const el = document.createElement("div");
+      el.className = "nearby-dot";
+      el.setAttribute("aria-label", "Nearby query origin");
+      nearbyMarkerRef.current = new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
+    }
+  }, [nearbyOrigin]);
+
   // --- Filters --------------------------------------------------------------
   useEffect(() => {
     const map = mapRef.current;
     if (map && readyRef.current) applyFilters(map, filters);
   }, [filters]);
+
+  // --- Region slice: zoom to the selected circle (or back out) on change ----
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || prevCircle.current === regionCircle) return;
+    prevCircle.current = regionCircle;
+    fitToCircle(map, data, regionCircle);
+  }, [regionCircle, data]);
 
   // --- Generation overlay arrives (lazy) ------------------------------------
   useEffect(() => {

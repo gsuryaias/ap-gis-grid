@@ -176,7 +176,8 @@ export function ControlPanel({ data }: { data: GridData }) {
   const [open, setOpen] = useState(true);
   const filters = useAppStore((s) => s.filters);
   const basemap = useAppStore((s) => s.basemap);
-  const { toggleVoltage, toggleCircuit, toggleShow, setBasemap } = useAppStore.getState();
+  const { toggleVoltage, toggleCircuit, toggleShow, setBasemap, setRegionCircle } = useAppStore.getState();
+  const regionStat = filters.circle ? data.meta.byCircle[filters.circle] : null;
 
   return (
     <section className="pointer-events-auto flex min-h-0 w-full flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/95 shadow-[var(--shadow-panel)] backdrop-blur">
@@ -210,6 +211,32 @@ export function ControlPanel({ data }: { data: GridData }) {
               </Row>
             );
           })}
+
+          {/* Region (circle) slice */}
+          <div className="mt-2 border-t border-line pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">
+            Region
+          </div>
+          <Row>
+            <span className="text-ink">Circle</span>
+            <select
+              value={filters.circle ?? ""}
+              onChange={(e) => setRegionCircle(e.target.value || null)}
+              aria-label="Filter by AP-TRANSCO circle"
+              className="max-w-[150px] rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink outline-none focus:border-accent"
+            >
+              <option value="">All circles</option>
+              {data.meta.circles.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </Row>
+          {regionStat && (
+            <p className="-mt-0.5 pb-0.5 text-[11px] text-ink-2">
+              {regionStat.substations} SS · {regionStat.lines} lines · {Math.round(regionStat.lengthKm).toLocaleString("en-IN")} km
+            </p>
+          )}
 
           {/* Feature types */}
           <div className="mt-2 border-t border-line pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">

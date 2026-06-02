@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatArea, formatLength, haversineMeters, pathLengthMeters, ringAreaMeters } from "./geo.ts";
+import { bearingDeg, compass8, formatArea, formatLength, haversineMeters, pathLengthMeters, ringAreaMeters } from "./geo.ts";
 
 describe("haversineMeters", () => {
   it("measures one degree of latitude as ~111.2 km", () => {
@@ -51,6 +51,23 @@ describe("ringAreaMeters", () => {
     const cw = [[0, 0], [1, 0], [1, 1], [0, 1]] as [number, number][];
     const ccw = [...cw].reverse();
     expect(ringAreaMeters(cw)).toBeCloseTo(ringAreaMeters(ccw), 6);
+  });
+});
+
+describe("bearingDeg / compass8", () => {
+  it("points due north, east, south, and west", () => {
+    expect(bearingDeg([80, 16], [80, 17])).toBeCloseTo(0, 1); // straight up a meridian
+    expect(bearingDeg([80, 16], [81, 16])).toBeCloseTo(90, 0); // due east (small ≈90°)
+    expect(bearingDeg([80, 16], [80, 15])).toBeCloseTo(180, 1); // due south
+    expect(bearingDeg([80, 16], [79, 16])).toBeCloseTo(270, 0); // due west
+  });
+
+  it("maps bearings to 8-point compass labels", () => {
+    expect(compass8(0)).toBe("N");
+    expect(compass8(45)).toBe("NE");
+    expect(compass8(90)).toBe("E");
+    expect(compass8(225)).toBe("SW");
+    expect(compass8(359)).toBe("N");
   });
 });
 

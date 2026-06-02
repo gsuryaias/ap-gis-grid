@@ -17,6 +17,7 @@ import {
   type SubstationProps,
 } from "../data/types.ts";
 import { formatDist, formatKm } from "../lib/format.ts";
+import { downloadText, subsetFeatures, substationsToGeoJSON } from "../lib/export.ts";
 import { useAppStore } from "../state/store.ts";
 import {
   BULKLOAD_COLOR,
@@ -26,7 +27,7 @@ import {
   POWERGRID_COLOR,
   RAILWAY_COLOR,
 } from "../theme/palette.ts";
-import { BoltIcon, CloseIcon, LineIcon, SubstationIcon, TargetIcon, TowerIcon, WarnIcon } from "./icons.tsx";
+import { BoltIcon, CloseIcon, DownloadIcon, LineIcon, SubstationIcon, TargetIcon, TowerIcon, WarnIcon } from "./icons.tsx";
 import { VoltageBadge, VoltageDot } from "./VoltageBadge.tsx";
 
 /**
@@ -349,6 +350,23 @@ export function DetailPanel({ data }: { data: GridData }) {
           <h2 className="text-[15px] font-semibold leading-snug text-ink">{feature.name}</h2>
         </div>
         <div className="flex shrink-0 gap-1">
+          {(isSubstation(feature) || isLine(feature)) && (
+            <button
+              onClick={() => {
+                const fc = isSubstation(feature)
+                  ? substationsToGeoJSON([feature])
+                  : isLine(feature)
+                    ? subsetFeatures(data.linesFc, new Set([feature.id]))
+                    : null;
+                if (fc) downloadText(`${feature.id}.geojson`, "application/geo+json", JSON.stringify(fc));
+              }}
+              aria-label="Download as GeoJSON"
+              title="Download as GeoJSON"
+              className="rounded-md p-1 text-ink-2 hover:bg-surface-2 hover:text-ink"
+            >
+              <DownloadIcon width={16} height={16} />
+            </button>
+          )}
           <button
             onClick={() => flyTo(feature.id, { fly: true })}
             aria-label="Center on map"

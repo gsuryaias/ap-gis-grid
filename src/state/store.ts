@@ -25,6 +25,14 @@ export interface FlySignal {
   ts: number;
 }
 
+/** Query anchor for the nearest-substation tool. `fly` eases the map there (GPS), not for map picks. */
+export interface NearbyOrigin {
+  lng: number;
+  lat: number;
+  label: string;
+  fly: boolean;
+}
+
 interface AppState {
   status: Status;
   error: string | null;
@@ -55,6 +63,10 @@ interface AppState {
   measureStats: MeasureStats | null;
   measureClearNonce: number;
 
+  // Nearest-substation tool (transient — never persisted to the URL hash)
+  nearbyMode: boolean;
+  nearbyOrigin: NearbyOrigin | null;
+
   init: () => Promise<void>;
   select: (id: string | null, opts?: { fly?: boolean }) => void;
   back: () => void;
@@ -66,6 +78,7 @@ interface AppState {
   isolateVoltage: (v: Voltage) => void;
   toggleVoltage: (v: Voltage) => void;
   toggleCircuit: (c: Circuit) => void;
+  setRegionCircle: (circle: string | null) => void;
   toggleShow: (k: "showSubstations" | "showLines") => void;
   toggleGeneration: (open?: boolean) => void;
   toggleGenType: (t: EnergyType) => void;
@@ -74,6 +87,9 @@ interface AppState {
   setMeasureMode: (m: MeasureMode | null) => void;
   clearMeasure: () => void;
   setMeasureStats: (s: MeasureStats | null) => void;
+  toggleNearbyMode: (on?: boolean) => void;
+  setNearbyOrigin: (o: NearbyOrigin | null) => void;
+  clearNearby: () => void;
   applyHash: (h: Partial<HashState>) => void;
   hashState: () => HashState;
 }
@@ -82,6 +98,7 @@ function freshFilters(): FilterState {
   return {
     voltages: { 400: true, 220: true, 132: true },
     circuits: { SC: true, DC: true },
+    circle: null,
     showSubstations: true,
     showLines: true,
     showGeneration: false, // lazy — off until the user opts in
@@ -117,6 +134,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   measureMode: null,
   measureStats: null,
   measureClearNonce: 0,
+
+  nearbyMode: false,
+  nearbyOrigin: null,
 
   init: async () => {
     try {
@@ -160,6 +180,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({ filters: { ...s.filters, voltages: { ...s.filters.voltages, [v]: !s.filters.voltages[v] } } })),
   toggleCircuit: (c) =>
     set((s) => ({ filters: { ...s.filters, circuits: { ...s.filters.circuits, [c]: !s.filters.circuits[c] } } })),
+  setRegionCircle: (circle) => set((s) => ({ filters: { ...s.filters, circle }, summaryOpen: false })),
   toggleShow: (k) => set((s) => ({ filters: { ...s.filters, [k]: !s.filters[k] } })),
 
   toggleGeneration: (open) => {
@@ -197,9 +218,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({ filters: { ...s.filters, pgClasses: { ...s.filters.pgClasses, [c]: !s.filters.pgClasses[c] } } })),
 
   // Passing the active mode again toggles the tool off; clears any prior readout on every change.
-  setMeasureMode: (m) => set((s) => ({ measureMode: s.measureMode === m ? null : m, measureStats: null })),
+  // Measure and the nearest-substation tool both hijack map clicks, so enabling one disables the other.
+  setMeasureMode: (m) =>
+    set((s) => {
+      const measureMode = s.measureMode === m ? null : m;
+      return measureMode
+        ? { measureMode, measureStats: null, nearbyMode: false, nearbyOrigin: null }
+        : { measureMode, measureStats: null };
+    }),
   clearMeasure: () => set((s) => ({ measureClearNonce: s.measureClearNonce + 1, measureStats: null })),
   setMeasureStats: (measureStats) => set({ measureStats }),
+
+  toggleNearbyMode: (on) =>
+    set((s) => {
+      const next = on ?? !s.nearbyMode;
+      return next ? { nearbyMode: true, measureMode: null, measureStats: null } : { nearbyMode: false };
+    }),
+  setNearbyOrigin: (nearbyOrigin) => set({ nearbyOrigin }),
+  clearNearby: () => set({ nearbyMode: false, nearbyOrigin: null }),
 
   applyHash: (h) =>
     set((s) => {
@@ -232,6 +268,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         filters: {
           voltages,
           circuits,
+          circle: h.circle !== undefined ? h.circle : s.filters.circle,
           showSubstations: h.showSubstations ?? s.filters.showSubstations,
           showLines: h.showLines ?? s.filters.showLines,
           showGeneration,
@@ -252,6 +289,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       tableOpen: s.tableOpen,
       voltages: VOLTAGES.filter((v) => s.filters.voltages[v]),
       circuits: CIRCUITS.filter((c) => s.filters.circuits[c]),
+      circle: s.filters.circle,
       showSubstations: s.filters.showSubstations,
       showLines: s.filters.showLines,
       showGeneration: s.filters.showGeneration,

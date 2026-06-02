@@ -14,6 +14,8 @@ export interface HashState {
   showGeneration: boolean;
   showPowerGrid: boolean;
   tableOpen: boolean;
+  /** Regional slice by AP-TRANSCO circle (null = all). */
+  circle?: string | null;
 }
 
 export const defaultHashState: HashState = {
@@ -26,6 +28,7 @@ export const defaultHashState: HashState = {
   showGeneration: false,
   showPowerGrid: false,
   tableOpen: false,
+  circle: null,
 };
 
 export function serializeHash(s: HashState): string {
@@ -42,6 +45,7 @@ export function serializeHash(s: HashState): string {
   if (s.showGeneration) p.set("gen", "1");
   if (s.showPowerGrid) p.set("pg", "1");
   if (s.tableOpen) p.set("tbl", "1");
+  if (s.circle) p.set("circle", s.circle);
   return `#${p.toString()}`;
 }
 
@@ -82,5 +86,8 @@ export function parseHash(hash: string): Partial<HashState> {
   out.showGeneration = p.get("gen") === "1";
   out.showPowerGrid = p.get("pg") === "1";
   out.tableOpen = p.get("tbl") === "1";
+
+  const circle = p.get("circle");
+  if (circle) out.circle = circle;
   return out;
 }

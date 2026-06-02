@@ -70,3 +70,9 @@ export const AreaIcon = (p: P) => (
 export const TrashIcon = (p: P) => (
   <svg {...base(p)}><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M18.5 6 17.5 20a2 2 0 0 1-2 2H8.5a2 2 0 0 1-2-2L5.5 6M10 11v6M14 11v6" /></svg>
 );
+export const DownloadIcon = (p: P) => (
+  <svg {...base(p)}><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
+);
+export const PinIcon = (p: P) => (
+  <svg {...base(p)}><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+);

@@ -506,15 +506,17 @@ export function applyFilters(map: MlMap, filters: FilterState): void {
   const voltFilter = e(["in", ["get", "voltage"], ["literal", enabledV]]);
   const enabledCircuits = (["SC", "DC"] as const).filter((c) => filters.circuits[c]);
   const circuitFilter = e(["in", ["get", "circuit"], ["literal", enabledCircuits]]);
+  // Regional slice (core network): both lines and substations carry `circle`.
+  const circleParts: unknown[] = filters.circle ? [["==", ["get", "circle"], filters.circle]] : [];
 
   if (map.getLayer(LAYER.linesCasing))
-    map.setFilter(LAYER.linesCasing, e(["all", voltFilter, circuitFilter]));
+    map.setFilter(LAYER.linesCasing, e(["all", voltFilter, circuitFilter, ...circleParts]));
   if (map.getLayer(LAYER.linesSC))
-    map.setFilter(LAYER.linesSC, e(["all", ["==", ["get", "circuit"], "SC"], voltFilter]));
+    map.setFilter(LAYER.linesSC, e(["all", ["==", ["get", "circuit"], "SC"], voltFilter, ...circleParts]));
   if (map.getLayer(LAYER.linesDC))
-    map.setFilter(LAYER.linesDC, e(["all", ["==", ["get", "circuit"], "DC"], voltFilter]));
-  if (map.getLayer(LAYER.substations)) map.setFilter(LAYER.substations, voltFilter);
-  if (map.getLayer(LAYER.ssLabels)) map.setFilter(LAYER.ssLabels, voltFilter);
+    map.setFilter(LAYER.linesDC, e(["all", ["==", ["get", "circuit"], "DC"], voltFilter, ...circleParts]));
+  if (map.getLayer(LAYER.substations)) map.setFilter(LAYER.substations, e(["all", voltFilter, ...circleParts]));
+  if (map.getLayer(LAYER.ssLabels)) map.setFilter(LAYER.ssLabels, e(["all", voltFilter, ...circleParts]));
 
   const vis = (on: boolean) => (on ? "visible" : "none");
   const set = (id: string, on: boolean) => {

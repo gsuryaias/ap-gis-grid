@@ -12,10 +12,26 @@ import type { GridData, LineProps, SubstationProps } from "../data/types.ts";
 import { formatKm } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
 import { CIRCUIT_LABEL } from "../theme/palette.ts";
-import { CloseIcon, SearchIcon } from "./icons.tsx";
+import { downloadText, linesToCsv, subsetFeatures, substationsToCsv, substationsToGeoJSON } from "../lib/export.ts";
+import { CloseIcon, DownloadIcon, SearchIcon } from "./icons.tsx";
 import { VoltageBadge } from "./VoltageBadge.tsx";
 
 type Tab = "substation" | "line";
+
+/** Mirror the table's case-insensitive global filter over the visible columns, so an export
+ *  reflects exactly the rows the user is looking at. */
+function matchSubstation(s: SubstationProps, q: string): boolean {
+  if (!q) return true;
+  return [s.name, s.voltage, s.circle, s.ssCode, s.connectedLineCount].some((v) =>
+    String(v ?? "").toLowerCase().includes(q),
+  );
+}
+function matchLine(l: LineProps, q: string): boolean {
+  if (!q) return true;
+  return [l.name, l.voltage, CIRCUIT_LABEL[l.circuit], l.lengthKm, l.connectsSS.length].some((v) =>
+    String(v ?? "").toLowerCase().includes(q),
+  );
+}
 
 const ssColumns: ColumnDef<SubstationProps>[] = [
   { accessorKey: "name", header: "Substation", cell: (c) => <span className="font-medium text-ink">{c.getValue<string>()}</span> },
@@ -130,6 +146,31 @@ export function DataTableSheet({ data }: { data: GridData }) {
     if (selectedKind === "substation" || selectedKind === "line") setTab(selectedKind);
   }, [selectedKind]);
 
+  const q = filter.trim().toLowerCase();
+  const exportRows = () =>
+    tab === "substation"
+      ? data.substations.filter((s) => matchSubstation(s, q))
+      : data.lines.filter((l) => matchLine(l, q));
+  const suffix = q ? "-filtered" : "";
+
+  const exportCsv = () => {
+    if (tab === "substation") {
+      downloadText(`aptransco-substations${suffix}.csv`, "text/csv", substationsToCsv(exportRows() as SubstationProps[]));
+    } else {
+      downloadText(`aptransco-lines${suffix}.csv`, "text/csv", linesToCsv(exportRows() as LineProps[]));
+    }
+  };
+  const exportGeoJson = () => {
+    if (tab === "substation") {
+      const fc = substationsToGeoJSON(exportRows() as SubstationProps[]);
+      downloadText(`aptransco-substations${suffix}.geojson`, "application/geo+json", JSON.stringify(fc));
+    } else {
+      const ids = new Set((exportRows() as LineProps[]).map((l) => l.id));
+      const fc = subsetFeatures(data.linesFc, ids);
+      downloadText(`aptransco-lines${suffix}.geojson`, "application/geo+json", JSON.stringify(fc));
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -156,6 +197,22 @@ export function DataTableSheet({ data }: { data: GridData }) {
             placeholder={`Filter ${tab === "substation" ? "substations" : "lines"}…`}
             className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-2/70"
           />
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={exportCsv}
+            title={`Export the ${tab === "substation" ? "substations" : "lines"} shown as CSV`}
+            className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+          >
+            <DownloadIcon width={14} height={14} /> CSV
+          </button>
+          <button
+            onClick={exportGeoJson}
+            title={`Export the ${tab === "substation" ? "substations" : "lines"} shown as GeoJSON`}
+            className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+          >
+            <DownloadIcon width={14} height={14} /> GeoJSON
+          </button>
         </div>
         <button onClick={() => toggle(false)} aria-label="Close table" className="rounded-md p-1.5 text-ink-2 hover:bg-surface-2 hover:text-ink">
           <CloseIcon />

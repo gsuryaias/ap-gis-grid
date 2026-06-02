@@ -42,6 +42,22 @@ export function ringAreaMeters(ring: Position[]): number {
   return Math.abs((total * R * R) / 2);
 }
 
+/** Initial great-circle bearing from `a` to `b`, in degrees clockwise from north (0–360). */
+export function bearingDeg(a: Position, b: Position): number {
+  const lat1 = rad(a[1]);
+  const lat2 = rad(b[1]);
+  const dLng = rad(b[0] - a[0]);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+}
+
+/** 8-point compass abbreviation (N, NE, E, …) for a bearing in degrees. */
+export function compass8(deg: number): string {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
+}
+
 /** Component-wise mean of a set of positions — good enough to anchor a centroid label. */
 export function centroid(points: Position[]): Position {
   let x = 0;

@@ -109,8 +109,32 @@ A client-side **distance / area** measure tool (top-centre `MeasureControl` pill
 - Click adds vertices, a dashed rubber-band tracks the cursor, **double-click / Enter** finishes,
   **Esc** clears (or exits if empty), **Backspace** undoes. Live readout published to the store
   (`measureMode` / `measureStats` — **transient, never in the URL hash**).
-- While a mode is active, `MapView`'s feature hover/select handlers early-return (`isMeasuring()`) and
-  `doubleClickZoom` is disabled, so clicks place points instead of selecting features / zooming.
+- While a mode is active, `MapView`'s feature hover/select handlers early-return (`clickSuppressed()`,
+  which is true for **either** the measure tool or the nearest-SS tool) and `doubleClickZoom` is
+  disabled, so clicks place points instead of selecting features / zooming.
+
+## Lookup utilities (export · regional slice · nearest substation)
+
+Three client-side conveniences for the MIS/lookup workflow — all pure-data + existing patterns, no new
+deps, no backend.
+
+- **Export & reporting** — `src/lib/export.ts` (pure CSV + GeoJSON builders, RFC-4180 escaping;
+  unit-tested in `export.test.ts`). The `DataTableSheet` header has **CSV** + **GeoJSON** buttons that
+  export the *currently-shown* rows of the active tab (respecting the text filter); `DetailPanel` has a
+  per-feature **GeoJSON** download (substation Point / line geometry from `linesFc`). `downloadText()`
+  is the only impure helper (Blob + anchor; no-op outside a browser, so the builders stay testable).
+- **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The `ControlPanel`
+  **Region → Circle** `<select>` (13 canonical circles from `meta.circles`) filters the **core** lines +
+  substations (`applyFilters` ANDs `["==",["get","circle"],…]`) and `MapView.fitToCircle` zooms to the
+  circle's SS bounds (back to `meta.bounds` when cleared). Deep-linkable: hash key **`circle`**.
+  **Circle-only** because `zone`/`division` exist on substations but are **absent on all lines** — circle
+  is the one admin field both layers carry. Overlays are not sliced (PGCIL has no circle).
+- **Nearest substation / locate-me** — `NearbyControl` pill (beside Measure): **Locate me** (browser
+  geolocation) or **Pick point** (map click) sets the transient `nearbyOrigin` (`{lng,lat,label,fly}`);
+  `nearbyMode` gates the pick. `NearbyPanel` lists the **6 nearest** SS by `haversineMeters`, with a
+  compass bearing (`bearingDeg`/`compass8` in `geo.ts`), respecting the active voltage + circle filters.
+  An azure **`.nearby-dot`** MapLibre marker (DOM overlay → survives style reloads) marks the origin.
+  Mutually exclusive with the measure tool. All nearby state is **transient (never in the hash)**.
 
 ## Data decisions (core network now sourced from the Gridmap ESRI shapefiles)
 
