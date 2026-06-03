@@ -9,8 +9,8 @@ transmission network (400 / 220 / 132 kV lines and substations), plus optional l
 **generation-plant overlay** (energy-mix classified) and a **power-grid overlay** (POWERGRID/PGCIL
 765/400 kV inter-state grid + railway-traction & bulk-load HT substations). No backend, no database,
 no API keys. Source data is ESRI shapefiles (core transmission SS + lines, and the power-grid layers)
-plus a Google-Earth KML (generation plants); a build-time ETL turns it into clean static assets the
-browser loads. Deploys to GitHub Pages (project site, base `/ap-gis-grid/`).
+plus a Google-Earth KML (generation plants) and a GeoNames AP place extract (search-box gazetteer);
+a build-time ETL turns it into clean static assets the browser loads. Deploys to GitHub Pages (project site, base `/ap-gis-grid/`).
 
 ## Commands
 
@@ -28,9 +28,10 @@ After ANY ETL or component change, run `npm run typecheck` (strict, `noUnusedLoc
 ## Architecture
 
 ```
-data/raw/Transco.kml      ─┐
-data/raw/generation.kml   ─┤
-data/raw/gridmap/*.shp+dbf ┴(ETL)─▶ public/data/*.{geojson,json} ─▶ React + MapLibre app ─▶ GitHub Pages
+data/raw/Transco.kml       ─┐
+data/raw/generation.kml    ─┤
+data/raw/gridmap/*.shp+dbf ─┤
+data/raw/geonames-ap.tsv   ─┴(ETL)─▶ public/data/*.{geojson,json} ─▶ React + MapLibre app ─▶ GitHub Pages
 ```
 
 `build:data` reads the shapefiles via the `shapefile` dep (build-time only). All source layers are
@@ -136,6 +137,31 @@ deps, no backend.
   An azure **`.nearby-dot`** MapLibre marker (DOM overlay → survives style reloads) marks the origin.
   Mutually exclusive with the measure tool. All nearby state is **transient (never in the hash)**.
 
+## Place search (AP gazetteer, lazy-loaded)
+
+The search box also matches **~33.5k Andhra-Pradesh place names** (villages/towns/cities, districts,
+mandals, rivers/reservoirs, hills, railway stations, temples, forests…) from a committed **GeoNames
+extract** (`data/raw/geonames-ap.tsv` — the `IN` dump filtered to admin1 = `02`, roads excluded;
+**CC BY 4.0**, credited in the App footer).
+
+- **ETL**: `buildPlaces()` in `build-data.mts`; pure helpers `parsePlacesTsv` / `placeType` /
+  `dedupePlaces` in `etl-lib.ts` (unit-tested). Near-duplicates (same name + feature class within
+  10 km) collapse to the most populous row (33,497 from 34,649); district names come from the
+  extract's own ADM2 rows (covers both the 13- and 26-district vintages GeoNames mixes); the
+  town/village split is by population (the source has no such distinction — Vijayawada is a plain
+  `PPL`). Emits `public/data/places.json` as compact tuples `[name, type, district, lng, lat, pop]`
+  (~2 MB raw / ~450 KB gz). Validation gate: > 25k rows.
+- **Lazy contract**: fetched by the store's `ensurePlaces()` on first **focus** of the search box
+  (`placesStatus`; a failed fetch resets to `idle` so the next focus retries). Never part of the
+  initial payload.
+- **Search-only — places are NOT map features**: no layer, no `byId`, no selection, no hash key.
+  `SearchBar` appends up to 8 gazetteer hits under a "Places" divider (grid assets always rank
+  first; rank ties break by population so Tirupati-the-city beats its namesake villages, and
+  same-name villages disambiguate by district). Choosing one calls `setNearbyOrigin` with a
+  type-based zoom (state 7 / district 9 / mandal 11 / city 12 / default 13) — `MapView`'s
+  `NearbyOrigin.zoom` branch **flies** there (may zoom OUT, unlike the GPS `easeTo`), drops the
+  azure nearby-dot and opens the nearest-substations panel. All transient, like the nearby tool.
+
 ## Derived analytics (indicative capacity · asset age)
 
 Two **client-side, derived** read-outs computed live from data already on each line — no ETL change,
@@ -236,7 +262,9 @@ left in the repo but is **no longer a source** (generation still uses `generatio
 
 Replace the relevant `data/raw/gridmap/*.{shp,dbf,shx,prj,cpg}` layers — `aptransco-ss` +
 `lines-{400,220,132}kv` (core network), `powergrid-*` / `railway-ss` / `bulkload-ss` / `generation-ss`
-(overlays + external-endpoint snapping) — and/or `data/raw/generation.kml` (generation overlay) →
+(overlays + external-endpoint snapping) — and/or `data/raw/generation.kml` (generation overlay),
+and/or `data/raw/geonames-ap.tsv` (place-search gazetteer; regenerate from the GeoNames `IN` dump:
+filter admin1 = `02`, drop fclass `R`, keep cols geonameid/asciiname/lat/lng/fclass/fcode/admin2/population) →
 `npm run build:data` → review `public/data/data-quality.json` → commit + push (the GitHub Action
 re-runs ETL + tests + build and redeploys). All sources are processed by the one `build:data` run. The
 shapefile parser is the `shapefile` dev-dep (build-time only); keep the `gridmap/` raw files committed

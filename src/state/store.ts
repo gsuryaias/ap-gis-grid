@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { loadGeneration, loadGridData, loadPowerGrid } from "../data/load.ts";
+import { loadGeneration, loadGridData, loadPlaces, loadPowerGrid } from "../data/load.ts";
 import { PG_CLASSES, type FilterState, type PgClass } from "../data/selectors.ts";
 import type { MeasureMode, MeasureStats } from "../map/measure.ts";
 import {
@@ -10,6 +10,7 @@ import {
   type EnergyType,
   type GenerationData,
   type GridData,
+  type PlaceItem,
   type PowerGridData,
   type Voltage,
 } from "../data/types.ts";
@@ -31,6 +32,8 @@ export interface NearbyOrigin {
   lat: number;
   label: string;
   fly: boolean;
+  /** Explicit target zoom for search-picked places (may zoom OUT, e.g. to a district); GPS/picks leave it unset. */
+  zoom?: number;
 }
 
 interface AppState {
@@ -67,6 +70,10 @@ interface AppState {
   nearbyMode: boolean;
   nearbyOrigin: NearbyOrigin | null;
 
+  // Place-search gazetteer (lazy-loaded on first use of the search box)
+  places: PlaceItem[] | null;
+  placesStatus: GenStatus;
+
   init: () => Promise<void>;
   select: (id: string | null, opts?: { fly?: boolean }) => void;
   back: () => void;
@@ -90,6 +97,7 @@ interface AppState {
   toggleNearbyMode: (on?: boolean) => void;
   setNearbyOrigin: (o: NearbyOrigin | null) => void;
   clearNearby: () => void;
+  ensurePlaces: () => void;
   applyHash: (h: Partial<HashState>) => void;
   hashState: () => HashState;
 }
@@ -137,6 +145,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   nearbyMode: false,
   nearbyOrigin: null,
+
+  places: null,
+  placesStatus: "idle",
 
   init: async () => {
     try {
@@ -236,6 +247,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
   setNearbyOrigin: (nearbyOrigin) => set({ nearbyOrigin }),
   clearNearby: () => set({ nearbyMode: false, nearbyOrigin: null }),
+
+  // Lazy-fetch the search gazetteer on first focus of the search box; cache thereafter.
+  // A failed fetch resets to idle so the next focus retries (search degrades gracefully meanwhile).
+  ensurePlaces: () => {
+    if (get().placesStatus !== "idle") return;
+    set({ placesStatus: "loading" });
+    loadPlaces()
+      .then((places) => set({ places, placesStatus: "ready" }))
+      .catch(() => set({ placesStatus: "idle" }));
+  },
 
   applyHash: (h) =>
     set((s) => {

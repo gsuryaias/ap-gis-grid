@@ -36,13 +36,16 @@ import {
   haversineMeters,
   lineCircuitMultiplier,
   mapLineCircuit,
+  dedupePlaces,
   normalizeKv,
   normalizeSsVoltage,
   parseDescriptionTable,
   parseEndpointLabels,
   parseMva,
+  parsePlacesTsv,
   parseVoltage,
   pick,
+  placeType,
   round5,
   snapExternal,
   type BulkLoadSubstation,
@@ -51,6 +54,7 @@ import {
   type ExternalPoint,
   type GenerationPlant,
   type LineFeature,
+  type PlaceTuple,
   type PowerGridLine,
   type PowerGridSubstation,
   type RailwaySubstation,
@@ -277,6 +281,48 @@ function buildGeneration(outDir: string): void {
   writeFileSync(resolve(outDir, "generation.geojson"), JSON.stringify(fc));
   const mix = ENERGY_TYPES.filter((t) => byType[t]).map((t) => `${t} ${byType[t as EnergyType]}`).join(", ");
   console.log(`[etl] wrote ${plants.length} generation plants | mix: ${mix}`);
+}
+
+/**
+ * Build the place-search gazetteer from the committed GeoNames AP extract
+ * (data/raw/geonames-ap.tsv, CC BY 4.0). Emitted as compact tuples — `places.json` is
+ * LAZY-loaded by the search box on first use (never part of the initial payload) and is
+ * search-only: places are not a map layer and are never selectable features.
+ */
+function buildPlaces(outDir: string): void {
+  const tsvPath = resolve("data/raw/geonames-ap.tsv");
+  console.log(`[etl] reading ${tsvPath}`);
+  const rows = parsePlacesTsv(readFileSync(tsvPath, "utf-8"));
+
+  // District names for disambiguation, from the extract's own ADM2 rows (covers both the
+  // 13-district and 26-district vintages GeoNames mixes).
+  const districts = new Map<string, string>();
+  for (const r of rows) if (r.fcode === "ADM2") districts.set(r.admin2, r.name);
+
+  const deduped = dedupePlaces(rows).sort(
+    (a, b) => b.population - a.population || a.name.localeCompare(b.name),
+  );
+  const places: PlaceTuple[] = deduped.map((r) => {
+    const type = placeType(r.fclass, r.fcode, r.population);
+    // Districts / the state row need no district disambiguator of their own.
+    const district = r.fclass === "A" && r.fcode !== "ADM3" ? "" : (districts.get(r.admin2) ?? "");
+    return [r.name, type, district, round5(r.lng), round5(r.lat), r.population];
+  });
+
+  if (places.length < 25_000) {
+    console.error(`[etl] VALIDATION FAILED: places gazetteer has ${places.length} rows (< 25000)`);
+    process.exit(1);
+  }
+  writeFileSync(
+    resolve(outDir, "places.json"),
+    JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      source: "GeoNames gazetteer, Andhra Pradesh extract (CC BY 4.0)",
+      count: places.length,
+      places,
+    }),
+  );
+  console.log(`[etl] wrote ${places.length} gazetteer places (dedup ${rows.length} → ${places.length})`);
 }
 
 /** Flatten a (Multi)LineString into segment rings; sum geodesic length over all of them (km). */
@@ -990,6 +1036,9 @@ async function main(): Promise<void> {
 
   // ---- POWERGRID (PGCIL) national grid overlay (separate, lazy-loaded) -----
   await buildPowerGrid(outDir);
+
+  // ---- Place-search gazetteer (separate, lazy-loaded by the search box) ----
+  buildPlaces(outDir);
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

@@ -115,7 +115,7 @@ export function App() {
 
         {/* Data-source credit (basemap credit is the MapLibre attribution control) */}
         <div className="pointer-events-none absolute bottom-1 left-2 z-10 text-[10px] text-ink-2/70">
-          Network data: AP-TRANSCO
+          Network data: AP-TRANSCO · Places: GeoNames (CC BY 4.0)
         </div>
       </div>
     </ErrorBoundary>

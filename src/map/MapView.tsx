@@ -356,10 +356,13 @@ export function MapView({ data }: { data: GridData }) {
   }, [nearbyMode]);
 
   // Ease to a GPS-derived origin ("locate me"); map-pick origins don't move the view.
+  // Search-picked places carry an explicit zoom — fly there (possibly zooming OUT, e.g. a district).
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current || !nearbyOrigin?.fly) return;
-    map.easeTo({ center: [nearbyOrigin.lng, nearbyOrigin.lat], zoom: Math.max(map.getZoom(), 10), duration: 800 });
+    const center: [number, number] = [nearbyOrigin.lng, nearbyOrigin.lat];
+    if (nearbyOrigin.zoom != null) map.flyTo({ center, zoom: nearbyOrigin.zoom, speed: 1.6, essential: true });
+    else map.easeTo({ center, zoom: Math.max(map.getZoom(), 10), duration: 800 });
   }, [nearbyOrigin]);
 
   // Drop a marker at the query origin so "your location" / the picked point is visible on the map.

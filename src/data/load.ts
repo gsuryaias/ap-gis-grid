@@ -8,6 +8,8 @@ import type {
   GridData,
   LineProps,
   Meta,
+  PlaceItem,
+  PlacesFile,
   PowerGridData,
   PowerGridLineProps,
   PowerGridProps,
@@ -81,4 +83,20 @@ export async function loadPowerGrid(): Promise<PowerGridData> {
   for (const s of railway) byId.set(s.id, s);
   for (const s of bulkload) byId.set(s.id, s);
   return { lines, substations, railway, bulkload, linesFc, substationsFc, railwayFc, bulkloadFc, byId };
+}
+
+/**
+ * Fetch the place-search gazetteer (~33k AP villages / towns / mandals / landmarks; GeoNames
+ * CC BY 4.0). Called lazily — on first use of the search box — so the initial payload stays lean.
+ */
+export async function loadPlaces(): Promise<PlaceItem[]> {
+  const file = await getJson<PlacesFile>("places.json");
+  return file.places.map(([name, type, district, lng, lat, pop]) => ({
+    name,
+    type,
+    district: district || null,
+    lng,
+    lat,
+    pop,
+  }));
 }

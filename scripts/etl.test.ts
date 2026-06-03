@@ -9,6 +9,7 @@ import {
   cleanPgName,
   cleanSsName,
   cleanValue,
+  dedupePlaces,
   detectNameFlags,
   distancePointToPolygons,
   formatMonthYear,
@@ -21,10 +22,13 @@ import {
   parseDescriptionTable,
   parseEndpointLabels,
   parseMva,
+  parsePlacesTsv,
   parseVoltage,
+  placeType,
   pointInPolygons,
   round5,
   snapEndpoint,
+  type PlaceRow,
 } from "./etl-lib.ts";
 
 describe("etl-lib helpers", () => {
@@ -210,6 +214,56 @@ describe("etl-lib helpers", () => {
     expect(parseMva(null)).toBeNull();
     expect(parseMva(NaN)).toBeNull();
   });
+
+  it("parses the GeoNames TSV (header + blank/short rows skipped)", () => {
+    const tsv = [
+      "geonameid\tname\tlat\tlng\tfclass\tfcode\tadmin2\tpopulation",
+      "1253102\tVijayawada\t16.50745\t80.6466\tP\tPPL\t749\t1143232",
+      "9999999\tNo Coords\tx\ty\tP\tPPL\t749\t0",
+      "",
+      "1253184\tVetapalem\t15.78042\t80.30905\tP\tPPL\t750\t0",
+    ].join("\n");
+    const rows = parsePlacesTsv(tsv);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({
+      id: 1253102,
+      name: "Vijayawada",
+      lat: 16.50745,
+      lng: 80.6466,
+      fclass: "P",
+      fcode: "PPL",
+      admin2: "749",
+      population: 1143232,
+    });
+  });
+
+  it("classifies place types (population splits city/town/village)", () => {
+    expect(placeType("P", "PPL", 1143232)).toBe("city");
+    expect(placeType("P", "PPLA2", 0)).toBe("city"); // district seat
+    expect(placeType("P", "PPL", 45000)).toBe("town");
+    expect(placeType("P", "PPL", 0)).toBe("village");
+    expect(placeType("A", "ADM2", 0)).toBe("district");
+    expect(placeType("A", "ADM3", 0)).toBe("mandal");
+    expect(placeType("S", "RSTN", 0)).toBe("railway station");
+    expect(placeType("S", "TMPL", 0)).toBe("temple");
+    expect(placeType("L", "RESF", 0)).toBe("forest");
+    expect(placeType("H", "RSV", 0)).toBe("water");
+    expect(placeType("T", "MT", 0)).toBe("hill");
+  });
+
+  it("dedupes same-name rows within 10 km (keep most populous); far homonyms survive", () => {
+    const row = (id: number, name: string, lat: number, lng: number, population: number): PlaceRow => ({
+      id, name, lat, lng, fclass: "P", fcode: "PPL", admin2: "749", population,
+    });
+    const out = dedupePlaces([
+      row(1, "Tirupati", 13.6355, 79.4199, 295323),
+      row(2, "Tirupati", 13.65, 79.42, 0), // ~1.6 km from the city → collapsed
+      row(3, "Tirupati", 17.15, 82.152, 0), // ~480 km away → a real homonym, kept
+      row(4, "Other", 15.0, 80.0, 0),
+    ]);
+    expect(out.map((r) => r.id).sort()).toEqual([1, 3, 4]);
+    expect(out.find((r) => r.id === 1)?.population).toBe(295323); // populous row won
+  });
 });
 
 describe("emitted data integrity (run `npm run build:data` first)", () => {
@@ -353,5 +407,35 @@ describe("emitted data integrity (run `npm run build:data` first)", () => {
       expect(lat).toBeGreaterThan(12);
       expect(lat).toBeLessThan(21);
     }
+  });
+
+  const placesReady = existsSync(resolve(dir, "places.json"));
+  it.skipIf(!placesReady)("emits a well-formed place gazetteer", () => {
+    type PlacesFile = {
+      count: number;
+      source: string;
+      places: [string, string, string, number, number, number][];
+    };
+    const f = read<PlacesFile>("places.json");
+    expect(f.count).toBeGreaterThan(25_000); // lower-bound gate (33,497 in current data)
+    expect(f.count).toBe(f.places.length);
+    expect(f.source).toContain("GeoNames");
+
+    for (const [name, type, district, lng, lat, pop] of f.places) {
+      expect(name.length).toBeGreaterThan(0);
+      expect(typeof type).toBe("string");
+      expect(typeof district).toBe("string");
+      // AP proper — slightly wider than the grid bbox (GeoNames border villages overhang a bit).
+      expect(lng).toBeGreaterThan(76);
+      expect(lng).toBeLessThan(85.5);
+      expect(lat).toBeGreaterThan(12);
+      expect(lat).toBeLessThan(20);
+      expect(pop).toBeGreaterThanOrEqual(0);
+    }
+
+    // Known anchors: the biggest city and a district must both resolve.
+    const vij = f.places.find((p) => p[0] === "Vijayawada");
+    expect(vij?.[1]).toBe("city");
+    expect(f.places.some((p) => p[0] === "Kurnool" && p[1] === "district")).toBe(true);
   });
 });

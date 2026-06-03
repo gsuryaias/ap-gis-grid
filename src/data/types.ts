@@ -209,6 +209,30 @@ export interface SearchItem {
   sub: string | null;
 }
 
+/**
+ * A gazetteer place (GeoNames AP extract, CC BY 4.0). Lazy search-only data — fetched on first
+ * use of the search box, never a map layer or selectable feature; choosing one just flies the
+ * map there (and anchors the nearest-substation readout).
+ */
+export interface PlaceItem {
+  name: string;
+  /** Friendly type tag ("village" | "town" | "city" | "district" | "mandal" | "water" | …). */
+  type: string;
+  district: string | null;
+  lng: number;
+  lat: number;
+  /** Population (0 when GeoNames has none) — used only to rank search results. */
+  pop: number;
+}
+
+/** Wire shape of places.json — compact tuples keep the ~33k-row payload small. */
+export interface PlacesFile {
+  generatedAt: string;
+  source: string;
+  count: number;
+  places: [name: string, type: string, district: string, lng: number, lat: number, pop: number][];
+}
+
 export interface GridData {
   substations: SubstationProps[];
   lines: LineProps[];

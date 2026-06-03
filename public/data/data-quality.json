@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-01T17:09:58.661Z",
+  "generatedAt": "2026-06-03T18:08:23.231Z",
   "notes": [
     "Source migrated from the Google-Earth KML to the authoritative AP-TRANSCO Gridmap ESRI shapefiles.",
     "Circle / voltage are now authoritative from the source layers, so inferredCircles = 0 and there are no circuit/voltage-mismatch flags.",

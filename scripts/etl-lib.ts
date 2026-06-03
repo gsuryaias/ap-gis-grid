@@ -543,3 +543,100 @@ export function distancePointToPolygons(p: [number, number], rings: Position[][]
   }
   return best;
 }
+
+// ---- Place gazetteer (GeoNames AP extract → places.json for the search box) ----
+
+/** One parsed row of data/raw/geonames-ap.tsv (the committed GeoNames Andhra Pradesh extract). */
+export interface PlaceRow {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+  fclass: string;
+  fcode: string;
+  admin2: string;
+  population: number;
+}
+
+/** Emitted places.json row: [name, type, district, lng, lat, population] — tuples keep ~34k rows small. */
+export type PlaceTuple = [string, string, string, number, number, number];
+
+/** Parse the committed GeoNames extract (tab-separated, one header line; bad rows skipped). */
+export function parsePlacesTsv(text: string): PlaceRow[] {
+  const out: PlaceRow[] = [];
+  for (const line of text.split("\n").slice(1)) {
+    const c = line.replace(/\r$/, "").split("\t");
+    if (c.length < 8 || !c[1].trim()) continue;
+    const lat = Number(c[2]);
+    const lng = Number(c[3]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    out.push({
+      id: Number(c[0]),
+      name: c[1].trim(),
+      lat,
+      lng,
+      fclass: c[4],
+      fcode: c[5],
+      admin2: c[6].trim(),
+      population: Number(c[7]) || 0,
+    });
+  }
+  return out;
+}
+
+/**
+ * Friendly type tag for a GeoNames (feature-class, feature-code, population) triple. P-class has
+ * no town/village distinction in the source (Vijayawada is a plain PPL), so population splits it.
+ */
+export function placeType(fclass: string, fcode: string, population: number): string {
+  switch (fclass) {
+    case "P":
+      if (fcode.startsWith("PPLA") || population >= 100_000) return "city";
+      return population >= 20_000 ? "town" : "village";
+    case "A":
+      if (fcode === "ADM1") return "state";
+      if (fcode === "ADM2") return "district";
+      if (fcode === "ADM3") return "mandal";
+      return "area";
+    case "H":
+      return "water";
+    case "T":
+      return "hill";
+    case "V":
+      return "forest";
+    case "L":
+      return fcode === "RESF" ? "forest" : "locality";
+    case "S":
+      if (fcode === "RSTN") return "railway station";
+      if (fcode === "TMPL") return "temple";
+      if (fcode === "AIRP") return "airport";
+      return "landmark";
+    default:
+      return "place";
+  }
+}
+
+/**
+ * Collapse near-duplicate gazetteer rows: the same name + feature class within ~10 km is one place
+ * (GeoNames carries e.g. two "Tirupati" PPL rows from different district vintages) — keep the most
+ * populous. Same-name places further apart are real homonyms and survive (the UI disambiguates by
+ * district).
+ */
+export function dedupePlaces(rows: PlaceRow[]): PlaceRow[] {
+  const byKey = new Map<string, PlaceRow[]>();
+  for (const r of rows) {
+    const k = `${r.name.toLowerCase()}|${r.fclass}`;
+    const g = byKey.get(k);
+    if (g) g.push(r);
+    else byKey.set(k, [r]);
+  }
+  const out: PlaceRow[] = [];
+  for (const group of byKey.values()) {
+    const kept: PlaceRow[] = [];
+    for (const r of [...group].sort((a, b) => b.population - a.population)) {
+      if (!kept.some((k) => haversineMeters([k.lng, k.lat], [r.lng, r.lat]) < 10_000)) kept.push(r);
+    }
+    out.push(...kept);
+  }
+  return out;
+}
