@@ -16,7 +16,8 @@ import {
   type RailwaySubstationProps,
   type SubstationProps,
 } from "../data/types.ts";
-import { formatDist, formatKm } from "../lib/format.ts";
+import { ageYears, formatAge, formatDist, formatKm } from "../lib/format.ts";
+import { formatMva, lineCapacityFor } from "../lib/capacity.ts";
 import { downloadText, subsetFeatures, substationsToGeoJSON } from "../lib/export.ts";
 import { useAppStore } from "../state/store.ts";
 import {
@@ -126,6 +127,8 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
   const select = useAppStore((s) => s.select);
   const subs = connectedSubstations(line, data);
   const [from, to] = line.endpointLabels ?? [null, null];
+  const capacity = lineCapacityFor(line);
+  const age = ageYears(line.commissioned, new Date().getFullYear());
   return (
     <>
       <Field label="Voltage" value={`${line.voltage} kV`} />
@@ -136,7 +139,23 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
         value={line.ckm != null ? `${formatKm(line.ckm)}${line.circuit === "DC" ? " (2× route)" : ""}` : undefined}
       />
       <Field label="Conductor" value={line.conductor} />
-      <Field label="Commissioned" value={line.commissioned} />
+      {capacity && (
+        <Field
+          label="Indicative capacity"
+          value={
+            <span title="Derived from conductor type at nominal conditions — not authoritative">
+              {formatMva(capacity.totalMva)}
+              <span className="ml-1 font-normal text-ink-2">
+                ({line.circuit === "DC" ? `${formatMva(capacity.perCircuitMva)}/ckt` : "thermal"})
+              </span>
+            </span>
+          }
+        />
+      )}
+      <Field
+        label="Commissioned"
+        value={line.commissioned ? `${line.commissioned}${age != null ? ` · ${formatAge(age)}` : ""}` : undefined}
+      />
       <Field label="Circle" value={line.circle} />
       {(from || to) && <Field label="Route (from name)" value={`${from ?? "?"} → ${to ?? "?"}`} />}
       {line.externalEndpoints && line.externalEndpoints.length > 0 && (
@@ -179,6 +198,13 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
             );
           })}
         </div>
+      )}
+
+      {capacity && (
+        <p className="mt-3 text-xs text-ink-2">
+          Indicative thermal capacity derived from the {capacity.rating.base} conductor at nominal
+          conditions (√3·kV·A). Not a load-flow or authoritative rating.
+        </p>
       )}
     </>
   );

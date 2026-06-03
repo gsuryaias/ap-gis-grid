@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { VOLTAGES, type GridData, type GroupStat, type Voltage } from "../data/types.ts";
 import { formatInt, formatKm } from "../lib/format.ts";
+import { formatMva, totalIndicativeCapacity } from "../lib/capacity.ts";
 import { useAppStore } from "../state/store.ts";
 import { VOLTAGE_COLOR } from "../theme/palette.ts";
 import { ChevronDown, CloseIcon, TargetIcon } from "./icons.tsx";
@@ -41,6 +42,7 @@ export function SummaryView({ data }: { data: GridData }) {
   if (!open) return null;
 
   const m = data.meta;
+  const capacity = totalIndicativeCapacity(data.lines);
   const maxCkm = Math.max(
     ...VOLTAGES.map((v) => m.byVoltage[v]?.circuitKm ?? 0),
     ...m.circles.map((c) => m.byCircle[c]?.circuitKm ?? 0),
@@ -98,12 +100,17 @@ export function SummaryView({ data }: { data: GridData }) {
           </button>
         </header>
 
-        <div className="grid grid-cols-2 gap-2.5 px-5 py-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 px-5 pt-4 sm:grid-cols-4">
           <Kpi label="Substations" value={formatInt(m.counts.substations)} />
           <Kpi label="Lines" value={formatInt(m.counts.lines)} />
           <Kpi label="Route-km" value={formatKm(m.totalLengthKm)} />
           <Kpi label="Circuit-km" value={formatKm(m.totalCircuitKm)} />
         </div>
+        <p className="px-5 pb-3 pt-2 text-xs text-ink-2">
+          <span className="font-semibold text-ink">{formatMva(capacity.totalMva)}</span> indicative
+          thermal capacity, derived from conductor type ({formatInt(capacity.rated)}/
+          {formatInt(capacity.total)} lines rated). Not a load-flow result.
+        </p>
 
         <div className="flex items-center justify-between px-5 pb-2">
           <div className="flex rounded-lg bg-surface-2 p-0.5 text-sm">

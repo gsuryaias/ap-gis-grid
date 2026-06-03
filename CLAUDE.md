@@ -136,6 +136,34 @@ deps, no backend.
   An azure **`.nearby-dot`** MapLibre marker (DOM overlay → survives style reloads) marks the origin.
   Mutually exclusive with the measure tool. All nearby state is **transient (never in the hash)**.
 
+## Derived analytics (indicative capacity · asset age)
+
+Two **client-side, derived** read-outs computed live from data already on each line — no ETL change,
+no new data, no graph. Both are **purely presentational** (computed in the component / pure lib, not
+emitted to geojson) and clearly labelled **indicative**, mirroring the "inferred connectivity"
+honesty convention.
+
+- **Indicative thermal capacity** — `src/lib/capacity.ts` (pure, unit-tested in `capacity.test.ts`).
+  The source has **no MVA/rating data**, so capacity is inferred from `conductor`: a lookup
+  `CONDUCTOR_AMPACITY` (nominal continuous Amps per sub-conductor for the standard Indian ACSR codes
+  — Panther 480, Zebra 735, Moose 800, …) × a bundle factor (Twin ×2 / Quad ×4) → `conductorRating()`;
+  then `lineCapacity()` = **√3 · kV · A / 1000** per circuit, × circuit count (DC ×2). `conductorRating`
+  folds the source's conductor-name typos ("Zeebra"→Zebra, "Panter"→Panther) → **1181/1190 lines
+  rated (~99%)**; the rest (bare "UG Cable", "AL59" alloy) return null → UI shows nothing. `DetailPanel`
+  shows it per line (≈ 610 MVA, with a per-circuit split for DC) + an honesty footnote; `SummaryView`
+  shows the network total (≈ 560 GVA) with coverage. **Indicative only** — not a load-flow result;
+  real ratings depend on ambient/conductor temperature, sag and bundle geometry.
+- **Asset age** — `commissionYear()` / `ageYears()` / `formatAge()` in `src/lib/format.ts`
+  (unit-tested in `format.test.ts`). Parses the year from the `commissioned` "Mon YYYY" string and
+  derives age vs. `new Date().getFullYear()` (kept pure by passing the reference year in).
+  `DetailPanel` appends "· 9 yrs" to the Commissioned field. (A dedicated age choropleth / filter is a
+  natural follow-up.)
+
+> **Next analytics milestone (deferred — needs the connectivity graph):** topological criticality &
+> **N-1 islanding** screening (betweenness, articulation points, "remove this line → who is islanded").
+> Build it on the `graph.ts` from the *Trace the Grid* feature (`SESSION-PLAN.md`); the data already
+> shows the payoff — **24 single-fed and 109 double-fed substations**.
+
 ## Data decisions (core network now sourced from the Gridmap ESRI shapefiles)
 
 The core transmission substations + lines were **migrated off `Transco.kml`** onto the authoritative
