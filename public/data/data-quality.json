@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-03T18:08:23.231Z",
+  "generatedAt": "2026-06-10T17:59:53.881Z",
   "notes": [
     "Source migrated from the Google-Earth KML to the authoritative AP-TRANSCO Gridmap ESRI shapefiles.",
     "Circle / voltage are now authoritative from the source layers, so inferredCircles = 0 and there are no circuit/voltage-mismatch flags.",
@@ -242,5 +242,14 @@
     "samples": []
   },
   "droppedDuplicates": [],
-  "coordWarnings": []
+  "coordWarnings": [],
+  "coastalExposure": {
+    "source": "Natural Earth 10m coastline, AP Bay-of-Bengal extract (indicative straight-line distance)",
+    "substationBands": {
+      "<10km": 39,
+      "10-25km": 46,
+      "25-50km": 49,
+      ">=50km": 242
+    }
+  }
 }

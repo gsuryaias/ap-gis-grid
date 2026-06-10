@@ -9,6 +9,8 @@ import {
   cleanPgName,
   cleanSsName,
   cleanValue,
+  coastalBand,
+  distanceToPolylineKm,
   dedupePlaces,
   detectNameFlags,
   distancePointToPolygons,
@@ -249,6 +251,33 @@ describe("etl-lib helpers", () => {
     expect(placeType("L", "RESF", 0)).toBe("forest");
     expect(placeType("H", "RSV", 0)).toBe("water");
     expect(placeType("T", "MT", 0)).toBe("hill");
+  });
+
+  it("computes min distance from a point to a polyline (coastal exposure)", () => {
+    // A meridian "coastline" along lng 81 from lat 14 to 16.
+    const coast: [number, number][][] = [[[81, 14], [81, 16]]];
+    // A point 0.9° due west at lat 15 → 0.9° × 111.195 km × cos(15°) ≈ 96.7 km.
+    expect(distanceToPolylineKm(80.1, 15, coast)).toBeCloseTo(96.7, 0);
+    // On a vertex → 0.
+    expect(distanceToPolylineKm(81, 14, coast)).toBe(0);
+    // Beyond the segment end the projection clamps: 1° due north of the top vertex ≈ 111.2 km.
+    expect(distanceToPolylineKm(81, 17, coast)).toBeCloseTo(111.2, 0);
+    // Multiple polylines: the nearer one wins.
+    const two: [number, number][][] = [...coast, [[80.2, 14], [80.2, 16]]];
+    expect(distanceToPolylineKm(80.1, 15, two)).toBeCloseTo(10.7, 0);
+    // Empty coastline → Infinity.
+    expect(distanceToPolylineKm(80, 15, [])).toBe(Infinity);
+  });
+
+  it("bands coastal distance (<10 / 10–25 / 25–50 / ≥50 km)", () => {
+    expect(coastalBand(0)).toBe(0);
+    expect(coastalBand(9.9)).toBe(0);
+    expect(coastalBand(10)).toBe(1);
+    expect(coastalBand(24.9)).toBe(1);
+    expect(coastalBand(25)).toBe(2);
+    expect(coastalBand(49.9)).toBe(2);
+    expect(coastalBand(50)).toBe(3);
+    expect(coastalBand(612.4)).toBe(3);
   });
 
   it("dedupes same-name rows within 10 km (keep most populous); far homonyms survive", () => {

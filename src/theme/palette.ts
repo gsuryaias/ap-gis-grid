@@ -44,6 +44,17 @@ export const POWERGRID_HALO = "#fda4af"; // rose-300
 export const RAILWAY_COLOR = "#7c3aed"; // violet-600 (railway-traction RTSS)
 export const BULKLOAD_COLOR = "#0d9488"; // teal-600 (bulk-load / HT consumer)
 
+// Live-weather overlay. Cyclone alert swatches use GDACS's own semantic green/orange/red
+// (universally understood for hazard levels); the track line is a dark maroon outside every
+// other palette, and at-risk substations get an amber warning halo.
+export const WX_ALERT_COLOR: Record<string, string> = {
+  Green: "#16a34a",
+  Orange: "#f59e0b",
+  Red: "#dc2626",
+};
+export const WX_TRACK_COLOR = "#881337"; // rose-900 — cyclone track + positions
+export const WX_RISK_COLOR = "#f59e0b"; // amber-500 — substations inside a forecast cone
+
 export const ENERGY_LABEL: Record<EnergyType, string> = {
   Thermal: "Thermal",
   Gas: "Gas",

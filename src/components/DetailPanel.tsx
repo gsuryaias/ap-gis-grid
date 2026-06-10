@@ -1,4 +1,9 @@
+import { useEffect, useMemo, useState } from "react";
+import { graphAnalysis } from "../data/graph-data.ts";
 import { connectedLines, connectedSubstations } from "../data/selectors.ts";
+import { loadSpotWeather, type SpotWeather } from "../data/weather.ts";
+import { compass8, haversineMeters } from "../lib/geo.ts";
+import { wmoLabel } from "../lib/weather.ts";
 import {
   isBulkLoadSubstation,
   isGeneration,
@@ -18,6 +23,8 @@ import {
 } from "../data/types.ts";
 import { ageYears, formatAge, formatDist, formatKm } from "../lib/format.ts";
 import { formatMva, lineCapacityFor } from "../lib/capacity.ts";
+import { deratedCapacityMva, formatDerating } from "../lib/dlr.ts";
+import { COASTAL_BAND_LABEL, riskTier, substationRisk } from "../lib/risk.ts";
 import { downloadText, subsetFeatures, substationsToGeoJSON } from "../lib/export.ts";
 import { useAppStore } from "../state/store.ts";
 import {
@@ -28,7 +35,17 @@ import {
   POWERGRID_COLOR,
   RAILWAY_COLOR,
 } from "../theme/palette.ts";
-import { BoltIcon, CloseIcon, DownloadIcon, LineIcon, SubstationIcon, TargetIcon, TowerIcon, WarnIcon } from "./icons.tsx";
+import {
+  BoltIcon,
+  CloseIcon,
+  DownloadIcon,
+  LineIcon,
+  SpotlightIcon,
+  SubstationIcon,
+  TargetIcon,
+  TowerIcon,
+  WarnIcon,
+} from "./icons.tsx";
 import { VoltageBadge, VoltageDot } from "./VoltageBadge.tsx";
 
 /**
@@ -86,9 +103,55 @@ function ConnectionRow({
   );
 }
 
+/**
+ * Live spot conditions for a selected substation — rendered only while the weather overlay is
+ * enabled (keeps the panel network-silent otherwise). Cached per ~1 km cell in data/weather.ts.
+ */
+function SpotConditions({ lng, lat }: { lng: number; lat: number }) {
+  const showWeather = useAppStore((s) => s.filters.showWeather);
+  const [spot, setSpot] = useState<SpotWeather | null>(null);
+  useEffect(() => {
+    if (!showWeather) return;
+    let stale = false;
+    setSpot(null);
+    loadSpotWeather(lng, lat).then((w) => {
+      if (!stale) setSpot(w);
+    }).catch(() => {});
+    return () => {
+      stale = true;
+    };
+  }, [showWeather, lng, lat]);
+  if (!showWeather || !spot) return null;
+  return (
+    <Field
+      label="Weather now"
+      value={
+        <span title="Live Open-Meteo conditions at this location — indicative">
+          {Math.round(spot.tempC)}°C · {wmoLabel(spot.code)} · wind {Math.round(spot.windKmh)} km/h{" "}
+          {compass8(spot.windDirDeg)}
+        </span>
+      }
+    />
+  );
+}
+
+// Tier accent for the vulnerability read-out — reuses the existing amber/red token styles.
+const TIER_CLASS: Record<string, string | undefined> = {
+  low: undefined,
+  moderate: "text-amber-600 dark:text-amber-300",
+  elevated: "text-amber-600 dark:text-amber-300",
+  high: "text-red-600 dark:text-red-400",
+};
+
 function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData }) {
   const select = useAppStore((s) => s.select);
   const lines = connectedLines(ss, data);
+  const ga = graphAnalysis(data);
+  const deg = ga.feedDegrees.get(ss.id) ?? 0;
+  const singleFed = ga.singleFedIds.has(ss.id);
+  // Core SS carry no commissioning date (`doc` is null in this dataset) → unknown age.
+  const risk = substationRisk({ coastalBand: ss.coastalBand, ageYears: null, feedDegree: deg, voltage: ss.voltage });
+  const tier = riskTier(risk.score);
   return (
     <>
       <Field label="Substation code" value={ss.ssCode} />
@@ -98,6 +161,48 @@ function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData })
       <Field label="Circle" value={ss.circle ? `${ss.circle}${ss.circleInferred ? " (inferred)" : ""}` : null} />
       <Field label="Commissioned" value={ss.doc} />
       <Field label="Coordinates" value={`${ss.lat.toFixed(5)}, ${ss.lng.toFixed(5)}`} />
+      <Field
+        label="Coast"
+        value={
+          ss.coastalKm != null && ss.coastalBand != null
+            ? `${formatKm(ss.coastalKm)} (${COASTAL_BAND_LABEL[ss.coastalBand]} band)`
+            : undefined
+        }
+      />
+      <Field
+        label="Vulnerability (indicative)"
+        value={
+          <span title="Screening score from coastal exposure, inferred redundancy, age and voltage — not a hazard model">
+            <span className={TIER_CLASS[tier]}>
+              {risk.score} · {tier}
+            </span>
+            <span className="block text-xs font-normal text-ink-2">{risk.factors.join(" · ")}</span>
+          </span>
+        }
+      />
+      <Field
+        label="Inferred feed"
+        value={
+          <span
+            className={singleFed ? "text-amber-600 dark:text-amber-300" : undefined}
+            title="Distinct neighbouring substations, geometrically inferred — indicative only"
+          >
+            Fed from {deg} substation{deg === 1 ? "" : "s"}
+            {singleFed ? " · single-fed" : ""}
+          </span>
+        }
+      />
+      {ga.articulationIds.has(ss.id) && (
+        <Field
+          label="Criticality"
+          value={
+            <span title="Removing this SS would split the inferred network">
+              Articulation point (inferred)
+            </span>
+          }
+        />
+      )}
+      <SpotConditions lng={ss.lng} lat={ss.lat} />
 
       <SectionTitle>
         Connected lines · {lines.length}
@@ -125,10 +230,35 @@ function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData })
 
 function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
   const select = useAppStore((s) => s.select);
+  const weather = useAppStore((s) => s.weather);
   const subs = connectedSubstations(line, data);
   const [from, to] = line.endpointLabels ?? [null, null];
   const capacity = lineCapacityFor(line);
+  // Indicative DLR: derate the nominal capacity for the live ambient temperature at the nearest
+  // circle centroid (silently absent until the live weather data has loaded).
+  const dlr = useMemo(() => {
+    const cap = lineCapacityFor(line);
+    if (!cap || !weather || weather.circles.length === 0) return null;
+    const g = data.linesFc.features.find((f) => f.properties?.id === line.id)?.geometry;
+    const anchor =
+      g?.type === "LineString" ? g.coordinates[0] : g?.type === "MultiLineString" ? g.coordinates[0]?.[0] : undefined;
+    if (!anchor) return null;
+    let nearest = weather.circles[0];
+    let bestM = Infinity;
+    for (const cw of weather.circles) {
+      const m = haversineMeters(anchor, [cw.lng, cw.lat]);
+      if (m < bestM) {
+        bestM = m;
+        nearest = cw;
+      }
+    }
+    const derated = deratedCapacityMva(cap.totalMva, nearest.current.tempC);
+    return derated ? { ...derated, tempC: nearest.current.tempC } : null;
+  }, [line, data, weather]);
   const age = ageYears(line.commissioned, new Date().getFullYear());
+  // N-1 screening (inferred): non-empty only when this line is a bridge in the inferred graph.
+  const islanded = graphAnalysis(data).bridgeImpacts.get(line.id);
+  const islandedNames = (islanded ?? []).slice(0, 5).map((id) => data.byId.get(id)?.name ?? id);
   return (
     <>
       <Field label="Voltage" value={`${line.voltage} kV`} />
@@ -148,6 +278,14 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
               <span className="ml-1 font-normal text-ink-2">
                 ({line.circuit === "DC" ? `${formatMva(capacity.perCircuitMva)}/ckt` : "thermal"})
               </span>
+              {dlr && (
+                <span
+                  className="block text-xs font-normal text-ink-2"
+                  title="Nominal capacity derated for the live ambient temperature only — indicative"
+                >
+                  Now {formatMva(dlr.mva)} ({formatDerating(dlr.factor)} at {Math.round(dlr.tempC)} °C) · indicative
+                </span>
+              )}
             </span>
           }
         />
@@ -157,12 +295,31 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
         value={line.commissioned ? `${line.commissioned}${age != null ? ` · ${formatAge(age)}` : ""}` : undefined}
       />
       <Field label="Circle" value={line.circle} />
+      <Field
+        label="Coast"
+        value={
+          line.coastalKm != null && line.coastalBand != null
+            ? `${formatKm(line.coastalKm)} (${COASTAL_BAND_LABEL[line.coastalBand]} band)`
+            : undefined
+        }
+      />
       {(from || to) && <Field label="Route (from name)" value={`${from ?? "?"} → ${to ?? "?"}`} />}
       {line.externalEndpoints && line.externalEndpoints.length > 0 && (
         <Field
           label="External endpoints"
           value={line.externalEndpoints.map((e) => `${e.name} (${e.category})`).join(", ")}
         />
+      )}
+
+      {islanded && islanded.length > 0 && (
+        <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-100/70 px-2.5 py-2 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
+          <WarnIcon width={14} height={14} className="mt-0.5 shrink-0" />
+          <span title="Pure topology on geometrically-inferred connectivity — not a contingency study">
+            Inferred N−1: outage would island {islanded.length} substation{islanded.length === 1 ? "" : "s"} —{" "}
+            {islandedNames.join(", ")}
+            {islanded.length > islandedNames.length ? ", …" : ""}.
+          </span>
+        </div>
       )}
 
       {(line.circuitAmbiguous || line.voltageMismatch) && (
@@ -203,7 +360,9 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
       {capacity && (
         <p className="mt-3 text-xs text-ink-2">
           Indicative thermal capacity derived from the {capacity.rating.base} conductor at nominal
-          conditions (√3·kV·A). Not a load-flow or authoritative rating.
+          conditions (√3·kV·A).
+          {dlr ? " “Now” derates only for the nearest circle’s live ambient temperature (no wind, solar or sag)." : ""}{" "}
+          Not a load-flow or authoritative rating.
         </p>
       )}
     </>
@@ -307,6 +466,8 @@ export function DetailPanel({ data }: { data: GridData }) {
   const select = useAppStore((s) => s.select);
   const back = useAppStore((s) => s.back);
   const flyTo = useAppStore((s) => s.select);
+  const spotlight = useAppStore((s) => s.spotlight);
+  const toggleSpotlight = useAppStore((s) => s.toggleSpotlight);
   const generation = useAppStore((s) => s.generation);
   const powergrid = useAppStore((s) => s.powergrid);
   // Overlay features (generation, PowerGrid) live in their own lazily-loaded byId maps,
@@ -376,6 +537,19 @@ export function DetailPanel({ data }: { data: GridData }) {
           <h2 className="text-[15px] font-semibold leading-snug text-ink">{feature.name}</h2>
         </div>
         <div className="flex shrink-0 gap-1">
+          {(isSubstation(feature) || isLine(feature)) && (
+            <button
+              onClick={toggleSpotlight}
+              aria-label="Spotlight inferred connections on the map"
+              aria-pressed={spotlight}
+              title="Spotlight inferred connections on the map"
+              className={`rounded-md p-1 ${
+                spotlight ? "bg-surface-3 text-accent" : "text-ink-2 hover:bg-surface-2 hover:text-ink"
+              }`}
+            >
+              <SpotlightIcon width={16} height={16} />
+            </button>
+          )}
           {(isSubstation(feature) || isLine(feature)) && (
             <button
               onClick={() => {

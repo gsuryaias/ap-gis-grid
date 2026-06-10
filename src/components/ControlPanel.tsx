@@ -9,8 +9,9 @@ import {
   POWERGRID_COLOR,
   RAILWAY_COLOR,
   VOLTAGE_COLOR,
+  WX_TRACK_COLOR,
 } from "../theme/palette.ts";
-import { BoltIcon, ChevronDown, LayersIcon, SunIcon, MoonIcon, SatelliteIcon, TowerIcon } from "./icons.tsx";
+import { BoltIcon, ChevronDown, CloudIcon, LayersIcon, SunIcon, MoonIcon, SatelliteIcon, TowerIcon } from "./icons.tsx";
 import type { Basemap } from "../state/store.ts";
 
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
@@ -172,11 +173,75 @@ function PowerGridSection() {
   );
 }
 
+function WeatherSection() {
+  const filters = useAppStore((s) => s.filters);
+  const wxStatus = useAppStore((s) => s.wxStatus);
+  const wxError = useAppStore((s) => s.wxError);
+  const weather = useAppStore((s) => s.weather);
+  const { toggleWeather, toggleWxLayer } = useAppStore.getState();
+
+  const radarTime = weather?.radar
+    ? new Date(weather.radar.time * 1000).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+    : null;
+
+  return (
+    <div className="mt-2 border-t border-line pt-1.5">
+      <Row>
+        <span className="flex items-center gap-2 text-ink">
+          <CloudIcon width={15} height={15} className="text-ink-2" />
+          Live weather
+        </span>
+        <Switch checked={filters.showWeather} onChange={() => toggleWeather()} label="Toggle live weather overlay" />
+      </Row>
+
+      {filters.showWeather && (
+        <div className="ml-1 mt-0.5 border-l border-line pl-3">
+          {wxStatus === "loading" && (
+            <p className="flex items-center gap-2 py-1 text-xs text-ink-2">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-line border-t-accent" />
+              Fetching live weather…
+            </p>
+          )}
+          {wxStatus === "error" && (
+            <p className="py-1 text-xs text-red-600 dark:text-red-400">Couldn’t load weather. {wxError}</p>
+          )}
+          {wxStatus === "ready" && weather && (
+            <>
+              <Row>
+                <span className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full ring-1 ring-white/70" style={{ backgroundColor: "#58c4f0" }} />
+                  <span className="font-medium text-ink">Rain radar</span>
+                  {radarTime && <span className="text-xs text-ink-2">{radarTime}</span>}
+                </span>
+                <Switch checked={filters.wxLayers.radar} onChange={() => toggleWxLayer("radar")} label="Toggle rain radar" />
+              </Row>
+              <Row>
+                <span className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full ring-1 ring-white/70" style={{ backgroundColor: WX_TRACK_COLOR }} />
+                  <span className="font-medium text-ink">Cyclones</span>
+                  <span className="text-xs text-ink-2">
+                    {weather.cyclones.length === 0 ? "none active" : weather.cyclones.length}
+                  </span>
+                </span>
+                <Switch checked={filters.wxLayers.cyclone} onChange={() => toggleWxLayer("cyclone")} label="Toggle cyclone tracks" />
+              </Row>
+              <p className="mt-0.5 text-[11px] leading-snug text-ink-2">
+                Open-Meteo · RainViewer · GDACS — auto-refreshes while on
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ControlPanel({ data }: { data: GridData }) {
   const [open, setOpen] = useState(true);
   const filters = useAppStore((s) => s.filters);
   const basemap = useAppStore((s) => s.basemap);
-  const { toggleVoltage, toggleCircuit, toggleShow, setBasemap, setRegionCircle } = useAppStore.getState();
+  const { toggleVoltage, toggleCircuit, toggleShow, setBasemap, setRegionCircle, setCoastalBand } =
+    useAppStore.getState();
   const regionStat = filters.circle ? data.meta.byCircle[filters.circle] : null;
 
   return (
@@ -237,6 +302,20 @@ export function ControlPanel({ data }: { data: GridData }) {
               {regionStat.substations} SS · {regionStat.lines} lines · {Math.round(regionStat.lengthKm).toLocaleString("en-IN")} km
             </p>
           )}
+          <Row>
+            <span className="text-ink">Coast</span>
+            <select
+              value={filters.coastalBand ?? ""}
+              onChange={(e) => setCoastalBand(e.target.value === "" ? null : (Number(e.target.value) as 0 | 1 | 2))}
+              aria-label="Filter by distance to the coastline"
+              className="max-w-[150px] rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink outline-none focus:border-accent"
+            >
+              <option value="">All distances</option>
+              <option value="0">&lt; 10 km</option>
+              <option value="1">&lt; 25 km</option>
+              <option value="2">&lt; 50 km</option>
+            </select>
+          </Row>
 
           {/* Feature types */}
           <div className="mt-2 border-t border-line pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">
@@ -287,6 +366,9 @@ export function ControlPanel({ data }: { data: GridData }) {
 
           {/* POWERGRID (PGCIL) overlay (lazy-loaded on first enable) */}
           <PowerGridSection />
+
+          {/* Live-weather overlay (lazy-fetched on first enable, auto-refreshed) */}
+          <WeatherSection />
 
           {/* Basemap */}
           <div className="mt-2 border-t border-line pt-2">

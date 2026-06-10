@@ -98,6 +98,49 @@ user enables it. It bundles **three classes** behind one master toggle, each wit
   Voltage shown as plain text (NOT `VoltageBadge`, which only types 400/220/132). No grid connectivity
   is modelled (the `connectedSs` string is indicative only).
 
+## Live-weather overlay + Weather monitor (lazy, real-time)
+
+The one feature that talks to **external live APIs** (everything else is static assets). All sources
+are free, keyless and CORS-enabled, so the static site calls them directly — still no backend:
+
+- **Open-Meteo forecast API** — current conditions + 3-day outlook at the **13 circle centroids**
+  (computed at runtime by `circlePoints()` from loaded substations — no ETL change, one batched call).
+- **Open-Meteo marine API** — wave/swell at 6 fixed offshore points (`AP_COAST_POINTS`).
+- **RainViewer** — composite rain-radar raster tiles. Free tier: **past frames only, zoom ≤ 7**
+  (the source is capped `maxzoom: 7`, MapLibre overzooms beyond), Universal-Blue colour scheme,
+  attribution required (on the raster source + App footer).
+- **GDACS (UN/EC JRC)** — tropical-cyclone events (`geteventlist/SEARCH?eventlist=TC`, filtered to
+  `iscurrent` + the NIO basin via `cycloneInBasin`) + per-event `getgeometry` (Class-tagged: kept
+  classes are `Line_*` track, `Poly_Cones`, `Poly_Green/Orange/Red` swaths, `Point_Centroid`).
+
+Layout: pure helpers in `src/lib/weather.ts` (+ `pointInRing`/`pointInPolygonGeom` in `geo.ts`) —
+unit-tested; fetch clients in `src/data/weather.ts` (`loadWeather()` = one `Promise.allSettled`,
+**per-source degradation**: failures land in `sourceErrors`, only all-four-down rejects); map layers
+in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
+
+- **Lazy contract**: same as generation/powergrid — nothing fetches until the ControlPanel "Live
+  weather" toggle OR the BrandHeader "Weather" dashboard opens (`toggleWeather` /
+  `toggleWeatherView` → `refreshWeather`; `wxStatus` mirrors `genStatus`). Hash key **`wx=1`**
+  (master only; `wxLayers` radar/cyclone sub-toggles are NOT in the hash, like `genTypes`). A wx=1
+  deep link arrives before grid data, so `init()` re-triggers the fetch once circle points exist.
+- **Auto-refresh**: one module-level 10-min `setInterval`, alive only while the overlay or dashboard
+  is in use (`syncWeatherTimer`); refreshes keep stale data on screen and only error when empty.
+  `weather`/`wxStatus` are otherwise transient — never persisted.
+- **Map layers** (`addWeatherLayers`, idempotent, re-run on `styledata`): radar raster + cyclone
+  fills inserted **beneath `grid-lines-casing`** so the grid stays legible; track/positions/cone
+  outline on top. Radar frame swap uses `RasterTileSource.setTiles` (URL memoised per map in a
+  WeakMap). Substations inside a forecast cone get an amber halo — a separate `wx-risk-substations`
+  circle layer on the core SS source with an id `in`-filter (NOT feature-state). Visibility is
+  gated by `applyWeatherVisibility(map, filters)` — called by MapView alongside `applyFilters`.
+- **Weather monitor** (`WeatherView`, `weatherOpen` like `summaryOpen`, not in hash): cyclone alert
+  cards (GDACS level colours + "N substations inside the forecast envelope" via `assetsInCone`),
+  13-circle conditions grid, coastal sea state, 3-day outlook table, last-updated + manual refresh.
+- **DetailPanel** shows a "Weather now" line for a selected substation **only while the overlay is
+  on** (`loadSpotWeather`, deduped per ~1 km cell in a module cache).
+- Palette: cyclone swaths use GDACS's semantic green/orange/red (`WX_ALERT_COLOR`), track is
+  rose-900 `WX_TRACK_COLOR`, risk halo amber `WX_RISK_COLOR` — all outside the voltage palette.
+  Everything is labelled **indicative** (model output, not IMD advisories) per the honesty convention.
+
 ## Measurement tool
 
 A client-side **distance / area** measure tool (top-centre `MeasureControl` pill). All geodesy is in

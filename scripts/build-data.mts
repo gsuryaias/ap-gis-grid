@@ -30,7 +30,9 @@ import {
   classifyEnergy,
   cleanPgName,
   cleanSsName,
+  coastalBand,
   distancePointToPolygons,
+  distanceToPolylineKm,
   ENERGY_TYPES,
   formatMonthYear,
   haversineMeters,
@@ -881,6 +883,44 @@ async function main(): Promise<void> {
     .slice(0, 25)
     .map((l) => ({ id: l.id, name: l.name, endpoints: l.endpointLabels }));
 
+  // ---- Coastal exposure (distance to the Bay-of-Bengal coastline) ----------
+  // Straight-line distance to the committed Natural Earth coastline extract — the canonical
+  // cyclone-exposure proxy (AP's coast is the most cyclone-struck in India). Indicative only.
+  const coastPath = resolve("data/raw/coastline-ap.geojson");
+  console.log(`[etl] reading ${coastPath}`);
+  const coastFc = JSON.parse(readFileSync(coastPath, "utf-8")) as FeatureCollection;
+  const coast: [number, number][][] = [];
+  for (const f of coastFc.features) {
+    const g = f.geometry;
+    if (g?.type === "LineString") coast.push(g.coordinates as [number, number][]);
+    else if (g?.type === "MultiLineString") coast.push(...(g.coordinates as [number, number][][]));
+  }
+  if (coast.length === 0) {
+    console.error("[etl] VALIDATION FAILED: coastline-ap.geojson has no LineString geometry");
+    process.exit(1);
+  }
+  const rnd1km = (km: number) => Math.round(km * 10) / 10;
+  const ssCoast = new Map<string, { km: number; band: 0 | 1 | 2 | 3 }>();
+  const coastBandCounts: Record<0 | 1 | 2 | 3, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
+  for (const s of substations) {
+    const km = rnd1km(distanceToPolylineKm(s.lng, s.lat, coast));
+    const band = coastalBand(km);
+    ssCoast.set(s.id, { km, band });
+    coastBandCounts[band]++;
+  }
+  // Lines: minimum distance over the line's geometry vertices.
+  const lineCoast = new Map<string, { km: number; band: 0 | 1 | 2 | 3 }>();
+  for (const [id, pos] of lineGeoms) {
+    let min = Infinity;
+    for (const c of pos) min = Math.min(min, distanceToPolylineKm(c[0], c[1], coast));
+    const km = rnd1km(min);
+    lineCoast.set(id, { km, band: coastalBand(km) });
+  }
+  console.log(
+    `[etl] coastal exposure (${coast.reduce((n, l) => n + l.length, 0)} coastline vertices): ` +
+      `SS bands <10km=${coastBandCounts[0]} / 10–25=${coastBandCounts[1]} / 25–50=${coastBandCounts[2]} / inland=${coastBandCounts[3]}`,
+  );
+
   // ---- Emit ----------------------------------------------------------------
   const ssFc: FeatureCollection = {
     type: "FeatureCollection",
@@ -906,6 +946,9 @@ async function main(): Promise<void> {
           // New optional fields (Gridmap migration)
           zone: s.zone,
           division: s.division,
+          // Coastal exposure (indicative straight-line distance to the Natural Earth coastline)
+          coastalKm: ssCoast.get(s.id)!.km,
+          coastalBand: ssCoast.get(s.id)!.band,
         },
       }),
     ),
@@ -938,6 +981,9 @@ async function main(): Promise<void> {
           conductor: l.conductor,
           commissioned: l.commissioned,
           externalEndpoints: l.externalEndpoints,
+          // Coastal exposure (min over the line's vertices; indicative straight-line distance)
+          coastalKm: lineCoast.get(l.id)!.km,
+          coastalBand: lineCoast.get(l.id)!.band,
         },
       }),
     ),
@@ -1012,6 +1058,15 @@ async function main(): Promise<void> {
     voltageMismatchLines: { count: 0, samples: [] as string[] },
     droppedDuplicates: [] as Array<{ name: string; lng: number; lat: number; keptId: string }>,
     coordWarnings,
+    coastalExposure: {
+      source: "Natural Earth 10m coastline, AP Bay-of-Bengal extract (indicative straight-line distance)",
+      substationBands: {
+        "<10km": coastBandCounts[0],
+        "10-25km": coastBandCounts[1],
+        "25-50km": coastBandCounts[2],
+        ">=50km": coastBandCounts[3],
+      },
+    },
   };
 
   writeFileSync(resolve(outDir, "substations.geojson"), JSON.stringify(ssFc));

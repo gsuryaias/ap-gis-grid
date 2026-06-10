@@ -544,6 +544,53 @@ export function distancePointToPolygons(p: [number, number], rings: Position[][]
   return best;
 }
 
+// ---- Coastal exposure (distance to the Bay-of-Bengal coastline) ------------
+// AP's coast is the most cyclone-struck in India; straight-line distance to the coastline is the
+// canonical exposure proxy. The coastline is a committed Natural Earth 10m extract
+// (data/raw/coastline-ap.geojson) — indicative, not a surveyed shoreline.
+
+/**
+ * Minimum distance in km from a point to a set of polylines ([lng, lat] vertex lists).
+ * Per segment: project the point onto the segment in a local equirectangular approximation
+ * (anchored at the point's latitude), clamp to the segment, then haversine to the closest
+ * point — exact to well under 1% at AP latitudes. Empty input → Infinity.
+ */
+export function distanceToPolylineKm(
+  lng: number,
+  lat: number,
+  coast: [number, number][][],
+): number {
+  const mLat = 111_320;
+  const mLng = 111_320 * Math.cos((lat * Math.PI) / 180);
+  let bestM = Infinity;
+  for (const line of coast) {
+    for (let i = 1; i < line.length; i++) {
+      const a = line[i - 1];
+      const b = line[i];
+      const ax = (a[0] - lng) * mLng, ay = (a[1] - lat) * mLat;
+      const bx = (b[0] - lng) * mLng, by = (b[1] - lat) * mLat;
+      const dx = bx - ax, dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      let t = len2 > 0 ? -(ax * dx + ay * dy) / len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      // Closest point on the segment, back in degrees, then exact haversine.
+      const cLng = a[0] + t * (b[0] - a[0]);
+      const cLat = a[1] + t * (b[1] - a[1]);
+      const d = haversineMeters([lng, lat], [cLng, cLat]);
+      if (d < bestM) bestM = d;
+    }
+  }
+  return bestM / 1000;
+}
+
+/** Coastal-exposure band for a distance-to-coast: 0 = <10 km, 1 = 10–25, 2 = 25–50, 3 = inland (≥50). */
+export function coastalBand(km: number): 0 | 1 | 2 | 3 {
+  if (km < 10) return 0;
+  if (km < 25) return 1;
+  if (km < 50) return 2;
+  return 3;
+}
+
 // ---- Place gazetteer (GeoNames AP extract → places.json for the search box) ----
 
 /** One parsed row of data/raw/geonames-ap.tsv (the committed GeoNames Andhra Pradesh extract). */

@@ -34,6 +34,11 @@ export interface SubstationProps {
   zone?: string | null;
   /** Operating division (authoritative, from the Gridmap SS layer). Optional. */
   division?: string | null;
+  // ---- Optional fields added in the coastal-exposure milestone ----
+  /** Indicative straight-line distance to the Bay-of-Bengal coast (Natural Earth coastline), km, 1 dp. */
+  coastalKm?: number;
+  /** Coastal-exposure band: 0 = <10 km, 1 = 10–25, 2 = 25–50, 3 = inland (≥50 km). */
+  coastalBand?: 0 | 1 | 2 | 3;
 }
 
 export interface LineProps {
@@ -60,6 +65,11 @@ export interface LineProps {
   commissioned?: string | null;
   /** Display-only non-TRANSCO endpoints (Generation/Railway/PowerGrid/HT consumer); not clickable. */
   externalEndpoints?: { name: string; category: string }[];
+  // ---- Optional fields added in the coastal-exposure milestone ----
+  /** Indicative straight-line distance to the Bay-of-Bengal coast (Natural Earth coastline), km, 1 dp — the MINIMUM over the line's vertices. */
+  coastalKm?: number;
+  /** Coastal-exposure band: 0 = <10 km, 1 = 10–25, 2 = 25–50, 3 = inland (≥50 km). */
+  coastalBand?: 0 | 1 | 2 | 3;
 }
 
 /**

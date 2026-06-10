@@ -1,11 +1,12 @@
 import type { GridData } from "../data/types.ts";
 import { formatInt } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
-import { InfoIcon, LayersIcon } from "./icons.tsx";
+import { CloudIcon, InfoIcon, LayersIcon } from "./icons.tsx";
 
 export function BrandHeader({ data }: { data: GridData }) {
   const toggleQuality = useAppStore((s) => s.toggleQuality);
   const toggleSummary = useAppStore((s) => s.toggleSummary);
+  const toggleWeatherView = useAppStore((s) => s.toggleWeatherView);
   const km = Math.round(data.meta.totalLengthKm);
 
   return (
@@ -32,6 +33,12 @@ export function BrandHeader({ data }: { data: GridData }) {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink hover:bg-surface-2"
         >
           <LayersIcon width={13} height={13} /> Summary
+        </button>
+        <button
+          onClick={() => toggleWeatherView(true)}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink hover:bg-surface-2"
+        >
+          <CloudIcon width={13} height={13} /> Weather
         </button>
         <button
           onClick={() => toggleQuality(true)}

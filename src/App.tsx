@@ -12,6 +12,7 @@ import { NearbyPanel } from "./components/NearbyPanel.tsx";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
 import { DataQualityView } from "./components/DataQualityView.tsx";
 import { SummaryView } from "./components/SummaryView.tsx";
+import { WeatherView } from "./components/WeatherView.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
 import { TableIcon } from "./components/icons.tsx";
 
@@ -112,10 +113,11 @@ export function App() {
         <DataTableSheet data={data} />
         <SummaryView data={data} />
         <DataQualityView data={data} />
+        <WeatherView data={data} />
 
         {/* Data-source credit (basemap credit is the MapLibre attribution control) */}
         <div className="pointer-events-none absolute bottom-1 left-2 z-10 text-[10px] text-ink-2/70">
-          Network data: AP-TRANSCO · Places: GeoNames (CC BY 4.0)
+          Network data: AP-TRANSCO · Places: GeoNames (CC BY 4.0) · Weather: Open-Meteo · Radar: RainViewer · Cyclones: GDACS
         </div>
       </div>
     </ErrorBoundary>

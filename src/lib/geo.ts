@@ -1,7 +1,7 @@
 // Pure geodesic helpers for the on-map measurement tool. Kept dependency-free and
 // side-effect-free so they can be unit-tested in the `node` test environment (same
 // discipline as the ETL helpers). Inputs are GeoJSON [lng, lat] positions in degrees.
-import type { Position } from "geojson";
+import type { MultiPolygon, Polygon, Position } from "geojson";
 
 /** Mean Earth radius (IUGG), metres. Used for both length and area for consistency. */
 const R = 6_371_008.8;
@@ -68,6 +68,41 @@ export function centroid(points: Position[]): Position {
   }
   const n = points.length || 1;
   return [x / n, y / n];
+}
+
+/**
+ * Ray-casting point-in-ring test for [lng, lat] positions. Planar — fine at the scale of
+ * cyclone cones / alert swaths (the same approach the ETL uses for SS compounds).
+ */
+export function pointInRing(pt: Position, ring: Position[]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > pt[1] !== yj > pt[1] && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** Point-in-polygon for a GeoJSON Polygon/MultiPolygon geometry (outer ring minus holes). */
+export function pointInPolygonGeom(pt: Position, geom: Polygon | MultiPolygon): boolean {
+  const polys = geom.type === "Polygon" ? [geom.coordinates] : geom.coordinates;
+  for (const rings of polys) {
+    if (rings.length === 0) continue;
+    if (!pointInRing(pt, rings[0])) continue;
+    // Inside the outer ring — make sure the point isn't inside a hole.
+    let inHole = false;
+    for (let h = 1; h < rings.length; h++) {
+      if (pointInRing(pt, rings[h])) {
+        inHole = true;
+        break;
+      }
+    }
+    if (!inHole) return true;
+  }
+  return false;
 }
 
 /** Human-readable distance: metres under 1 km, otherwise km (en-IN grouping). */

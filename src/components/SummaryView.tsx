@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { VOLTAGES, type GridData, type GroupStat, type Voltage } from "../data/types.ts";
+import { graphAnalysis } from "../data/graph-data.ts";
+import { isLine, VOLTAGES, type GridData, type GroupStat, type Voltage } from "../data/types.ts";
 import { formatInt, formatKm } from "../lib/format.ts";
 import { formatMva, totalIndicativeCapacity } from "../lib/capacity.ts";
+import { COASTAL_BAND_LABEL, riskTier, substationRisk, type CoastalBand } from "../lib/risk.ts";
 import { useAppStore } from "../state/store.ts";
 import { VOLTAGE_COLOR } from "../theme/palette.ts";
 import { ChevronDown, CloseIcon, TargetIcon } from "./icons.tsx";
@@ -37,12 +39,47 @@ export function SummaryView({ data }: { data: GridData }) {
   const open = useAppStore((s) => s.summaryOpen);
   const toggle = useAppStore((s) => s.toggleSummary);
   const isolateVoltage = useAppStore((s) => s.isolateVoltage);
+  const select = useAppStore((s) => s.select);
   const [groupBy, setGroupBy] = useState<GroupBy>("voltage");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   if (!open) return null;
 
   const m = data.meta;
   const capacity = totalIndicativeCapacity(data.lines);
+  // Topological criticality (inferred graph; WeakMap-memoised per GridData instance).
+  const ga = graphAnalysis(data);
+  let doubleFed = 0;
+  for (const d of ga.feedDegrees.values()) if (d === 2) doubleFed++;
+  // Coastal exposure: per-band counts plus an indicative high-tier substation screen.
+  const coastalBands = ([0, 1, 2, 3] as CoastalBand[]).map((band) => {
+    let substations = 0;
+    for (const s of data.substations) if (s.coastalBand === band) substations++;
+    let lines = 0;
+    let lineKm = 0;
+    for (const l of data.lines) {
+      if (l.coastalBand !== band) continue;
+      lines++;
+      lineKm += l.lengthKm ?? 0;
+    }
+    return { band, substations, lines, lineKm };
+  });
+  let highRiskSs = 0;
+  for (const s of data.substations) {
+    const r = substationRisk({
+      coastalBand: s.coastalBand,
+      ageYears: null, // core SS carry no commissioning date in this dataset
+      feedDegree: ga.feedDegrees.get(s.id) ?? 0,
+      voltage: s.voltage,
+    });
+    if (riskTier(r.score) === "high") highRiskSs++;
+  }
+  const topBridges = [...ga.bridgeImpacts.entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 10)
+    .flatMap(([id, islanded]) => {
+      const line = data.byId.get(id);
+      return line && isLine(line) ? [{ line, islanded: islanded.length }] : [];
+    });
   const maxCkm = Math.max(
     ...VOLTAGES.map((v) => m.byVoltage[v]?.circuitKm ?? 0),
     ...m.circles.map((c) => m.byCircle[c]?.circuitKm ?? 0),
@@ -172,6 +209,79 @@ export function SummaryView({ data }: { data: GridData }) {
               </div>
             );
           })}
+
+          <div className="mt-4 px-2">
+            <h3 className="text-base font-semibold text-ink">Resilience (inferred)</h3>
+            <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <Kpi label="Single-fed SS" value={formatInt(ga.singleFedIds.size)} />
+              <Kpi label="Double-fed SS" value={formatInt(doubleFed)} />
+              <Kpi label="Bridge lines" value={formatInt(ga.bridgeImpacts.size)} />
+              <Kpi label="Articulation SS" value={formatInt(ga.articulationIds.size)} />
+            </div>
+            {topBridges.length > 0 && (
+              <>
+                <div className="mt-3 flex items-center justify-between pb-1 pr-1 text-[10px] font-semibold uppercase tracking-wide text-ink-2">
+                  <span>Top bridge lines (N−1 islanding)</span>
+                  <span>SS islanded</span>
+                </div>
+                {topBridges.map(({ line, islanded }) => (
+                  <button
+                    key={line.id}
+                    onClick={() => {
+                      select(line.id, { fly: true });
+                      toggle(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md border-b border-line/60 py-1.5 pl-1 pr-2 text-left last:border-0 hover:bg-surface-2"
+                  >
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: VOLTAGE_COLOR[line.voltage] }} />
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink">{line.name}</span>
+                    <span className="shrink-0 text-xs text-ink-2">{line.voltage} kV</span>
+                    <span className="w-8 shrink-0 text-right text-sm font-semibold tabular-nums text-ink">
+                      {formatInt(islanded)}
+                    </span>
+                  </button>
+                ))}
+              </>
+            )}
+            <p className="mt-2 text-xs text-ink-2">
+              Derived from geometric endpoint snapping — indicative, not an operational contingency study.
+            </p>
+          </div>
+
+          <div className="mt-4 px-2">
+            <h3 className="text-base font-semibold text-ink">Coastal exposure (indicative)</h3>
+            <div className="mt-2 overflow-hidden rounded-xl border border-line">
+              <table className="w-full text-sm tabular-nums">
+                <thead>
+                  <tr className="bg-surface-2 text-[10px] font-semibold uppercase tracking-wide text-ink-2">
+                    <th className="px-3 py-1.5 text-left font-semibold">Band</th>
+                    <th className="px-3 py-1.5 text-right font-semibold">Substations</th>
+                    <th className="px-3 py-1.5 text-right font-semibold">Lines</th>
+                    <th className="px-3 py-1.5 text-right font-semibold">Line km</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coastalBands.map((b) => (
+                    <tr key={b.band} className="border-t border-line/60">
+                      <td className="px-3 py-1.5 text-ink">{COASTAL_BAND_LABEL[b.band]}</td>
+                      <td className="px-3 py-1.5 text-right text-ink">{formatInt(b.substations)}</td>
+                      <td className="px-3 py-1.5 text-right text-ink">{formatInt(b.lines)}</td>
+                      <td className="px-3 py-1.5 text-right text-ink">{formatKm(b.lineKm)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-sm text-ink-2">
+              <span className="font-semibold text-ink">{formatInt(highRiskSs)}</span> substation
+              {highRiskSs === 1 ? "" : "s"} in the “high” vulnerability tier (coastal exposure ×
+              inferred redundancy × age × voltage screening).
+            </p>
+            <p className="mt-2 text-xs text-ink-2">
+              Straight-line distance to the Natural Earth coastline — a screening proxy for cyclone
+              and salinity exposure, not a hazard model.
+            </p>
+          </div>
         </div>
       </div>
     </div>

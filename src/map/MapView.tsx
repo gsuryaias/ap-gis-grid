@@ -3,18 +3,22 @@ import maplibregl, { type LngLatBoundsLike, Map as MlMap } from "maplibre-gl";
 import type { GenerationData, GridData, PowerGridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { BASEMAPS } from "./basemaps.ts";
+import { graphAnalysis, spotlightFor, type SpotlightSets } from "../data/graph-data.ts";
 import {
   addGenerationLayers,
   addGridLayers,
   addPowerGridLayers,
   ALL_INTERACTIVE,
   applyFilters,
+  applySpotlight,
   INTERACTIVE_LAYERS,
   LAYER,
   POWERGRID_INTERACTIVE,
   SRC,
 } from "./layers.ts";
 import { MeasureController } from "./measure.ts";
+import { addWeatherLayers, applyWeatherVisibility } from "./weather-layers.ts";
+import { assetsInCone } from "../lib/weather.ts";
 
 /** Feature hover/selection is suppressed while a click-capturing tool (measure / nearby) is active. */
 const clickSuppressed = (): boolean => {
@@ -138,11 +142,23 @@ export function MapView({ data }: { data: GridData }) {
   const flySignal = useAppStore((s) => s.flySignal);
   const generation = useAppStore((s) => s.generation);
   const powergrid = useAppStore((s) => s.powergrid);
+  const weather = useAppStore((s) => s.weather);
   const measureMode = useAppStore((s) => s.measureMode);
   const measureClearNonce = useAppStore((s) => s.measureClearNonce);
   const regionCircle = useAppStore((s) => s.filters.circle);
   const nearbyMode = useAppStore((s) => s.nearbyMode);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
+  const spotlight = useAppStore((s) => s.spotlight);
+
+  // The core ids to keep at full opacity while the spotlight is armed (null = nothing dimmed —
+  // spotlight off, no selection, or an overlay selection). Graph access is WeakMap-memoised.
+  const currentSpotlight = useCallback((): SpotlightSets | null => {
+    const st = useAppStore.getState();
+    if (!st.spotlight || !st.selectedId) return null;
+    const f = data.byId.get(st.selectedId);
+    if (!f || f.kind === "generation") return null;
+    return spotlightFor(graphAnalysis(data), f);
+  }, [data]);
 
   // Add the generation source/layers (when loaded) and bind its interaction handlers once.
   // Idempotent: safe to call after the initial load and after every basemap style reload.
@@ -215,6 +231,20 @@ export function MapView({ data }: { data: GridData }) {
         });
       }
       pgBound.current = true;
+    },
+    [data],
+  );
+
+  // Add/refresh the weather sources + layers (when loaded). Idempotent: safe after the lazy
+  // fetch, after every auto-refresh (new radar frame / cyclone fixes), and after style reloads.
+  const mountWeather = useCallback(
+    (map: MlMap) => {
+      const st = useAppStore.getState();
+      if (!st.weather) return;
+      const cones = st.weather.cyclones.flatMap((ev) => ev.conePolygons);
+      const riskIds = cones.length ? assetsInCone(data.substations, cones).map((s) => s.id) : [];
+      addWeatherLayers(map, st.weather, riskIds);
+      applyWeatherVisibility(map, st.filters);
     },
     [data],
   );
@@ -302,6 +332,7 @@ export function MapView({ data }: { data: GridData }) {
       prevCircle.current = st.filters.circle;
       mountGeneration(map); // no-op unless a gen=1 deep link already finished loading
       mountPowerGrid(map); // no-op unless a pg=1 deep link already finished loading
+      mountWeather(map); // no-op unless a wx=1 deep link already finished loading
       if (st.flySignal) flyToFeature(map, data, st.generation, st.powergrid, st.flySignal.id);
       else if (st.filters.circle) fitToCircle(map, data, st.filters.circle); // deep-linked region slice
     });
@@ -316,7 +347,7 @@ export function MapView({ data }: { data: GridData }) {
       map.remove();
       mapRef.current = null;
     };
-  }, [data, mountGeneration, mountPowerGrid]);
+  }, [data, mountGeneration, mountPowerGrid, mountWeather]);
 
   // --- Basemap switch -------------------------------------------------------
   useEffect(() => {
@@ -328,14 +359,16 @@ export function MapView({ data }: { data: GridData }) {
       addGridLayers(map, data, basemap);
       mountGeneration(map); // setStyle drops custom sources/layers — re-add the overlays
       mountPowerGrid(map);
+      mountWeather(map);
       measureRef.current?.ensureLayers(basemap); // ...same for the measurement overlay
       applyFilters(map, useAppStore.getState().filters);
+      applySpotlight(map, currentSpotlight()); // re-dim — re-added layers carry default paint
       const st = useAppStore.getState();
       setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
       setFeatState(map, data, st.generation, st.powergrid, st.hoverId, "hover", true);
     };
     map.once("styledata", onStyle);
-  }, [basemap, data, mountGeneration, mountPowerGrid]);
+  }, [basemap, data, mountGeneration, mountPowerGrid, mountWeather, currentSpotlight]);
 
   // --- Measurement tool -----------------------------------------------------
   useEffect(() => {
@@ -389,7 +422,9 @@ export function MapView({ data }: { data: GridData }) {
   // --- Filters --------------------------------------------------------------
   useEffect(() => {
     const map = mapRef.current;
-    if (map && readyRef.current) applyFilters(map, filters);
+    if (!map || !readyRef.current) return;
+    applyFilters(map, filters);
+    applyWeatherVisibility(map, filters);
   }, [filters]);
 
   // --- Region slice: zoom to the selected circle (or back out) on change ----
@@ -411,6 +446,19 @@ export function MapView({ data }: { data: GridData }) {
     const map = mapRef.current;
     if (map && readyRef.current && powergrid) mountPowerGrid(map);
   }, [powergrid, mountPowerGrid]);
+
+  // --- Weather arrives or refreshes (lazy, auto-refreshed) -------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && readyRef.current && weather) mountWeather(map);
+  }, [weather, mountWeather]);
+
+  // --- Connection spotlight (dim core features outside the inferred neighborhood) ---
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    applySpotlight(map, currentSpotlight());
+  }, [spotlight, selectedId, currentSpotlight]);
 
   // --- Selection highlight --------------------------------------------------
   useEffect(() => {

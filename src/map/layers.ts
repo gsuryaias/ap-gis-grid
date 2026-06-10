@@ -111,6 +111,19 @@ const lineWidth = zoomInterp(LINE_STOPS, (v) => ["*", v, LINE_SEL]);
 const casingWidth = zoomInterp(LINE_STOPS, (v) => ["+", ["*", v, LINE_SEL], CASE_EXTRA]);
 const ssRadius = zoomInterp(SS_STOPS, (v) => ["*", v, SS_SEL]);
 
+// Default opacities for the core layers — shared with the connection spotlight, which swaps
+// them for an id-membership case expression and restores these exact values on exit. Opacity
+// carries no zoom interpolate (width/radius do), so the case wrapper is safe w.r.t. the
+// "zoom must be a top-level input" rule.
+const CASING_OPACITY = e([
+  "case",
+  ["boolean", ["feature-state", "selected"], false], 0.95,
+  ["boolean", ["feature-state", "hover"], false], 0.85,
+  0.75,
+]);
+const LINE_OPACITY = 0.95;
+const SS_OPACITY = 0.95;
+
 function casingColor(def: (typeof BASEMAPS)[Basemap]): ExpressionSpecification {
   return e([
     "case",
@@ -415,12 +428,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
       paint: {
         "line-color": casingColor(def),
         "line-width": casingWidth,
-        "line-opacity": e([
-          "case",
-          ["boolean", ["feature-state", "selected"], false], 0.95,
-          ["boolean", ["feature-state", "hover"], false], 0.85,
-          0.75,
-        ]),
+        "line-opacity": CASING_OPACITY,
       },
     },
     {
@@ -429,7 +437,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
       source: SRC.lines,
       filter: e(["==", ["get", "circuit"], "SC"]),
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": voltColor, "line-width": lineWidth, "line-opacity": 0.95 },
+      paint: { "line-color": voltColor, "line-width": lineWidth, "line-opacity": LINE_OPACITY },
     },
     {
       id: LAYER.linesDC,
@@ -440,7 +448,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
       paint: {
         "line-color": voltColor,
         "line-width": lineWidth,
-        "line-opacity": 0.95,
+        "line-opacity": LINE_OPACITY,
         "line-dasharray": [2.2, 1.4],
       },
     },
@@ -462,7 +470,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
           ["boolean", ["feature-state", "hover"], false], 2,
           1.1,
         ]),
-        "circle-opacity": 0.95,
+        "circle-opacity": SS_OPACITY,
       },
     },
     {
@@ -508,15 +516,23 @@ export function applyFilters(map: MlMap, filters: FilterState): void {
   const circuitFilter = e(["in", ["get", "circuit"], ["literal", enabledCircuits]]);
   // Regional slice (core network): both lines and substations carry `circle`.
   const circleParts: unknown[] = filters.circle ? [["==", ["get", "circle"], filters.circle]] : [];
+  // Coastal slice (core network, cumulative ≤ band). The has-guard excludes features missing
+  // the prop — a bare <= against a missing value would otherwise evaluate to a type error.
+  const coastParts: unknown[] =
+    filters.coastalBand != null
+      ? [["all", ["has", "coastalBand"], ["<=", ["get", "coastalBand"], filters.coastalBand]]]
+      : [];
 
   if (map.getLayer(LAYER.linesCasing))
-    map.setFilter(LAYER.linesCasing, e(["all", voltFilter, circuitFilter, ...circleParts]));
+    map.setFilter(LAYER.linesCasing, e(["all", voltFilter, circuitFilter, ...circleParts, ...coastParts]));
   if (map.getLayer(LAYER.linesSC))
-    map.setFilter(LAYER.linesSC, e(["all", ["==", ["get", "circuit"], "SC"], voltFilter, ...circleParts]));
+    map.setFilter(LAYER.linesSC, e(["all", ["==", ["get", "circuit"], "SC"], voltFilter, ...circleParts, ...coastParts]));
   if (map.getLayer(LAYER.linesDC))
-    map.setFilter(LAYER.linesDC, e(["all", ["==", ["get", "circuit"], "DC"], voltFilter, ...circleParts]));
-  if (map.getLayer(LAYER.substations)) map.setFilter(LAYER.substations, e(["all", voltFilter, ...circleParts]));
-  if (map.getLayer(LAYER.ssLabels)) map.setFilter(LAYER.ssLabels, e(["all", voltFilter, ...circleParts]));
+    map.setFilter(LAYER.linesDC, e(["all", ["==", ["get", "circuit"], "DC"], voltFilter, ...circleParts, ...coastParts]));
+  if (map.getLayer(LAYER.substations))
+    map.setFilter(LAYER.substations, e(["all", voltFilter, ...circleParts, ...coastParts]));
+  if (map.getLayer(LAYER.ssLabels))
+    map.setFilter(LAYER.ssLabels, e(["all", voltFilter, ...circleParts, ...coastParts]));
 
   const vis = (on: boolean) => (on ? "visible" : "none");
   const set = (id: string, on: boolean) => {
@@ -547,4 +563,38 @@ export function applyFilters(map: MlMap, filters: FilterState): void {
   set(LAYER.railwayLabels, pgOn && filters.pgClasses.railway);
   set(LAYER.bulkloadSubstations, pgOn && filters.pgClasses.bulkload);
   set(LAYER.bulkloadLabels, pgOn && filters.pgClasses.bulkload);
+}
+
+// Spotlight dim levels for core features outside the selection's inferred neighborhood.
+const SPOT_DIM_LINE = 0.12;
+const SPOT_DIM_SS = 0.15;
+
+/**
+ * Connection spotlight: dim every CORE line/substation/label whose id is outside the selection's
+ * inferred neighborhood (overlays are untouched — core grid only). Pass null to restore the
+ * default opacities. Uses the same id-membership pattern as the wx-risk-substations filter, but
+ * via paint opacity so the dimmed features stay visible (and clickable) as context. Must be
+ * re-applied after `styledata` — setStyle re-adds the layers with their default paint.
+ */
+export function applySpotlight(map: MlMap, spot: { ssIds: Set<string>; lineIds: Set<string> } | null): void {
+  const setP = (id: string, prop: string, value: unknown) => {
+    if (map.getLayer(id)) map.setPaintProperty(id, prop, value);
+  };
+  if (!spot) {
+    setP(LAYER.linesCasing, "line-opacity", CASING_OPACITY);
+    setP(LAYER.linesSC, "line-opacity", LINE_OPACITY);
+    setP(LAYER.linesDC, "line-opacity", LINE_OPACITY);
+    setP(LAYER.substations, "circle-opacity", SS_OPACITY);
+    setP(LAYER.substations, "circle-stroke-opacity", 1);
+    setP(LAYER.ssLabels, "text-opacity", 1);
+    return;
+  }
+  const inLine = ["in", ["get", "id"], ["literal", [...spot.lineIds]]];
+  const inSs = ["in", ["get", "id"], ["literal", [...spot.ssIds]]];
+  setP(LAYER.linesCasing, "line-opacity", e(["case", inLine, CASING_OPACITY, SPOT_DIM_LINE]));
+  setP(LAYER.linesSC, "line-opacity", e(["case", inLine, LINE_OPACITY, SPOT_DIM_LINE]));
+  setP(LAYER.linesDC, "line-opacity", e(["case", inLine, LINE_OPACITY, SPOT_DIM_LINE]));
+  setP(LAYER.substations, "circle-opacity", e(["case", inSs, SS_OPACITY, SPOT_DIM_SS]));
+  setP(LAYER.substations, "circle-stroke-opacity", e(["case", inSs, 1, SPOT_DIM_SS]));
+  setP(LAYER.ssLabels, "text-opacity", e(["case", inSs, 1, SPOT_DIM_SS]));
 }

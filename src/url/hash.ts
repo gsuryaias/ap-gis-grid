@@ -13,9 +13,12 @@ export interface HashState {
   showLines: boolean;
   showGeneration: boolean;
   showPowerGrid: boolean;
+  showWeather: boolean;
   tableOpen: boolean;
   /** Regional slice by AP-TRANSCO circle (null = all). */
   circle?: string | null;
+  /** Coastal slice by exposure band (cumulative ≤; null = all distances). */
+  coastalBand?: 0 | 1 | 2 | 3 | null;
 }
 
 export const defaultHashState: HashState = {
@@ -27,8 +30,10 @@ export const defaultHashState: HashState = {
   showLines: true,
   showGeneration: false,
   showPowerGrid: false,
+  showWeather: false,
   tableOpen: false,
   circle: null,
+  coastalBand: null,
 };
 
 export function serializeHash(s: HashState): string {
@@ -44,8 +49,10 @@ export function serializeHash(s: HashState): string {
   if (show.length !== 2) p.set("show", show.join(","));
   if (s.showGeneration) p.set("gen", "1");
   if (s.showPowerGrid) p.set("pg", "1");
+  if (s.showWeather) p.set("wx", "1");
   if (s.tableOpen) p.set("tbl", "1");
   if (s.circle) p.set("circle", s.circle);
+  if (s.coastalBand != null) p.set("coast", String(s.coastalBand)); // band 0 is a real value
   return `#${p.toString()}`;
 }
 
@@ -85,9 +92,16 @@ export function parseHash(hash: string): Partial<HashState> {
 
   out.showGeneration = p.get("gen") === "1";
   out.showPowerGrid = p.get("pg") === "1";
+  out.showWeather = p.get("wx") === "1";
   out.tableOpen = p.get("tbl") === "1";
 
   const circle = p.get("circle");
   if (circle) out.circle = circle;
+
+  const coast = p.get("coast");
+  if (coast != null) {
+    const n = Number(coast);
+    if (n === 0 || n === 1 || n === 2 || n === 3) out.coastalBand = n;
+  }
   return out;
 }

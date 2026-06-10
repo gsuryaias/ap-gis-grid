@@ -76,3 +76,33 @@ export const DownloadIcon = (p: P) => (
 export const PinIcon = (p: P) => (
   <svg {...base(p)}><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>
 );
+export const CloudIcon = (p: P) => (
+  <svg {...base(p)}><path d="M17.5 19a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.1 8.5 4.5 4.5 0 0 0 6.5 19h11Z" /></svg>
+);
+export const CloudRainIcon = (p: P) => (
+  <svg {...base(p)}><path d="M17.5 16a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.1 5.5 4.5 4.5 0 0 0 6.5 16h11Z" /><path d="M8 19v2M12 19v2M16 19v2" /></svg>
+);
+export const FogIcon = (p: P) => (
+  <svg {...base(p)}><path d="M17.5 14a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.1 3.5 4.5 4.5 0 0 0 6.5 14h11Z" /><path d="M5 18h14M7 21h10" /></svg>
+);
+export const StormIcon = (p: P) => (
+  <svg {...base(p)}><path d="M17.5 15a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.1 4.5 4.5 4.5 0 0 0 6.5 15h11Z" /><path d="m12.5 15-2 4h3l-2 4" /></svg>
+);
+export const SnowIcon = (p: P) => (
+  <svg {...base(p)}><path d="M12 3v18M5 6.5l14 11M19 6.5l-14 11" /></svg>
+);
+export const WindIcon = (p: P) => (
+  <svg {...base(p)}><path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7a2.5 2.5 0 1 1-2.5 2.5" /></svg>
+);
+export const WaveIcon = (p: P) => (
+  <svg {...base(p)}><path d="M2 12c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0" /><path d="M2 18c2-2.5 4-2.5 6 0s4 2.5 6 0 4-2.5 6 0" /></svg>
+);
+export const RefreshIcon = (p: P) => (
+  <svg {...base(p)}><path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 3v6h-6" /></svg>
+);
+export const SpotlightIcon = (p: P) => (
+  <svg {...base(p)}><circle cx="12" cy="12" r="3" /><path d="M12 4V2M12 22v-2M4 12H2M22 12h-2M6.3 6.3 4.9 4.9M19.1 19.1l-1.4-1.4M17.7 6.3l1.4-1.4M4.9 19.1l1.4-1.4" /></svg>
+);
+export const CycloneIcon = (p: P) => (
+  <svg {...base(p)}><circle cx="12" cy="12" r="2.5" /><path d="M12 2.5a9.5 9.5 0 0 1 9.5 9.5M12 21.5A9.5 9.5 0 0 1 2.5 12" /><path d="M12 6a6 6 0 0 1 6 6M12 18a6 6 0 0 1-6-6" /></svg>
+);
