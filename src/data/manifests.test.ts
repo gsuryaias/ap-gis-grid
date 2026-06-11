@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   gateManifest,
   loadManifest,
+  LIVE_DATA_MANIFEST_IDS,
   MANIFEST_GATES,
   staleness,
   validateManifest,
@@ -115,7 +116,7 @@ describe("staleness", () => {
 describe("live data-branch manifests", () => {
   const live = process.env.CI === "true";
 
-  for (const id of Object.keys(MANIFEST_GATES)) {
+  for (const id of LIVE_DATA_MANIFEST_IDS) {
     it.skipIf(!live)(`validates ${id} from the data branch`, async () => {
       const m = await loadManifest(id);
       expect(m, `${id} manifest missing or invalid on data branch`).not.toBeNull();

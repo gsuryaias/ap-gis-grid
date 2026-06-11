@@ -91,6 +91,9 @@ export const MANIFEST_GATES: Record<string, { schema: Record<string, string>; mi
   },
 };
 
+/** Manifest ids the CI deploy gate expects on the live `data` branch (add here once the pipeline ships). */
+export const LIVE_DATA_MANIFEST_IDS = ["psp-daily", "vidyut-daily"] as const;
+
 /** Fetches `manifests/<id>.json` from the data branch; null on ANY failure — never throws. */
 export async function loadManifest(id: string): Promise<DatasetManifest | null> {
   try {
