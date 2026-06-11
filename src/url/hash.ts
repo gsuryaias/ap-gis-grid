@@ -1,10 +1,13 @@
 // Typed, versioned URL-hash (de)serializer. Selection is keyed on synthetic feature IDs
 // (never names — many substations share a name), so deep links are unambiguous.
 import { CIRCUITS, VOLTAGES, type Circuit, type Voltage } from "../data/types.ts";
+import { isWorkspaceId, type WorkspaceId } from "../workspaces/registry.ts";
 
 const VERSION = 1;
 
 export interface HashState {
+  /** Active workspace (`w` key; absent or unknown = atlas). */
+  workspace: WorkspaceId;
   selectedId: string | null;
   basemap: "light" | "dark" | "satellite";
   voltages: Voltage[];
@@ -22,6 +25,7 @@ export interface HashState {
 }
 
 export const defaultHashState: HashState = {
+  workspace: "atlas",
   selectedId: null,
   basemap: "light",
   voltages: [...VOLTAGES],
@@ -39,6 +43,7 @@ export const defaultHashState: HashState = {
 export function serializeHash(s: HashState): string {
   const p = new URLSearchParams();
   p.set("v", String(VERSION));
+  if (s.workspace !== "atlas") p.set("w", s.workspace);
   if (s.selectedId) p.set("sel", s.selectedId);
   if (s.basemap !== "light") p.set("base", s.basemap);
   if (s.voltages.length !== VOLTAGES.length) p.set("volt", s.voltages.join(","));
@@ -62,6 +67,10 @@ export function parseHash(hash: string): Partial<HashState> {
   const p = new URLSearchParams(raw);
   if (p.get("v") !== String(VERSION)) return {}; // unknown/legacy schema → ignore
   const out: Partial<HashState> = {};
+
+  // Absent or unknown `w` resolves to the Atlas, so every pre-shell deep link keeps working.
+  const w = p.get("w");
+  out.workspace = isWorkspaceId(w) ? w : "atlas";
 
   const sel = p.get("sel");
   if (sel) out.selectedId = sel;

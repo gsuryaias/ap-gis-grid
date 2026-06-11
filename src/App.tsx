@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, type ComponentType, type LazyExoticComponent } from "react";
 import { useAppStore } from "./state/store.ts";
+import { WORKSPACES, type WorkspaceId } from "./workspaces/registry.ts";
 import { useHashSync } from "./url/useHashSync.ts";
 import { MapView } from "./map/MapView.tsx";
 import { BrandHeader } from "./components/BrandHeader.tsx";
@@ -15,6 +16,12 @@ import { SummaryView } from "./components/SummaryView.tsx";
 import { WeatherView } from "./components/WeatherView.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
 import { TableIcon } from "./components/icons.tsx";
+
+// One stable React.lazy component per non-atlas workspace (module-level so identity survives
+// re-renders); each dynamic import becomes its own Vite chunk, loaded on first entry only.
+const LAZY_WORKSPACES = Object.fromEntries(
+  WORKSPACES.filter((w) => w.load).map((w) => [w.id, lazy(w.load!)]),
+) as Partial<Record<WorkspaceId, LazyExoticComponent<ComponentType>>>;
 
 function Loading() {
   return (
@@ -52,6 +59,7 @@ export function App() {
   const tableOpen = useAppStore((s) => s.tableOpen);
   const toggleTable = useAppStore((s) => s.toggleTable);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
+  const workspace = useAppStore((s) => s.workspace);
   const init = useAppStore((s) => s.init);
 
   useHashSync();
@@ -67,6 +75,26 @@ export function App() {
 
   if (status === "loading") return <Loading />;
   if (status === "error" || !data) return <ErrorScreen message={error ?? "Unknown error"} />;
+
+  // Non-atlas workspaces: render the lazy chunk full-screen (no MapView) with the BrandHeader
+  // kept on top so the user can always switch back. The Atlas path below is untouched.
+  const LazyWorkspace = workspace !== "atlas" ? LAZY_WORKSPACES[workspace] : undefined;
+  if (LazyWorkspace) {
+    return (
+      <ErrorBoundary>
+        <div className="relative h-full w-full overflow-hidden">
+          <Suspense fallback={<Loading />}>
+            <LazyWorkspace />
+          </Suspense>
+          <div className="pointer-events-none absolute left-3 top-3 z-20 w-[268px] max-w-[calc(100vw-1.5rem)]">
+            <div className="pointer-events-auto">
+              <BrandHeader data={data} />
+            </div>
+          </div>
+        </div>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -95,8 +123,8 @@ export function App() {
           <NearbyControl />
         </div>
 
-        {/* Right panel — the nearby readout pre-empts the detail panel while a query origin is set. */}
-        <div className="pointer-events-none absolute right-3 top-3 z-20 max-h-[calc(100%-1.5rem)] max-w-[calc(100vw-1.5rem)]">
+        {/* Right panel — bounded to the viewport so long detail lists scroll internally. */}
+        <div className="pointer-events-none absolute right-3 top-3 z-20 flex max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw-1.5rem)] flex-col">
           {nearbyOrigin ? <NearbyPanel data={data} /> : <DetailPanel data={data} />}
         </div>
 

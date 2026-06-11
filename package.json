@@ -9,17 +9,23 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "build:data": "tsx scripts/build-data.mts",
+    "pipeline:psp": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/psp-daily.mts",
+    "pipeline:vidyut": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/vidyut-daily.mts",
+    "pipelines": "npm run pipeline:psp && npm run pipeline:vidyut",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.33.1-dev45.0",
     "@tanstack/react-table": "^8.21.3",
+    "echarts": "^6.1.0",
     "maplibre-gl": "^5.8.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@duckdb/node-api": "^1.5.3-r.3",
     "@tailwindcss/vite": "^4.1.7",
     "@tmcw/togeojson": "^7.1.2",
     "@types/geojson": "^7946.0.16",
@@ -35,6 +41,7 @@
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
-    "vitest": "^3.1.4"
+    "vitest": "^3.1.4",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

@@ -17,6 +17,7 @@ import {
   type Voltage,
 } from "../data/types.ts";
 import { defaultHashState, type HashState } from "../url/hash.ts";
+import type { WorkspaceId } from "../workspaces/registry.ts";
 
 export type Basemap = "light" | "dark" | "satellite";
 type Status = "loading" | "ready" | "error";
@@ -42,6 +43,9 @@ interface AppState {
   status: Status;
   error: string | null;
   data: GridData | null;
+
+  /** Active workspace (DSS shell). "atlas" renders the original app tree unchanged. */
+  workspace: WorkspaceId;
 
   selectedId: string | null;
   history: string[];
@@ -88,6 +92,7 @@ interface AppState {
   placesStatus: GenStatus;
 
   init: () => Promise<void>;
+  setWorkspace: (w: WorkspaceId) => void;
   select: (id: string | null, opts?: { fly?: boolean }) => void;
   back: () => void;
   setHover: (id: string | null) => void;
@@ -160,6 +165,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   error: null,
   data: null,
 
+  workspace: "atlas",
+
   selectedId: null,
   history: [],
   hoverId: null,
@@ -208,6 +215,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ status: "error", error: e instanceof Error ? e.message : String(e) });
     }
   },
+
+  setWorkspace: (workspace) => set({ workspace }),
 
   select: (id, opts) =>
     set((s) => ({
@@ -380,6 +389,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Hash edits can also flip wx off — keep the auto-refresh timer in sync either way.
       Promise.resolve().then(() => syncWeatherTimer(get));
       return {
+        workspace: h.workspace ?? s.workspace,
         selectedId,
         history: selectedId === s.selectedId ? s.history : [],
         basemap: h.basemap ?? s.basemap,
@@ -406,6 +416,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const s = get();
     return {
       ...defaultHashState,
+      workspace: s.workspace,
       selectedId: s.selectedId,
       basemap: s.basemap,
       tableOpen: s.tableOpen,

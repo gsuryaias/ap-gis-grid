@@ -27,10 +27,10 @@ export function NearbyPanel({ data }: { data: GridData }) {
 
   return (
     <aside
-      className="pointer-events-auto flex max-h-full w-[320px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
+      className="pointer-events-auto flex min-h-0 max-h-full w-[320px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
       aria-label="Nearby substations"
     >
-      <header className="flex items-center gap-2 border-b border-line px-4 py-3">
+      <header className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-3">
         <span className="text-ink-2">
           <TargetIcon width={18} height={18} />
         </span>
@@ -47,7 +47,7 @@ export function NearbyPanel({ data }: { data: GridData }) {
         </button>
       </header>
 
-      <div className="overflow-auto px-2 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2">
         {hits.length === 0 ? (
           <p className="px-2 py-3 text-sm text-ink-2">No substations match the current voltage / circle filter.</p>
         ) : (
@@ -70,7 +70,7 @@ export function NearbyPanel({ data }: { data: GridData }) {
         )}
       </div>
 
-      <div className="border-t border-line px-4 py-1.5 text-[11px] text-ink-2">
+      <div className="shrink-0 border-t border-line px-4 py-1.5 text-[11px] text-ink-2">
         {origin.lat.toFixed(4)}, {origin.lng.toFixed(4)} · within current voltage{filters.circle ? " + circle" : ""} filter
       </div>
     </aside>

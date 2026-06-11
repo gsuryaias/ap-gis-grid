@@ -481,19 +481,19 @@ export function DetailPanel({ data }: { data: GridData }) {
 
   return (
     <aside
-      className="pointer-events-auto flex max-h-full w-[340px] max-w-[92vw] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
+      className="pointer-events-auto flex min-h-0 max-h-full w-[340px] max-w-[92vw] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
       aria-label="Feature details"
     >
       {prev && (
         <button
           onClick={back}
-          className="flex items-center gap-1.5 border-b border-line bg-surface-2/60 px-4 py-1.5 text-left text-xs font-medium text-ink-2 hover:text-ink"
+          className="flex shrink-0 items-center gap-1.5 border-b border-line bg-surface-2/60 px-4 py-1.5 text-left text-xs font-medium text-ink-2 hover:text-ink"
         >
           <span aria-hidden className="text-sm leading-none">←</span>
           <span className="truncate">Back to {prev.name}</span>
         </button>
       )}
-      <header className="flex items-start gap-2 border-b border-line px-4 py-3">
+      <header className="flex shrink-0 items-start gap-2 border-b border-line px-4 py-3">
         <span className="mt-0.5 text-ink-2">
           {isSubstation(feature) ? (
             <SubstationIcon />
@@ -584,7 +584,7 @@ export function DetailPanel({ data }: { data: GridData }) {
         </div>
       </header>
 
-      <div className="overflow-auto px-4 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2">
         {isSubstation(feature) ? (
           <SubstationDetail ss={feature} data={data} />
         ) : isLine(feature) ? (

@@ -1,12 +1,18 @@
 import type { GridData } from "../data/types.ts";
 import { formatInt } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
+import { WORKSPACES, type WorkspaceId } from "../workspaces/registry.ts";
 import { CloudIcon, InfoIcon, LayersIcon } from "./icons.tsx";
+
+// Compact tab captions so all four fit the 268 px column; full label + description in the tooltip.
+const TAB_LABEL: Record<WorkspaceId, string> = { atlas: "Atlas", risk: "Risk", planning: "Plan", mis: "MIS" };
 
 export function BrandHeader({ data }: { data: GridData }) {
   const toggleQuality = useAppStore((s) => s.toggleQuality);
   const toggleSummary = useAppStore((s) => s.toggleSummary);
   const toggleWeatherView = useAppStore((s) => s.toggleWeatherView);
+  const workspace = useAppStore((s) => s.workspace);
+  const setWorkspace = useAppStore((s) => s.setWorkspace);
   const km = Math.round(data.meta.totalLengthKm);
 
   return (
@@ -27,26 +33,47 @@ export function BrandHeader({ data }: { data: GridData }) {
         <span className="font-semibold text-ink">{formatInt(data.meta.counts.lines)}</span> lines ·{" "}
         <span className="font-semibold text-ink">{formatInt(km)}</span> km
       </p>
-      <div className="mt-2 flex gap-1.5">
-        <button
-          onClick={() => toggleSummary(true)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink hover:bg-surface-2"
-        >
-          <LayersIcon width={13} height={13} /> Summary
-        </button>
-        <button
-          onClick={() => toggleWeatherView(true)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink hover:bg-surface-2"
-        >
-          <CloudIcon width={13} height={13} /> Weather
-        </button>
-        <button
-          onClick={() => toggleQuality(true)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
-        >
-          <InfoIcon width={13} height={13} /> Quality
-        </button>
-      </div>
+      <nav aria-label="Workspace" className="mt-2 grid grid-cols-4 gap-0.5 rounded-lg border border-line bg-surface-2/70 p-0.5">
+        {WORKSPACES.map((w) => {
+          const active = workspace === w.id;
+          return (
+            <button
+              key={w.id}
+              onClick={() => setWorkspace(w.id)}
+              title={`${w.label} — ${w.description}`}
+              aria-current={active ? "page" : undefined}
+              className={`rounded-md px-1 py-1 text-[11px] font-medium transition-colors ${
+                active ? "bg-accent text-white" : "text-ink-2 hover:bg-surface-3 hover:text-ink"
+              }`}
+            >
+              {TAB_LABEL[w.id]}
+            </button>
+          );
+        })}
+      </nav>
+      {/* Summary/Weather/Quality open views mounted only in the Atlas tree — hide elsewhere. */}
+      {workspace === "atlas" && (
+        <div className="mt-2 flex gap-1.5">
+          <button
+            onClick={() => toggleSummary(true)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink hover:bg-surface-2"
+          >
+            <LayersIcon width={13} height={13} /> Summary
+          </button>
+          <button
+            onClick={() => toggleWeatherView(true)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink hover:bg-surface-2"
+          >
+            <CloudIcon width={13} height={13} /> Weather
+          </button>
+          <button
+            onClick={() => toggleQuality(true)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+          >
+            <InfoIcon width={13} height={13} /> Quality
+          </button>
+        </div>
+      )}
     </section>
   );
 }
