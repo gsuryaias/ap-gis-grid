@@ -9,13 +9,13 @@ import {
   lineUtilisation,
   n1Screen,
   solveDcFlow,
-  uniformInjections,
 } from "../../lib/dcflow.ts";
 import { buildGridGraph } from "../../lib/graph.ts";
 import { haversineMeters } from "../../lib/geo.ts";
 import {
   generatorCandidates,
   growthFactor,
+  expandImplicitDcCircuits,
   kpisFor,
   n1Severity,
   relievedCorridors,
@@ -25,6 +25,7 @@ import {
   topContingencies,
   toWireLines,
   wireToLineProps,
+  LOAD_WEIGHT_BY_VOLTAGE,
   type FlowCaseResult,
   type FlowCaseSpec,
   type WireLine,
@@ -36,10 +37,10 @@ function wire(id: string, a: string, b: string, lengthKm = 50): WireLine {
 }
 
 const SUBS = [
-  { id: "s1", circle: "A" },
-  { id: "s2", circle: "A" },
-  { id: "s3", circle: "B" },
-  { id: "s4", circle: null },
+  { id: "s1", circle: "A", voltage: 132 as const },
+  { id: "s2", circle: "A", voltage: 132 as const },
+  { id: "s3", circle: "B", voltage: 132 as const },
+  { id: "s4", circle: null, voltage: 132 as const },
 ];
 const WIRES = [wire("l1", "s1", "s2"), wire("l2", "s2", "s3"), wire("l3", "s3", "s1"), wire("l4", "s3", "s4")];
 
@@ -88,34 +89,64 @@ describe("generatorCandidates", () => {
 });
 
 describe("scenarioInjections", () => {
-  it("matches uniformInjections in the no-growth case", () => {
+  it("balances generation to total load when all load buses share the same voltage weight", () => {
     const lines = WIRES.map(wireToLineProps);
     const net = buildDcNetwork(buildGridGraph(SUBS, lines), lines);
-    const ours = scenarioInjections(net, SUBS, spec());
-    const reference = uniformInjections(net, SUBS, 300, ["s1"]);
-    expect([...ours.entries()].sort()).toEqual([...reference.entries()].sort());
+    const inj = scenarioInjections(net, SUBS, spec());
+    // Slack is s3 — excluded from load; s1 is the sole generator; 300 MW splits over s2 + s4.
+    expect(inj.get("s2")).toBeCloseTo(-150, 6);
+    expect(inj.get("s4")).toBeCloseTo(-150, 6);
+    expect(inj.get("s3")).toBeUndefined();
+    expect(inj.get("s1")).toBeCloseTo(300, 6);
+    const sum = [...inj.values()].reduce((a, b) => a + b, 0);
+    expect(sum).toBeCloseTo(0, 9);
+  });
+
+  it("assigns zero load to 400 kV pass-through substations", () => {
+    const subs = [
+      { id: "hub", circle: "A", voltage: 400 as const },
+      { id: "load", circle: "A", voltage: 132 as const },
+    ];
+    const lines = [wire("l1", "hub", "load")];
+    const lineProps = lines.map(wireToLineProps);
+    const net = buildDcNetwork(buildGridGraph(subs, lineProps), lineProps);
+    const inj = scenarioInjections(
+      net,
+      subs,
+      { generatorIds: [], cagrPctByCircle: {}, years: 0, baseDemandMw: 100 },
+    );
+    expect(inj.get("load")).toBeCloseTo(-100, 6);
+    expect(inj.get("hub")).toBeUndefined();
   });
 
   it("scales each load by its circle's CAGR and balances generation to total load", () => {
     const lines = WIRES.map(wireToLineProps);
     const net = buildDcNetwork(buildGridGraph(SUBS, lines), lines);
     const inj = scenarioInjections(net, SUBS, spec({ cagrPctByCircle: { A: 10, B: 0 }, years: 2 }));
-    // 3 loads (s2, s3, s4) at 100 MW base each. s2 (circle A) grows 1.1²; s3 (B) flat;
-    // s4 (no circle) grows at the mean CAGR (5 %) ⇒ 1.05².
-    expect(inj.get("s2")).toBeCloseTo(-121, 6);
-    expect(inj.get("s3")).toBeCloseTo(-100, 6);
-    expect(inj.get("s4")).toBeCloseTo(-100 * 1.05 ** 2, 6);
-    const totalLoad = -(inj.get("s2")! + inj.get("s3")! + inj.get("s4")!);
+    // Slack s3 excluded; 2 loads at 150 MW base. s2 (circle A) grows 1.1²; s4 (no circle) at mean 5 %.
+    expect(inj.get("s2")).toBeCloseTo(-150 * 1.1 ** 2, 6);
+    expect(inj.get("s4")).toBeCloseTo(-150 * 1.05 ** 2, 6);
+    const totalLoad = -(inj.get("s2")! + inj.get("s4")!);
     expect(inj.get("s1")).toBeCloseTo(totalLoad, 9);
   });
 
-  it("falls back to the slack bus when no generator id survives the network filter", () => {
+  it("falls back to slack-only generation when no generator id survives the network filter", () => {
     const lines = WIRES.map(wireToLineProps);
     const net = buildDcNetwork(buildGridGraph(SUBS, lines), lines);
     const inj = scenarioInjections(net, SUBS, spec({ generatorIds: ["nope"] }));
-    expect(inj.get(net.slack)).toBeGreaterThan(0);
+    expect(inj.get(net.slack)).toBeUndefined();
+    const sol = solveDcFlow(net, inj);
+    expect(sol.slackInjectionMw).toBeCloseTo(300, 6);
     const sum = [...inj.values()].reduce((a, b) => a + b, 0);
-    expect(sum).toBeCloseTo(0, 9);
+    expect(sum).toBeCloseTo(-300, 9);
+  });
+
+  it("does not assign generation at the slack bus when other generators exist", () => {
+    const lines = WIRES.map(wireToLineProps);
+    const net = buildDcNetwork(buildGridGraph(SUBS, lines), lines);
+    const inj = scenarioInjections(net, SUBS, spec({ generatorIds: [net.slack, "s1"] }));
+    expect(inj.get(net.slack)).toBeUndefined();
+    expect(inj.get("s1")).toBeCloseTo(300, 6);
   });
 });
 
@@ -125,7 +156,7 @@ describe("runFlowCase", () => {
 
     const lines = WIRES.map(wireToLineProps);
     const net = buildDcNetwork(buildGridGraph(SUBS, lines), lines);
-    const inj = uniformInjections(net, SUBS, 300, ["s1"]);
+    const inj = scenarioInjections(net, SUBS, spec());
     const sol = solveDcFlow(net, inj);
     const util = lineUtilisation(sol, lines);
     const n1 = n1Screen(net, lines, inj);
@@ -135,6 +166,7 @@ describe("runFlowCase", () => {
     expect(result.slack).toBe(net.slack);
     expect(result.totalLoadMw).toBeCloseTo(300, 9);
     expect(result.generatorCount).toBe(1);
+    expect(result.slackInjectionMw).toBeCloseTo(0, 6);
     const utilById = new Map(result.util.map((u) => [u.lineId, u]));
     for (const [id, u] of util) {
       expect(utilById.get(id)!.flowMw).toBeCloseTo(u.flowMw, 9);
@@ -157,6 +189,39 @@ describe("runFlowCase", () => {
   });
 });
 
+describe("expandImplicitDcCircuits", () => {
+  it("adds a parallel inferred circuit for a lone DC row and leaves paired DC rows alone", () => {
+    const lone: WireLine = {
+      id: "l-dc",
+      name: "220 Foo–Bar DC",
+      voltage: 220,
+      circuit: "DC",
+      conductor: "Zebra",
+      lengthKm: 40,
+      a: "s1",
+      b: "s2",
+    };
+    const paired = [
+      { ...lone, id: "l-a", name: "Ckt-1" },
+      { ...lone, id: "l-b", name: "Ckt-2" },
+    ];
+    const expanded = expandImplicitDcCircuits([lone]);
+    expect(expanded).toHaveLength(2);
+    expect(expanded[1].id).toBe("l-dc-c2i");
+    expect(expanded[1].inferred).toBe(true);
+    expect(expanded[1].circuit).toBe("SC");
+    expect(expandImplicitDcCircuits(paired)).toHaveLength(2);
+    expect(expandImplicitDcCircuits(expanded)).toHaveLength(2);
+  });
+});
+
+describe("LOAD_WEIGHT_BY_VOLTAGE", () => {
+  it("treats 400 kV as zero-load pass-through", () => {
+    expect(LOAD_WEIGHT_BY_VOLTAGE[400]).toBe(0);
+    expect(LOAD_WEIGHT_BY_VOLTAGE[132]).toBeGreaterThan(LOAD_WEIGHT_BY_VOLTAGE[220]);
+  });
+});
+
 describe("sandboxWireLines", () => {
   const ssById = new Map([
     ["s1", { name: "Alpha", lng: 80, lat: 16 }],
@@ -170,7 +235,7 @@ describe("sandboxWireLines", () => {
     for (const w of wires) {
       expect(w.id.startsWith("sb-")).toBe(true);
       expect(w.sandbox).toBe(true);
-      expect(w.circuit).toBe("SC"); // each wire is ONE circuit, per the dataset convention
+      expect(w.circuit).toBe("SC");
       expect(w.conductor).toBe("Twin Moose");
       expect(w.lengthKm!).toBeCloseTo(expectKm, 0);
       expect(w.a).toBe("s1");
@@ -217,7 +282,7 @@ describe("KPIs, contingency ranking and deltas", () => {
       ),
     );
     expect(k.ratedLines).toBe(3);
-    expect(k.over80).toBe(2); // ≥ 80 includes the ≥ 100 line
+    expect(k.over80).toBe(2);
     expect(k.over100).toBe(1);
     expect(k.pctOver80).toBeCloseTo((2 / 3) * 100, 9);
     expect(k.n1OverloadContingencies).toBe(1);
@@ -244,15 +309,15 @@ describe("KPIs, contingency ranking and deltas", () => {
       { lineId: "c", flowMw: 70, ratingMva: 100, pct: 70 },
     ]);
     const after = res([
-      { lineId: "a", flowMw: 60, ratingMva: 200, pct: 60 }, // −30 pp
-      { lineId: "b", flowMw: 47, ratingMva: 100, pct: 47 }, // −3 pp ⇒ below threshold
-      { lineId: "c", flowMw: 80, ratingMva: 100, pct: 80 }, // worsened
+      { lineId: "a", flowMw: 60, ratingMva: 200, pct: 60 },
+      { lineId: "b", flowMw: 47, ratingMva: 100, pct: 47 },
+      { lineId: "c", flowMw: 80, ratingMva: 100, pct: 80 },
     ]);
     const deltas = relievedCorridors(before, after);
     expect(deltas).toHaveLength(1);
     expect(deltas[0]).toMatchObject({ lineId: "a", beforePct: 90, afterPct: 60 });
     expect(deltas[0].dropPp).toBeCloseTo(30, 9);
-    expect(deltas[0].headroomGainMva).toBeCloseTo(60, 9); // 30 % of 200 MVA
+    expect(deltas[0].headroomGainMva).toBeCloseTo(60, 9);
   });
 });
 

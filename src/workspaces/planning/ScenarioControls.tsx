@@ -126,10 +126,11 @@ export function ScenarioControls({
 
         <p className="border-t border-line pt-2.5 text-[10px] leading-snug text-ink-2/90">
           Screening assumptions: an indicative {fmtInt(BASE_DEMAND_MW)} MW statewide base demand is
-          spread <em>uniformly</em> over the load substations, grown per circle to the horizon.
-          “Generator” substations are merely those with an inferred external <em>Generation</em>{" "}
-          endpoint — no capacity or merit-order data exists, so generation is spread evenly over
-          them. Crude by design; it sets a defensible base case, not a dispatch.
+          allocated <em>by voltage class</em> (132 kV primary, 220 kV partial, 400 kV pass-through),
+          then grown per circle to the horizon. “Generator” substations are merely those with an
+          inferred external <em>Generation</em> endpoint — no capacity or merit-order data exists, so
+          generation is spread evenly over them (never at the slack bus). Crude by design; it sets a
+          defensible base case, not a dispatch.
         </p>
       </div>
     </Card>

@@ -9,11 +9,16 @@
 // impedances, indicative ratings, DC approximation) this module adds two more, equally
 // crude and equally deliberate:
 //
-//   · DEMAND IS UNIFORM-SPREAD: a fixed indicative statewide base demand
-//     (`BASE_DEMAND_MW`) is divided EQUALLY over every load substation, then each
-//     substation's share is grown by its circle's CAGR to the horizon year. Real demand
-//     is nothing like uniform — this only gives the screen a defensible, documented base
-//     case (mirrors dcflow's `uniformInjections`, adding the per-circle growth knob).
+//   · DEMAND IS VOLTAGE-WEIGHTED: a fixed indicative statewide base demand
+//     (`BASE_DEMAND_MW`) is allocated to load substations in proportion to a voltage-class
+//     weight (132 kV = 1.0, 220 kV = 0.25, 400 kV = 0 — transmission hubs are pass-through
+//     nodes, not load sinks), then each share is grown by its circle's CAGR to the horizon
+//     year. Still crude — real demand follows distribution networks — but avoids injecting
+//     fictitious load at 400 kV switching stations.
+//   · DC LINES MAY BE INFERRED: source rows tagged `circuit: "DC"` but missing a second
+//     Ckt-2 feature for the same corridor get a synthetic parallel circuit (same convention
+//     as the sandbox's DC → two SC wires) so double-circuit routes do not appear half as
+//     wide as they are in the field.
 //   · GENERATION IS A GUESS: "generator" substations are merely those with a line whose
 //     external (non-TRANSCO) endpoint is categorised "Generation" in the source data —
 //     no capacity, no merit order, no dispatch. Total generation is spread evenly over
@@ -61,20 +66,36 @@ export const SANDBOX_CONDUCTOR: Record<Voltage, string> = {
   132: "Panther",
 };
 
+/** Suffix for a synthetic second circuit inferred from a lone `circuit: "DC"` row. */
+export const INFERRED_DC_SUFFIX = "-c2i";
+
+/**
+ * Relative load-allocation weight by substation voltage class. 400 kV nodes are treated as
+ * zero-load transmission hubs; 132 kV nodes carry the bulk of the statewide demand slice.
+ */
+export const LOAD_WEIGHT_BY_VOLTAGE: Record<Voltage, number> = {
+  400: 0,
+  220: 0.25,
+  132: 1,
+};
+
 /** One-line honesty label used verbatim on every table footnote AND inside the CSV exports. */
 export const HONESTY_NOTE =
   "Indicative screening only — inferred (geometric) topology, assumed impedances (typical Ω/km by " +
-  "voltage class), indicative conductor thermal ratings, and a uniform-spread demand / evenly-spread " +
-  "generation scenario. A research aid for where to look first, never a load-flow or N-1 study.";
+  "voltage class), indicative conductor thermal ratings, voltage-weighted demand (132 kV primary, " +
+  "400 kV pass-through), inferred parallel circuits where a DC corridor has only one source row, " +
+  "and evenly-spread generation. A research aid for where to look first, never a load-flow or N-1 study.";
 
 // ---------------------------------------------------------------------------
 // Serialisable network spec (what crosses the worker boundary)
 // ---------------------------------------------------------------------------
 
-/** Substation slice the solver needs: identity + the circle that drives demand growth. */
+/** Substation slice the solver needs: identity, voltage (load weight) + circle (CAGR). */
 export interface WireSubstation {
   id: string;
   circle: string | null;
+  /** Drives `LOAD_WEIGHT_BY_VOLTAGE`; omit only in unit tests (defaults to 132 kV weight). */
+  voltage?: Voltage;
 }
 
 /** Line slice the solver needs (real or sandbox); `a`/`b` are the snapped endpoint SS ids. */
@@ -89,6 +110,8 @@ export interface WireLine {
   b: string | null;
   /** True for hypothetical what-if lines (not real assets — never deep-linked). */
   sandbox?: boolean;
+  /** True for a synthetic second circuit inferred from a lone `circuit: "DC"` source row. */
+  inferred?: boolean;
 }
 
 /** One self-contained flow case — fully serialisable, structured-clone friendly. */
@@ -105,9 +128,46 @@ export interface FlowCaseSpec {
 }
 
 export function toWireSubstations(
-  substations: ReadonlyArray<Pick<SubstationProps, "id" | "circle">>,
+  substations: ReadonlyArray<Pick<SubstationProps, "id" | "circle" | "voltage">>,
 ): WireSubstation[] {
-  return substations.map((s) => ({ id: s.id, circle: s.circle }));
+  return substations.map((s) => ({ id: s.id, circle: s.circle, voltage: s.voltage }));
+}
+
+/** Stable key for a corridor: sorted endpoint pair + voltage (ignores circuit / direction). */
+export function wireCorridorKey(w: Pick<WireLine, "a" | "b" | "voltage">): string | null {
+  if (!w.a || !w.b) return null;
+  return `${[w.a, w.b].sort().join("|")}|${w.voltage}`;
+}
+
+/**
+ * Infer a missing second circuit for `circuit: "DC"` rows that are the sole feature on their
+ * corridor (the dataset convention is one row per circuit — many DC lines only have Ckt-1).
+ * Idempotent: already-paired or previously-inferred rows are left unchanged.
+ */
+export function expandImplicitDcCircuits(wireLines: readonly WireLine[]): WireLine[] {
+  const byCorridor = new Map<string, WireLine[]>();
+  for (const w of wireLines) {
+    const key = wireCorridorKey(w);
+    if (!key) continue;
+    const bucket = byCorridor.get(key);
+    if (bucket) bucket.push(w);
+    else byCorridor.set(key, [w]);
+  }
+
+  const out = [...wireLines];
+  for (const w of wireLines) {
+    if (w.circuit !== "DC" || w.inferred) continue;
+    const key = wireCorridorKey(w);
+    if (!key || (byCorridor.get(key)?.length ?? 0) !== 1) continue;
+    out.push({
+      ...w,
+      id: `${w.id}${INFERRED_DC_SUFFIX}`,
+      name: `${w.name} Ckt-2 (inferred)`,
+      circuit: "SC",
+      inferred: true,
+    });
+  }
+  return out;
 }
 
 export function toWireLines(lines: readonly LineProps[]): WireLine[] {
@@ -170,13 +230,18 @@ export function growthFactor(cagrPct: number, years: number): number {
   return Math.pow(1 + cagrPct / 100, Math.max(0, years));
 }
 
+function loadWeightVoltage(voltage: Voltage | undefined): number {
+  return LOAD_WEIGHT_BY_VOLTAGE[voltage ?? 132];
+}
+
 /**
- * Scenario injections — dcflow's `uniformInjections` with a per-circle growth knob on
- * the load side. Base demand is spread EQUALLY over every load substation (uniform-
- * spread screening assumption, see the module honesty note), each share grown by its
- * circle's CAGR; total generation (= total grown load, so the case balances) is spread
- * evenly over the generator buses, or placed at the slack when none are given/survive.
- * Substations without a circle grow at the mean CAGR of the provided map.
+ * Scenario injections — voltage-weighted load allocation with a per-circle CAGR growth
+ * knob. Base demand is split across load substations in proportion to `LOAD_WEIGHT_BY_VOLTAGE`
+ * (400 kV = pass-through, 132 kV = primary sink), each share grown by its circle's CAGR;
+ * total generation (= total grown load) is spread evenly over the generator buses. The slack
+ * bus is excluded from explicit generation — `solveDcFlow` always balances there. When no
+ * generator ids are given/survive, the slack alone represents all generation. Substations
+ * without a circle grow at the mean CAGR of the provided map.
  */
 export function scenarioInjections(
   net: DcNetwork,
@@ -184,26 +249,39 @@ export function scenarioInjections(
   spec: Pick<FlowCaseSpec, "generatorIds" | "cagrPctByCircle" | "years" | "baseDemandMw">,
 ): Map<string, number> {
   const inNet = new Set(net.nodes);
-  const gens = spec.generatorIds.filter((id) => inNet.has(id));
-  if (gens.length === 0) gens.push(net.slack);
+  let gens = spec.generatorIds.filter((id) => inNet.has(id) && id !== net.slack);
+  const slackOnlyGen = gens.length === 0;
+  if (slackOnlyGen) gens = [net.slack];
   const genSet = new Set(gens);
 
-  const loads = substations.filter((s) => inNet.has(s.id) && !genSet.has(s.id));
+  const loadCandidates = substations.filter(
+    (s) => inNet.has(s.id) && !genSet.has(s.id) && s.id !== net.slack,
+  );
   const injections = new Map<string, number>();
-  if (loads.length === 0) return injections;
+  if (loadCandidates.length === 0) return injections;
 
   const cagrs = Object.values(spec.cagrPctByCircle);
   const meanCagr = cagrs.length > 0 ? cagrs.reduce((a, b) => a + b, 0) / cagrs.length : 0;
-  const perSsBaseMw = spec.baseDemandMw / loads.length;
+
+  let weightSum = 0;
+  for (const s of loadCandidates) weightSum += loadWeightVoltage(s.voltage);
+  const equalSplit = weightSum <= 0;
+  if (equalSplit) weightSum = loadCandidates.length;
 
   let totalLoadMw = 0;
-  for (const s of loads) {
+  for (const s of loadCandidates) {
+    const w = equalSplit ? 1 : loadWeightVoltage(s.voltage);
     const cagr = (s.circle !== null ? spec.cagrPctByCircle[s.circle] : undefined) ?? meanCagr;
-    const mw = perSsBaseMw * growthFactor(cagr, spec.years);
+    const mw = (spec.baseDemandMw * w * growthFactor(cagr, spec.years)) / weightSum;
     injections.set(s.id, -mw);
     totalLoadMw += mw;
   }
-  for (const id of gens) injections.set(id, totalLoadMw / gens.length);
+
+  if (slackOnlyGen) {
+    // Generation is not specified at the slack — solveDcFlow will inject `slackInjectionMw`.
+  } else {
+    for (const id of gens) injections.set(id, totalLoadMw / gens.length);
+  }
   return injections;
 }
 
@@ -241,7 +319,8 @@ export interface FlowCaseResult {
  */
 export function runFlowCase(spec: FlowCaseSpec, onPhase?: (phase: string) => void): FlowCaseResult {
   onPhase?.("Building network");
-  const lines = spec.lines.map(wireToLineProps);
+  const expandedLines = expandImplicitDcCircuits(spec.lines);
+  const lines = expandedLines.map(wireToLineProps);
   const graph = buildGridGraph(spec.substations, lines);
   const net = buildDcNetwork(graph, lines);
   const injections = scenarioInjections(net, spec.substations, spec);
@@ -255,9 +334,12 @@ export function runFlowCase(spec: FlowCaseSpec, onPhase?: (phase: string) => voi
 
   let totalLoadMw = 0;
   let generatorCount = 0;
-  for (const mw of injections.values()) {
+  for (const [id, mw] of injections) {
     if (mw < 0) totalLoadMw -= mw;
-    else if (mw > 0) generatorCount++;
+    else if (mw > 0 && id !== net.slack) generatorCount++;
+  }
+  if (generatorCount === 0 && spec.generatorIds.filter((id) => net.nodes.includes(id)).length === 0) {
+    generatorCount = 1; // slack-only generation mode
   }
 
   return {
