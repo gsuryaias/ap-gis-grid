@@ -1,9 +1,10 @@
 // Print-styled briefing pack — the artefact to take into a meeting (DSS spec §4). Rendered
 // through a portal onto <body> so the @media print rules can hide the app (#root) and print
 // just this sheet. Always light-on-white regardless of the app theme, for print fidelity.
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { COASTAL_BAND_LABEL } from "../../lib/risk.ts";
+import { captureMapSnapshot } from "../../map/MapPane.tsx";
 import { windLabel, type RiskRow, type ScenarioDef } from "./model.ts";
 
 const PRINT_CSS = `
@@ -57,6 +58,18 @@ export function BriefingPack({
   liveEventNames: string[];
   onClose: () => void;
 }) {
+  const [mapSnapshot, setMapSnapshot] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
+
+  const captureMap = useCallback(async () => {
+    setCapturing(true);
+    try {
+      setMapSnapshot(await captureMapSnapshot());
+    } finally {
+      setCapturing(false);
+    }
+  }, []);
+
   const top25 = rows.slice(0, 25);
   const topWind = useMemo(
     () => [...rows].sort((a, b) => (b.windVb ?? 0) - (a.windVb ?? 0) || b.hazard - a.hazard).slice(0, 5),
@@ -78,6 +91,13 @@ export function BriefingPack({
       <div className="briefing-sheet mx-auto my-4 max-w-[820px] rounded-xl border border-slate-300 bg-white p-8 text-slate-900 shadow-2xl">
         {/* Screen-only actions */}
         <div className="mb-5 flex items-center justify-end gap-2 print:hidden">
+          <button
+            onClick={() => void captureMap()}
+            disabled={capturing}
+            className="rounded-lg border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          >
+            {capturing ? "Capturing map…" : mapSnapshot ? "Refresh map snapshot" : "Include map snapshot"}
+          </button>
           <button
             onClick={() => window.print()}
             className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:opacity-90"
@@ -110,6 +130,18 @@ export function BriefingPack({
             (static); live weather — {weatherFetchedAt ? `fetched ${fmtStamp(weatherFetchedAt)}` : "not loaded"}.
           </p>
         </section>
+
+        {mapSnapshot && (
+          <section className="mt-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-700">Map snapshot (embedded map pane)</h2>
+            <img
+              src={mapSnapshot}
+              alt="Risk Room map snapshot at briefing generation time"
+              className="mt-2 w-full rounded-lg border border-slate-300"
+            />
+            <p className="mt-1 text-[10px] text-slate-500">Indicative view — choropleth / overlays reflect the active workspace map state.</p>
+          </section>
+        )}
 
         <h2 className="mt-5 text-sm font-bold uppercase tracking-wide text-slate-700">
           Top 25 assets by composite risk

@@ -1,16 +1,17 @@
 // Risk Room workspace (M4 v1) — an ANALYSIS surface: scenario-ranked at-risk registers and
 // briefing-pack exports over the hazard × vulnerability × criticality engine. No map of its
-// own — every row deep-links into the Atlas (select + setWorkspace) for the geography.
+// own — every row syncs selection + fly-to on the persistent embedded map pane.
 // All scores are INDICATIVE SCREENING VALUES per the repo's honesty convention.
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { FeatureCollection } from "geojson";
 import { FreshnessBadge } from "../../components/FreshnessBadge.tsx";
+import { MethodCard } from "../../components/MethodCard.tsx";
 import { CycloneIcon, DownloadIcon, RefreshIcon } from "../../components/icons.tsx";
 import { VoltageBadge } from "../../components/VoltageBadge.tsx";
 import type { DatasetManifest } from "../../data/manifests.ts";
 import { downloadText } from "../../lib/export.ts";
 import { COASTAL_BAND_LABEL, type RiskTier } from "../../lib/risk.ts";
-import { useAppStore } from "../../state/store.ts";
+import { useAppStore, type RiskSelectionContext } from "../../state/store.ts";
 import { BriefingPack } from "./BriefingPack.tsx";
 import {
   applyScenario,
@@ -35,6 +36,10 @@ const TIER_CHIP: Record<RiskTier, string> = {
 };
 
 const TIER_ORDER: RiskTier[] = ["high", "elevated", "moderate", "low"];
+
+function isScenarioId(s: string | undefined): s is ScenarioId {
+  return s === "normal" || s === "watch" || s === "severe" || s === "active";
+}
 
 type SortKey =
   | "name" | "voltage" | "circle" | "coastal" | "wind"
@@ -108,7 +113,7 @@ function MiniRegister({
   rows: RiskRow[];
   empty: string;
   value: (r: RiskRow) => ReactNode;
-  onPick: (id: string) => void;
+  onPick: (row: RiskRow) => void;
 }) {
   return (
     <section className="rounded-[var(--radius-panel)] border border-line bg-surface px-3.5 py-3 shadow-[var(--shadow-panel)]">
@@ -121,8 +126,8 @@ function MiniRegister({
           {rows.map((r) => (
             <button
               key={r.ss.id}
-              onClick={() => onPick(r.ss.id)}
-              title="Open in the Atlas"
+              onClick={() => onPick(r)}
+              title="Fly to asset on map and show factor breakdown"
               className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-sm hover:bg-surface-2"
             >
               <span className="min-w-0 flex-1 truncate text-ink">{r.ss.name}</span>
@@ -136,6 +141,61 @@ function MiniRegister({
   );
 }
 
+function FactorBreakdown({
+  selection,
+  name,
+  onClose,
+}: {
+  selection: RiskSelectionContext;
+  name: string;
+  onClose: () => void;
+}) {
+  return (
+    <section className="mt-3 rounded-[var(--radius-panel)] border border-line bg-surface px-4 py-3 shadow-[var(--shadow-panel)]">
+      <div className="flex items-start gap-3">
+        <div className="mr-auto min-w-0">
+          <h3 className="truncate text-sm font-semibold text-ink">{name}</h3>
+          <p className="text-[11px] text-ink-2">
+            Indicative factor breakdown · composite{" "}
+            <span className={`rounded-full px-1.5 py-0.5 font-semibold tabular-nums ${TIER_CHIP[selection.tier as RiskTier]}`}>
+              {selection.composite}
+            </span>{" "}
+            ({selection.tier})
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 rounded-md px-2 py-1 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink"
+        >
+          Clear
+        </button>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div className="rounded-lg bg-surface-2 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">Hazard · {selection.hazard}</p>
+          <p className="mt-1 text-xs text-ink">{selection.hazardFactors.join(" · ") || "—"}</p>
+        </div>
+        <div className="rounded-lg bg-surface-2 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">
+            Vulnerability · {selection.vulnerability}
+          </p>
+          <p className="mt-1 text-xs text-ink">{selection.vulnFactors.join(" · ") || "—"}</p>
+        </div>
+        <div className="rounded-lg bg-surface-2 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">
+            Criticality · {selection.criticality}
+          </p>
+          <p className="mt-1 text-xs text-ink">{selection.critFactors.join(" · ") || "—"}</p>
+        </div>
+      </div>
+      <p className="mt-2 text-[10px] text-ink-2/80">
+        Screening proxy only — not a hazard model, reliability study or load-flow result.
+      </p>
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Workspace
 // ---------------------------------------------------------------------------
@@ -145,8 +205,12 @@ export default function RiskRoom() {
   const weather = useAppStore((s) => s.weather);
   const wxStatus = useAppStore((s) => s.wxStatus);
   const refreshWeather = useAppStore((s) => s.refreshWeather);
-  const setWorkspace = useAppStore((s) => s.setWorkspace);
   const select = useAppStore((s) => s.select);
+  const selectedId = useAppStore((s) => s.selectedId);
+  const setWorkspaceContext = useAppStore((s) => s.setWorkspaceContext);
+  const workspaceContext = useAppStore((s) => s.workspaceContext);
+  const regionCircle = useAppStore((s) => s.filters.circle);
+  const setRegionCircle = useAppStore((s) => s.setRegionCircle);
 
   // Wind zones (static asset) — fetched once on first entry, module-cached thereafter.
   const [zones, setZones] = useState<FeatureCollection | null>(null);
@@ -163,12 +227,39 @@ export default function RiskRoom() {
     };
   }, [zonesNonce]);
 
-  // All workspace state is LOCAL — no store slices, no hash keys (transient analysis surface).
-  const [scenarioId, setScenarioId] = useState<ScenarioId>("normal");
+  // Workspace state synced to URL hash via workspaceContext + filters.circle.
+  const [scenarioId, setScenarioId] = useState<ScenarioId>(() => {
+    const s = workspaceContext.scenario ?? workspaceContext.hazard;
+    return isScenarioId(s) ? s : "normal";
+  });
   const [query, setQuery] = useState("");
-  const [circle, setCircle] = useState("");
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "composite", dir: -1 });
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>(() => {
+    const k = workspaceContext.sort as SortKey | undefined;
+    return { key: k && k in SORT_VALUE ? k : "composite", dir: -1 };
+  });
   const [briefingOpen, setBriefingOpen] = useState(false);
+
+  const circle = regionCircle ?? "";
+
+  useEffect(() => {
+    if (workspaceContext.scenario === scenarioId && workspaceContext.hazard === scenarioId) return;
+    setWorkspaceContext({ scenario: scenarioId, hazard: scenarioId });
+  }, [scenarioId, setWorkspaceContext, workspaceContext.scenario, workspaceContext.hazard]);
+
+  useEffect(() => {
+    if (workspaceContext.sort === sort.key) return;
+    setWorkspaceContext({ sort: sort.key });
+  }, [sort.key, setWorkspaceContext, workspaceContext.sort]);
+
+  useEffect(() => {
+    const s = workspaceContext.scenario ?? workspaceContext.hazard;
+    if (isScenarioId(s) && s !== scenarioId) setScenarioId(s);
+  }, [workspaceContext.scenario, workspaceContext.hazard, scenarioId]);
+
+  useEffect(() => {
+    const k = workspaceContext.sort as SortKey | undefined;
+    if (k && k in SORT_VALUE && k !== sort.key) setSort((prev) => ({ ...prev, key: k }));
+  }, [workspaceContext.sort, sort.key]);
 
   const liveEvents = useMemo(
     () => (weather?.cyclones ?? []).filter((c) => c.conePolygons.length > 0),
@@ -189,6 +280,26 @@ export default function RiskRoom() {
     () => (data && zones ? applyScenario(riskBaseRows(data, weather, zones), scenario) : null),
     [data, weather, zones, scenario],
   );
+
+  // Push composite scores + scenario to the embedded map (transient — not in hash).
+  useEffect(() => {
+    if (!rows) return;
+    const prev = useAppStore.getState().workspaceContext.riskScores;
+    if (prev && Object.keys(prev).length === rows.length) {
+      let same = true;
+      for (const r of rows) {
+        if (prev[r.ss.id] !== r.composite) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return;
+    }
+    const riskScores = Object.fromEntries(rows.map((r) => [r.ss.id, r.composite]));
+    setWorkspaceContext({ riskScores });
+  }, [rows, setWorkspaceContext]);
+
+  const riskSelection = workspaceContext.riskSelection;
 
   const tierCounts = useMemo(() => {
     const c: Record<RiskTier, number> = { low: 0, moderate: 0, elevated: 0, high: 0 };
@@ -241,7 +352,10 @@ export default function RiskRoom() {
         ? {
             id: "core-network",
             schema: {},
-            source: "AP-TRANSCO Gridmap ETL + indicative IS 875 wind zones",
+            source: {
+              name: "AP-TRANSCO Gridmap ETL + indicative IS 875 wind zones",
+              url: "https://github.com/gsuryaias/ap-gis-grid",
+            },
             licence: "—",
             attribution: "AP-TRANSCO",
             cadence: "static",
@@ -258,7 +372,10 @@ export default function RiskRoom() {
         ? {
             id: "live-weather",
             schema: {},
-            source: "Open-Meteo · GDACS · RainViewer",
+            source: {
+              name: "Open-Meteo · GDACS · RainViewer",
+              url: "https://open-meteo.com",
+            },
             licence: "open / keyless",
             attribution: "Open-Meteo · GDACS",
             cadence: "daily",
@@ -272,9 +389,32 @@ export default function RiskRoom() {
 
   if (!data) return null; // App mounts workspaces only after the grid data is ready
 
-  const openInAtlas = (id: string) => {
-    select(id, { fly: true });
-    setWorkspace("atlas");
+  const focusOnMap = (row: RiskRow) => {
+    const selection: RiskSelectionContext = {
+      id: row.ss.id,
+      hazard: row.hazard,
+      vulnerability: row.vulnerability,
+      criticality: row.criticality,
+      composite: row.composite,
+      tier: row.tier,
+      hazardFactors: row.hazardFactors,
+      vulnFactors: row.vulnFactors,
+      critFactors: row.critFactors,
+    };
+    setWorkspaceContext({
+      scenario: scenario.id,
+      hazard: scenario.id,
+      circle: row.ss.circle ?? undefined,
+      highlightIds: [row.ss.id],
+      riskSelection: selection,
+    });
+    if (row.ss.circle) setRegionCircle(row.ss.circle);
+    select(row.ss.id, { fly: true });
+  };
+
+  const clearSelection = () => {
+    setWorkspaceContext({ highlightIds: [], riskSelection: null });
+    select(null);
   };
 
   const onSort = (k: SortKey) =>
@@ -287,15 +427,13 @@ export default function RiskRoom() {
 
   return (
     <div className="h-full w-full overflow-y-auto bg-surface-2">
-      {/* pt clears the floating BrandHeader card (top-left overlay in non-atlas workspaces) */}
-      <div className="mx-auto max-w-[1180px] px-4 pb-12 pt-[136px]">
+      <div className="mx-auto max-w-[1180px] px-4 pb-12 pt-4">
         {/* ---- Header strip: scenario, live event, tiers, freshness, exports ---- */}
         <section className="rounded-[var(--radius-panel)] border border-line bg-surface px-5 py-4 shadow-[var(--shadow-panel)]">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <div className="mr-auto">
-              <h1 className="text-lg font-bold text-ink">Risk Room</h1>
-              <p className="text-xs text-ink-2">
-                Scenario-ranked at-risk registers · hazard × vulnerability × criticality (indicative)
+              <p className="text-xs font-medium text-ink-2">
+                Scenario-ranked register · hazard × vulnerability × criticality (indicative)
               </p>
             </div>
             {hasLiveEvent && (
@@ -411,7 +549,7 @@ export default function RiskRoom() {
                 rows={topWind}
                 empty="No assets."
                 value={(r) => `${windLabel(r.windVb)} · h ${r.hazard}`}
-                onPick={openInAtlas}
+                onPick={focusOnMap}
               />
               <MiniRegister
                 title="Coastal proximity · top 10"
@@ -419,7 +557,7 @@ export default function RiskRoom() {
                 rows={topCoastal}
                 empty="No coastal-distance data."
                 value={(r) => `${r.ss.coastalKm!.toLocaleString("en-IN")} km`}
-                onPick={openInAtlas}
+                onPick={focusOnMap}
               />
               <MiniRegister
                 title="Cyclone cone · top 10"
@@ -433,9 +571,17 @@ export default function RiskRoom() {
                 rows={topCyclone}
                 empty="No substations in a cone under this scenario."
                 value={(r) => `composite ${r.composite}`}
-                onPick={openInAtlas}
+                onPick={focusOnMap}
               />
             </div>
+
+            {riskSelection && (
+              <FactorBreakdown
+                selection={riskSelection}
+                name={data.byId.get(riskSelection.id)?.name ?? riskSelection.id}
+                onClose={clearSelection}
+              />
+            )}
 
             {/* ---- Ranked register ---- */}
             <section className="mt-3 rounded-[var(--radius-panel)] border border-line bg-surface shadow-[var(--shadow-panel)]">
@@ -454,7 +600,11 @@ export default function RiskRoom() {
                 />
                 <select
                   value={circle}
-                  onChange={(e) => setCircle(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value || null;
+                    setRegionCircle(next);
+                    if (next) setWorkspaceContext({ circle: next });
+                  }}
                   className="rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-xs text-ink focus:outline-none"
                 >
                   <option value="">All circles</option>
@@ -484,9 +634,11 @@ export default function RiskRoom() {
                     {shown.map((r) => (
                       <tr
                         key={r.ss.id}
-                        onClick={() => openInAtlas(r.ss.id)}
-                        title={`Open in the Atlas — hazard: ${r.hazardFactors.join(", ")} · criticality: ${r.critFactors.join(", ")}`}
-                        className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-surface-2"
+                        onClick={() => focusOnMap(r)}
+                        title={`Show on map — hazard: ${r.hazardFactors.join(", ")} · criticality: ${r.critFactors.join(", ")}`}
+                        className={`cursor-pointer border-b border-line/60 last:border-0 hover:bg-surface-2 ${
+                          selectedId === r.ss.id ? "bg-accent/5" : ""
+                        }`}
                       >
                         <td className="px-2.5 py-1.5">
                           <span className="flex items-center gap-1.5">
@@ -540,6 +692,14 @@ export default function RiskRoom() {
                 screening assumptions; cyclone envelopes are GDACS model output, not IMD advisories.
               </p>
             </section>
+
+            <MethodCard
+              metric="Composite risk score (hazard × vulnerability × criticality)"
+              source="AP-TRANSCO Gridmap ETL + indicative IS 875 wind zones + GDACS (live weather optional)"
+              vintage={data.meta.generatedAt.slice(0, 10)}
+              method="Per-substation screening index ranked under the active scenario preset"
+              limitation="Indicative screening only — not a hazard model, reliability study or load-flow result"
+            />
           </>
         )}
       </div>

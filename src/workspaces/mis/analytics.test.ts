@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { anomalies, fmtNum, fmtSigned, indexTo100, kpiStat, mean, rollingMean, stddev } from "./analytics.ts";
+import {
+  anomalies,
+  dateRangeToZoom,
+  dayOfYear,
+  doyBaselineSeries,
+  doyZScores,
+  fmtNum,
+  fmtSigned,
+  indexTo100,
+  kpiStat,
+  loessSmooth,
+  mean,
+  rollingMean,
+  seasonalDecompose,
+  sliceByDateRange,
+  spanYears,
+  stddev,
+} from "./analytics.ts";
 
 describe("mean / stddev", () => {
   it("skips nulls and handles empties", () => {
@@ -57,7 +74,6 @@ describe("indexTo100", () => {
 
 describe("anomalies", () => {
   it("flags a >2σ spike against the trailing window only once history exists", () => {
-    // 14 quiet days oscillating ±1 around 100, then a big spike.
     const quiet = Array.from({ length: 14 }, (_, i) => (i % 2 === 0 ? 99 : 101));
     const found = anomalies([...quiet, 130], 14, 2, 7);
     expect(found).toHaveLength(1);
@@ -71,6 +87,81 @@ describe("anomalies", () => {
   it("ignores zero-variance windows instead of dividing by zero", () => {
     const flat = Array.from({ length: 10 }, () => 100);
     expect(anomalies([...flat, 100], 14, 2, 7)).toEqual([]);
+  });
+});
+
+describe("dayOfYear / spanYears", () => {
+  it("computes DOY and span", () => {
+    expect(dayOfYear("2024-01-01")).toBe(1);
+    expect(dayOfYear("2024-12-31")).toBe(366);
+    expect(spanYears(["2024-01-01", "2024-06-01"])).toBeGreaterThan(0.3);
+    expect(spanYears(["2024-06-01"])).toBe(0);
+  });
+});
+
+describe("doyBaselineSeries", () => {
+  it("falls back to trailing-14 when history is under one year", () => {
+    const dates = Array.from({ length: 20 }, (_, i) => `2024-06-${String(i + 1).padStart(2, "0")}`);
+    const values = dates.map((_, i) => 100 + (i % 3));
+    const baselines = doyBaselineSeries(dates, values);
+    expect(baselines[15]!.method).toBe("trailing14");
+    expect(baselines[15]!.mean).not.toBeNull();
+  });
+
+  it("uses same-DOY history when multiple years exist", () => {
+    const dates = ["2022-06-15", "2023-06-15", "2024-06-15"];
+    const values = [90, 100, 130];
+    const baselines = doyBaselineSeries(dates, values);
+    expect(baselines[2]!.method).toBe("doy");
+    expect(baselines[2]!.mean).toBe(95);
+    expect(baselines[2]!.n).toBe(2);
+  });
+});
+
+describe("doyZScores", () => {
+  it("produces a z-score against the DOY baseline", () => {
+    const dates = ["2022-06-15", "2023-06-15", "2024-06-15"];
+    const values = [90, 100, 130];
+    const z = doyZScores(dates, values);
+    expect(z[2]).not.toBeNull();
+    expect(z[2]!).toBeGreaterThan(1);
+  });
+});
+
+describe("loessSmooth / seasonalDecompose", () => {
+  it("smooths a noisy ramp", () => {
+    const values = Array.from({ length: 30 }, (_, i) => i + (i % 2 === 0 ? 0.5 : -0.5));
+    const smoothed = loessSmooth(values, 0.3);
+    expect(smoothed[15]).toBeGreaterThan(14);
+    expect(smoothed[15]).toBeLessThan(16);
+  });
+
+  it("decomposes into trend + seasonal + residual", () => {
+    const dates = Array.from({ length: 40 }, (_, i) => {
+      const d = new Date(Date.UTC(2024, 0, 1 + i));
+      return d.toISOString().slice(0, 10);
+    });
+    const values = dates.map((_, i) => 100 + Math.sin((i / 40) * Math.PI * 2) * 5 + i * 0.1);
+    const { trend, seasonal, residual } = seasonalDecompose(dates, values);
+    expect(trend.filter((v) => v != null).length).toBeGreaterThan(10);
+    expect(seasonal.some((v) => v != null)).toBe(true);
+    expect(residual.some((v) => v != null)).toBe(true);
+  });
+});
+
+describe("sliceByDateRange / dateRangeToZoom", () => {
+  it("slices parallel series", () => {
+    const dates = ["2024-01-01", "2024-01-02", "2024-01-03"];
+    const { dates: d2, series } = sliceByDateRange(dates, { start: "2024-01-02", end: "2024-01-03" }, [10, 20, 30]);
+    expect(d2).toEqual(["2024-01-02", "2024-01-03"]);
+    expect(series[0]).toEqual([20, 30]);
+  });
+
+  it("maps a range to zoom percentages", () => {
+    const dates = ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"];
+    const z = dateRangeToZoom(dates, { start: "2024-01-02", end: "2024-01-03" });
+    expect(z!.start).toBeCloseTo(25);
+    expect(z!.end).toBeCloseTo(75);
   });
 });
 

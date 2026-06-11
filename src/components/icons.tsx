@@ -22,6 +22,9 @@ export const CloseIcon = (p: P) => (
 export const LayersIcon = (p: P) => (
   <svg {...base(p)}><path d="m12 2 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5" /><path d="m3 17 9 5 9-5" /></svg>
 );
+export const MapIcon = (p: P) => (
+  <svg {...base(p)}><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" /><path d="M9 3v15M15 6v15" /></svg>
+);
 export const TableIcon = (p: P) => (
   <svg {...base(p)}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M3 15h18M9 3v18M15 3v18" /></svg>
 );

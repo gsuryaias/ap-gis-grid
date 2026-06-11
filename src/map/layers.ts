@@ -111,6 +111,22 @@ const lineWidth = zoomInterp(LINE_STOPS, (v) => ["*", v, LINE_SEL]);
 const casingWidth = zoomInterp(LINE_STOPS, (v) => ["+", ["*", v, LINE_SEL], CASE_EXTRA]);
 const ssRadius = zoomInterp(SS_STOPS, (v) => ["*", v, SS_SEL]);
 
+/** Planning N-1 preview — islanded SS get a 1.35× radius bump (single top-level zoom interpolate). */
+const PLAN_SS_SEL: unknown = [
+  "case",
+  ["boolean", ["feature-state", "islanded"], false],
+  [
+    "case",
+    ["boolean", ["feature-state", "selected"], false], 2.0925,
+    ["boolean", ["feature-state", "hover"], false], 1.6875,
+    1.35,
+  ],
+  ["boolean", ["feature-state", "selected"], false], 1.55,
+  ["boolean", ["feature-state", "hover"], false], 1.25,
+  1,
+];
+export const planningSsRadius = zoomInterp(SS_STOPS, (v) => ["*", v, PLAN_SS_SEL]);
+
 // Default opacities for the core layers — shared with the connection spotlight, which swaps
 // them for an id-membership case expression and restores these exact values on exit. Opacity
 // carries no zoom interpolate (width/radius do), so the case wrapper is safe w.r.t. the

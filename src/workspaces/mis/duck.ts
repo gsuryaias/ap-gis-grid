@@ -14,6 +14,7 @@ type AsyncConnection = Awaited<ReturnType<import("@duckdb/duckdb-wasm").AsyncDuc
 const PARQUET_FILES: Record<string, string> = {
   "psp-daily.parquet": "timeseries/psp-daily.parquet",
   "vidyut-daily.parquet": "timeseries/vidyut-daily.parquet",
+  "cea-monthly.parquet": "timeseries/cea-monthly.parquet",
 };
 
 let connPromise: Promise<AsyncConnection> | null = null;

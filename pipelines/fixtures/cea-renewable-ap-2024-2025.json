@@ -1,0 +1,60 @@
+{
+  "2024-2025": [
+    {
+      "ID": "2382",
+      "Month": "Apr-2024",
+      "State": "Andhra Pradesh",
+      "fy": "2024-2025",
+      "region": "SR",
+      "wind": "422.73",
+      "solar": "791.54",
+      "biomass": "1.52",
+      "bagasse": "1.86",
+      "small_hydel": "4.88",
+      "others": "27.1",
+      "total": "1249.63"
+    },
+    {
+      "ID": "2420",
+      "Month": "May-2024",
+      "State": "Andhra Pradesh",
+      "fy": "2024-2025",
+      "region": "SR",
+      "wind": "613.3200000000001",
+      "solar": "738.3000000000001",
+      "biomass": "0.88",
+      "bagasse": "1.1",
+      "small_hydel": "0.07000000000000001",
+      "others": "28.33",
+      "total": "1382"
+    },
+    {
+      "ID": "2458",
+      "Month": "Jun-2024",
+      "State": "Andhra Pradesh",
+      "fy": "2024-2025",
+      "region": "SR",
+      "wind": "1078.07",
+      "solar": "621.11",
+      "biomass": "1.24",
+      "bagasse": "1.67",
+      "small_hydel": "0.6",
+      "others": "24.85",
+      "total": "1727.54"
+    },
+    {
+      "ID": "2496",
+      "Month": "Jul-2024",
+      "State": "Andhra Pradesh",
+      "fy": "2024-2025",
+      "region": "SR",
+      "wind": "1078.07",
+      "solar": "580.9499999999999",
+      "biomass": "1.24",
+      "bagasse": "1.67",
+      "small_hydel": "0.6",
+      "others": "24.85",
+      "total": "1687.38"
+    }
+  ]
+}

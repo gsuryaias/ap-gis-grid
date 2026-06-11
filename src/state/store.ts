@@ -16,7 +16,7 @@ import {
   type PowerGridData,
   type Voltage,
 } from "../data/types.ts";
-import { defaultHashState, type HashState } from "../url/hash.ts";
+import { defaultHashState, defaultMapLayout, type HashState, type MapLayout } from "../url/hash.ts";
 import type { WorkspaceId } from "../workspaces/registry.ts";
 
 export type Basemap = "light" | "dark" | "satellite";
@@ -30,6 +30,43 @@ export interface FlySignal {
 }
 
 /** Query anchor for the nearest-substation tool. `fly` eases the map there (GPS), not for map picks. */
+/** Factor breakdown for a Risk Room register row (indicative screening — not in hash). */
+export interface RiskSelectionContext {
+  id: string;
+  hazard: number;
+  vulnerability: number;
+  criticality: number;
+  composite: number;
+  tier: string;
+  hazardFactors: string[];
+  vulnFactors: string[];
+  critFactors: string[];
+}
+
+/** Cross-workspace analysis focus — persisted in the URL hash when a DSS workspace is active. */
+export interface WorkspaceContext {
+  /** Risk Room scenario preset id (`scenario=` hash key). */
+  scenario?: string;
+  /** @deprecated alias kept for map focus — prefer `scenario`. */
+  hazard?: string;
+  /** MIS focused publication date (`date=` hash key). */
+  date?: string;
+  /** MIS focused entity name (`entity=` hash key). */
+  entity?: string;
+  /** Risk register sort column (`sort=` hash key). */
+  sort?: string;
+  /** Planning horizon year (`horizon=` hash key). */
+  horizon?: number;
+  /** Map fly-to circle (also mirrored by the global `circle=` filter when set from Risk). */
+  circle?: string;
+  /** Risk Room: composite scores keyed by substation id (transient map overlay). */
+  riskScores?: Record<string, number>;
+  /** Risk Room: substation ids to emphasize on the embedded map (transient). */
+  highlightIds?: string[];
+  /** Risk Room: active register row factor breakdown (transient). */
+  riskSelection?: RiskSelectionContext | null;
+}
+
 export interface NearbyOrigin {
   lng: number;
   lat: number;
@@ -39,6 +76,38 @@ export interface NearbyOrigin {
   zoom?: number;
 }
 
+/** Planning Studio ↔ embedded map overlay (transient — never in hash). */
+export interface PlanningMapState {
+  /** True while Planning Studio is mounted with flow results to paint. */
+  active: boolean;
+  /** Line id → indicative utilisation % (`null` = unrated). */
+  utilByLine: Record<string, number | null>;
+  /** Corridors at or above the headroom threshold — pulse on the map. */
+  pulseLineIds: string[];
+  /** Hover/click N-1 contingency preview. */
+  n1Preview: { outageLineId: string; islandedSsIds: string[] } | null;
+  /** Sandbox endpoint pick mode (mutually exclusive with measure / nearby). */
+  sandboxPick: "from" | "to" | null;
+  /** Last map-picked sandbox endpoint (SandboxPanel consumes via `ts`). */
+  sandboxPickResult: { role: "from" | "to"; ssId: string; ts: number } | null;
+  /** Highlight picked endpoints on the map while composing a what-if line. */
+  sandboxFromId: string | null;
+  sandboxToId: string | null;
+}
+
+export function defaultPlanningMap(): PlanningMapState {
+  return {
+    active: false,
+    utilByLine: {},
+    pulseLineIds: [],
+    n1Preview: null,
+    sandboxPick: null,
+    sandboxPickResult: null,
+    sandboxFromId: null,
+    sandboxToId: null,
+  };
+}
+
 interface AppState {
   status: Status;
   error: string | null;
@@ -46,6 +115,10 @@ interface AppState {
 
   /** Active workspace (DSS shell). "atlas" renders the original app tree unchanged. */
   workspace: WorkspaceId;
+  /** Split-layout map pane state (`map=` hash key when not the viewport default). */
+  mapLayout: MapLayout;
+  /** Transient cross-workspace analysis focus (chart/table row clicks, hazard context, …). */
+  workspaceContext: WorkspaceContext;
 
   selectedId: string | null;
   history: string[];
@@ -91,8 +164,13 @@ interface AppState {
   places: PlaceItem[] | null;
   placesStatus: GenStatus;
 
+  // Planning Studio map overlay (transient — never persisted)
+  planningMap: PlanningMapState;
+
   init: () => Promise<void>;
   setWorkspace: (w: WorkspaceId) => void;
+  setMapLayout: (layout: MapLayout) => void;
+  setWorkspaceContext: (ctx: Partial<WorkspaceContext>) => void;
   select: (id: string | null, opts?: { fly?: boolean }) => void;
   back: () => void;
   setHover: (id: string | null) => void;
@@ -122,6 +200,9 @@ interface AppState {
   setNearbyOrigin: (o: NearbyOrigin | null) => void;
   clearNearby: () => void;
   ensurePlaces: () => void;
+  setPlanningMap: (patch: Partial<PlanningMapState>) => void;
+  setSandboxPick: (role: "from" | "to" | null) => void;
+  completeSandboxPick: (ssId: string) => void;
   applyHash: (h: Partial<HashState>) => void;
   hashState: () => HashState;
 }
@@ -166,6 +247,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   data: null,
 
   workspace: "atlas",
+  mapLayout: "atlas-only",
+  workspaceContext: {},
 
   selectedId: null,
   history: [],
@@ -202,6 +285,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   places: null,
   placesStatus: "idle",
 
+  planningMap: defaultPlanningMap(),
+
   init: async () => {
     try {
       const data = await loadGridData();
@@ -216,7 +301,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  setWorkspace: (workspace) => set({ workspace }),
+  setWorkspace: (workspace) =>
+    set((s) => ({
+      workspace,
+      mapLayout: workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout,
+      workspaceContext: workspace === s.workspace ? s.workspaceContext : {},
+      planningMap: workspace === "planning" ? s.planningMap : defaultPlanningMap(),
+    })),
+
+  setMapLayout: (mapLayout) => set({ mapLayout }),
+
+  setWorkspaceContext: (ctx) =>
+    set((s) => {
+      let changed = false;
+      for (const key of Object.keys(ctx) as (keyof WorkspaceContext)[]) {
+        if (s.workspaceContext[key] !== ctx[key]) {
+          changed = true;
+          break;
+        }
+      }
+      if (!changed) return s;
+      return { workspaceContext: { ...s.workspaceContext, ...ctx } };
+    }),
 
   select: (id, opts) =>
     set((s) => ({
@@ -347,6 +453,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   setNearbyOrigin: (nearbyOrigin) => set({ nearbyOrigin }),
   clearNearby: () => set({ nearbyMode: false, nearbyOrigin: null }),
 
+  setPlanningMap: (patch) => set((s) => ({ planningMap: { ...s.planningMap, ...patch } })),
+
+  setSandboxPick: (role) =>
+    set((s) => ({
+      planningMap: { ...s.planningMap, sandboxPick: role },
+      ...(role ? { nearbyMode: false, nearbyOrigin: null, measureMode: null, measureStats: null } : {}),
+    })),
+
+  completeSandboxPick: (ssId) =>
+    set((s) => {
+      const role = s.planningMap.sandboxPick;
+      if (!role) return s;
+      const nextRole = role === "from" && !s.planningMap.sandboxToId ? "to" : null;
+      return {
+        planningMap: {
+          ...s.planningMap,
+          sandboxPick: nextRole,
+          sandboxPickResult: { role, ssId, ts: Date.now() },
+          sandboxFromId: role === "from" ? ssId : s.planningMap.sandboxFromId,
+          sandboxToId: role === "to" ? ssId : s.planningMap.sandboxToId,
+        },
+      };
+    }),
+
   // Lazy-fetch the search gazetteer on first focus of the search box; cache thereafter.
   // A failed fetch resets to idle so the next focus retries (search degrades gracefully meanwhile).
   ensurePlaces: () => {
@@ -388,8 +518,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       // Hash edits can also flip wx off — keep the auto-refresh timer in sync either way.
       Promise.resolve().then(() => syncWeatherTimer(get));
+      const workspace = h.workspace ?? s.workspace;
+      const mapLayout =
+        h.mapLayout ??
+        (workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);
+      const workspaceContext = { ...s.workspaceContext };
+      if (h.date !== undefined) workspaceContext.date = h.date ?? undefined;
+      if (h.entity !== undefined) workspaceContext.entity = h.entity ?? undefined;
+      if (h.scenario !== undefined) {
+        workspaceContext.scenario = h.scenario ?? undefined;
+        workspaceContext.hazard = h.scenario ?? undefined;
+      }
+      if (h.sort !== undefined) workspaceContext.sort = h.sort ?? undefined;
+      if (h.horizon !== undefined) workspaceContext.horizon = h.horizon ?? undefined;
+      if (h.circle !== undefined && h.circle) workspaceContext.circle = h.circle;
       return {
-        workspace: h.workspace ?? s.workspace,
+        workspace,
+        mapLayout,
+        workspaceContext,
         selectedId,
         history: selectedId === s.selectedId ? s.history : [],
         basemap: h.basemap ?? s.basemap,
@@ -414,9 +560,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   hashState: () => {
     const s = get();
+    const ctx = s.workspaceContext;
     return {
       ...defaultHashState,
       workspace: s.workspace,
+      mapLayout: s.workspace === "atlas" ? "atlas-only" : s.mapLayout,
       selectedId: s.selectedId,
       basemap: s.basemap,
       tableOpen: s.tableOpen,
@@ -429,6 +577,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       showGeneration: s.filters.showGeneration,
       showPowerGrid: s.filters.showPowerGrid,
       showWeather: s.filters.showWeather,
+      date: ctx.date ?? null,
+      entity: ctx.entity ?? null,
+      scenario: ctx.scenario ?? ctx.hazard ?? null,
+      sort: ctx.sort ?? null,
+      horizon: ctx.horizon ?? null,
     };
   },
 }));

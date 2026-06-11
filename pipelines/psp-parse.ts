@@ -27,7 +27,30 @@ export interface PspParseResult {
   /** The day the figures describe = reportingDate − 1. */
   dataDate: string;
   rows: PspDailyRow[];
+  frequencyRows: PspFrequencyRow[];
 }
+
+/** Section B frequency-band compliance (% of time in each band) + daily net exchange (MW). */
+export type PspFrequencyRow = {
+  date: string;
+  entity: string;
+  entity_type: "all-india" | "region";
+  /** Frequency Violation Index (FVI). */
+  fvi: number | null;
+  pct_lt_49_7: number | null;
+  pct_49_7_49_8: number | null;
+  pct_49_8_49_9: number | null;
+  /** Cumulative % below 49.9 Hz (report column "< 49.9"). */
+  pct_lt_49_9: number | null;
+  /** IEGC compliance band (49.9–50.05 Hz). */
+  pct_49_9_50_05: number | null;
+  pct_gt_50_05: number | null;
+  /**
+   * Daily mean net transnational exchange (MW) from the TimeSeries sheet.
+   * Section B itself carries no interchange column; this is attached for All India only.
+   */
+  interchange_mw: number | null;
+};
 
 const REGIONS = ["NR", "WR", "SR", "ER", "NER"] as const;
 const MONTHS: Record<string, number> = {
@@ -55,9 +78,93 @@ export function parseReportDate(raw: string): Date {
 
 const cellText = (v: unknown): string => String(v ?? "").replace(/\s+/g, " ").trim();
 
+function extractReportingDate(grid: unknown[][]): Date {
+  for (const row of grid) {
+    if (!row.some((c) => cellText(c).startsWith("Date of Reporting"))) continue;
+    const dateCell = row.map(cellText).find((c) => /^\d{1,2}-[A-Za-z]{3}-\d{2,4}$/.test(c));
+    gate(dateCell, "found 'Date of Reporting' row but no date cell in it");
+    return parseReportDate(dateCell);
+  }
+  gate(false, "'Date of Reporting' not found in MOP_E sheet");
+}
+
+/** Daily mean of the TimeSeries sheet's net transnational exchange column (MW). */
+export function parsePspInterchangeMw(wb: XLSX.WorkBook): number | null {
+  const sheet = wb.Sheets["TimeSeries"];
+  if (!sheet) return null;
+  const grid: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: null });
+  const headerIdx = grid.findIndex((row) => row.some((c) => cellText(c) === "TIME"));
+  if (headerIdx < 0) return null;
+  const header = grid[headerIdx].map(cellText);
+  const colExchange = header.findIndex((c) => c.includes("TRANSNATIONAL") && c.includes("EXCHANGE"));
+  if (colExchange < 0) return null;
+
+  const values: number[] = [];
+  for (let i = headerIdx + 2; i < grid.length; i++) {
+    const time = cellText(grid[i][0]);
+    if (!/^\d{1,2}:\d{2}$/.test(time)) break;
+    const n = parsePspNumber(grid[i][colExchange]);
+    if (n !== null) values.push(n);
+  }
+  if (values.length === 0) return null;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+/** Parse section B (frequency profile) rows from the MOP_E grid. */
+export function parsePspFrequencySection(
+  grid: unknown[][],
+  date: string,
+  interchangeMw: number | null,
+): PspFrequencyRow[] {
+  const sectionBIdx = grid.findIndex((row) => cellText(row[0]).startsWith("B. Frequency Profile"));
+  gate(sectionBIdx >= 0, "section B (frequency profile) not found");
+  const headerIdx = sectionBIdx + 1;
+  gate(cellText(grid[headerIdx][0]) === "Region", "section B header row (Region…) not found");
+  const header = grid[headerIdx].map(cellText);
+  const colOf = (label: string): number => {
+    const idx = header.findIndex((c) => c === label);
+    gate(idx >= 0, `section B header missing column "${label}"`);
+    return idx;
+  };
+  const cols = {
+    fvi: colOf("FVI"),
+    lt497: colOf("< 49.7"),
+    b497498: colOf("49.7 - 49.8"),
+    b498499: colOf("49.8 - 49.9"),
+    lt499: colOf("< 49.9"),
+    b4995005: colOf("49.9 - 50.05"),
+    gt5005: colOf("> 50.05"),
+  };
+
+  const rows: PspFrequencyRow[] = [];
+  for (let i = headerIdx + 1; i < grid.length; i++) {
+    const entity = cellText(grid[i][0]);
+    if (!entity || entity.startsWith("C.")) break;
+    let entityType: PspFrequencyRow["entity_type"];
+    if (entity === "All India") entityType = "all-india";
+    else if (REGIONS.includes(entity as (typeof REGIONS)[number])) entityType = "region";
+    else gate(false, `unrecognised section B entity "${entity}"`);
+    rows.push({
+      date,
+      entity,
+      entity_type: entityType,
+      fvi: parsePspNumber(grid[i][cols.fvi]),
+      pct_lt_49_7: parsePspNumber(grid[i][cols.lt497]),
+      pct_49_7_49_8: parsePspNumber(grid[i][cols.b497498]),
+      pct_49_8_49_9: parsePspNumber(grid[i][cols.b498499]),
+      pct_lt_49_9: parsePspNumber(grid[i][cols.lt499]),
+      pct_49_9_50_05: parsePspNumber(grid[i][cols.b4995005]),
+      pct_gt_50_05: parsePspNumber(grid[i][cols.gt5005]),
+      interchange_mw: entityType === "all-india" ? interchangeMw : null,
+    });
+  }
+  gate(rows.length >= 1, "no section B frequency rows parsed");
+  return rows;
+}
+
 /**
  * Parse the MOP_E sheet of an NLDC daily PSP .xls into long-format rows:
- * section A (All-India + regional PSP) and section C (state-wise PSP).
+ * section A (All-India + regional PSP), section B (frequency profile), and section C (state-wise PSP).
  */
 export function parsePspXls(bytes: Uint8Array): PspParseResult {
   const wb = XLSX.read(bytes, { type: "array" });
@@ -65,17 +172,9 @@ export function parsePspXls(bytes: Uint8Array): PspParseResult {
   gate(sheet, `MOP_E sheet missing (sheets: ${wb.SheetNames.join(", ")})`);
   const grid: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: null });
 
-  // --- Date of Reporting --------------------------------------------------
-  let reportingDate: Date | null = null;
-  for (const row of grid) {
-    if (!row.some((c) => cellText(c).startsWith("Date of Reporting"))) continue;
-    const dateCell = row.map(cellText).find((c) => /^\d{1,2}-[A-Za-z]{3}-\d{2,4}$/.test(c));
-    gate(dateCell, "found 'Date of Reporting' row but no date cell in it");
-    reportingDate = parseReportDate(dateCell);
-    break;
-  }
-  gate(reportingDate, "'Date of Reporting' not found in MOP_E sheet");
+  const reportingDate = extractReportingDate(grid);
   const date = isoDate(addDays(reportingDate, -1));
+  const interchangeMw = parsePspInterchangeMw(wb);
 
   // --- Section A: All India + regional ------------------------------------
   const headerIdx = grid.findIndex(
@@ -165,5 +264,7 @@ export function parsePspXls(bytes: Uint8Array): PspParseResult {
   }
 
   gate(rows.filter((r) => r.entity_type === "state").length >= 25, "fewer than 25 state rows parsed");
-  return { reportingDate: isoDate(reportingDate), dataDate: date, rows };
+
+  const frequencyRows = parsePspFrequencySection(grid, date, interchangeMw);
+  return { reportingDate: isoDate(reportingDate), dataDate: date, rows, frequencyRows };
 }

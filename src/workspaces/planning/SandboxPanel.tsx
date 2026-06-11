@@ -1,92 +1,15 @@
 // What-if sandbox — add up to MAX_SANDBOX_LINES hypothetical lines (from SS, to SS,
-// voltage, circuit). Endpoints are picked via a searchable dropdown over the real
-// substations; assumed length is the great-circle distance between the pair (scenario.ts
-// adds the typical conductor per voltage and expands DC into two parallel circuits).
-// Pure local state — owned by PlanningStudio, never persisted.
-import { useMemo, useState } from "react";
+// voltage, circuit). Endpoints are picked by clicking substations on the embedded map
+// (planningMap.sandboxPick in the store); assumed length is the great-circle distance
+// between the pair (scenario.ts adds the typical conductor per voltage and expands DC
+// into two parallel circuits). Pure local state — owned by PlanningStudio, never persisted.
+import { useEffect, useMemo, useState } from "react";
 import type { Circuit, GridData, SubstationProps, Voltage } from "../../data/types.ts";
 import { VOLTAGES } from "../../data/types.ts";
 import { haversineMeters } from "../../lib/geo.ts";
+import { useAppStore } from "../../state/store.ts";
 import { MAX_SANDBOX_LINES, SANDBOX_CONDUCTOR, type SandboxLine } from "./scenario.ts";
 import { Card, fmt1, MiniButton, VoltTag } from "./ui.tsx";
-
-/** Searchable substation picker: plain filtered dropdown over data.substations. */
-function SsPicker({
-  data,
-  value,
-  onChange,
-  placeholder,
-}: {
-  data: GridData;
-  value: SubstationProps | null;
-  onChange: (ss: SubstationProps | null) => void;
-  placeholder: string;
-}) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-
-  const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (needle.length < 2) return [];
-    return data.substations
-      .filter((s) => s.name.toLowerCase().includes(needle) || (s.ssCode ?? "").toLowerCase().includes(needle))
-      .slice(0, 10);
-  }, [data, query]);
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        value={value ? value.name : query}
-        placeholder={placeholder}
-        onChange={(e) => {
-          onChange(null);
-          setQuery(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
-        className="w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink placeholder:text-ink-2/60"
-      />
-      {value && (
-        <button
-          aria-label="Clear"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onChange(null);
-            setQuery("");
-          }}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded px-1 text-xs text-ink-2 hover:text-ink"
-        >
-          ×
-        </button>
-      )}
-      {open && !value && matches.length > 0 && (
-        <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-[var(--shadow-panel)]">
-          {matches.map((s) => (
-            <li key={s.id}>
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onChange(s);
-                  setQuery("");
-                  setOpen(false);
-                }}
-                className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-[11px] text-ink hover:bg-surface-2"
-              >
-                <span className="truncate">{s.name}</span>
-                <span className="flex shrink-0 items-center gap-1.5 text-ink-2">
-                  <VoltTag v={s.voltage} />
-                  {s.circle && <span className="text-[10px]">{s.circle}</span>}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 export function SandboxPanel({
   data,
@@ -101,12 +24,31 @@ export function SandboxPanel({
   onRemove: (index: number) => void;
   onClearAll: () => void;
 }) {
+  const setSandboxPick = useAppStore((s) => s.setSandboxPick);
+  const setPlanningMap = useAppStore((s) => s.setPlanningMap);
+  const sandboxPick = useAppStore((s) => s.planningMap.sandboxPick);
+  const sandboxPickResult = useAppStore((s) => s.planningMap.sandboxPickResult);
+
   const [fromSs, setFromSs] = useState<SubstationProps | null>(null);
   const [toSs, setToSs] = useState<SubstationProps | null>(null);
   const [voltage, setVoltage] = useState<Voltage>(220);
   const [circuit, setCircuit] = useState<Circuit>("DC");
 
   const ssById = useMemo(() => new Map(data.substations.map((s) => [s.id, s])), [data]);
+
+  // Consume map picks from the store (MapPane → completeSandboxPick).
+  useEffect(() => {
+    if (!sandboxPickResult) return;
+    const ss = ssById.get(sandboxPickResult.ssId);
+    if (!ss) return;
+    if (sandboxPickResult.role === "from") setFromSs(ss);
+    else setToSs(ss);
+  }, [sandboxPickResult, ssById]);
+
+  // Mirror endpoint ids to the map for highlight markers.
+  useEffect(() => {
+    setPlanningMap({ sandboxFromId: fromSs?.id ?? null, sandboxToId: toSs?.id ?? null });
+  }, [fromSs, toSs, setPlanningMap]);
 
   const previewKm =
     fromSs && toSs && fromSs.id !== toSs.id
@@ -119,12 +61,20 @@ export function SandboxPanel({
     onAdd({ fromId: fromSs.id, toId: toSs.id, voltage, circuit });
     setFromSs(null);
     setToSs(null);
+    setPlanningMap({ sandboxFromId: null, sandboxToId: null });
+    setSandboxPick(null);
+  };
+
+  const clearEndpoint = (which: "from" | "to") => {
+    if (which === "from") setFromSs(null);
+    else setToSs(null);
+    setSandboxPick(null);
   };
 
   return (
     <Card
       title="What-if sandbox"
-      subtitle={`Up to ${MAX_SANDBOX_LINES} hypothetical lines`}
+      subtitle={`Up to ${MAX_SANDBOX_LINES} hypothetical lines · pick endpoints on the map`}
       right={
         sandbox.length > 0 ? <MiniButton onClick={onClearAll}>Clear all</MiniButton> : undefined
       }
@@ -166,8 +116,20 @@ export function SandboxPanel({
 
         {sandbox.length < MAX_SANDBOX_LINES ? (
           <div className="space-y-1.5">
-            <SsPicker data={data} value={fromSs} onChange={setFromSs} placeholder="From substation…" />
-            <SsPicker data={data} value={toSs} onChange={setToSs} placeholder="To substation…" />
+            <EndpointRow
+              label="From"
+              ss={fromSs}
+              picking={sandboxPick === "from"}
+              onPick={() => setSandboxPick(sandboxPick === "from" ? null : "from")}
+              onClear={() => clearEndpoint("from")}
+            />
+            <EndpointRow
+              label="To"
+              ss={toSs}
+              picking={sandboxPick === "to"}
+              onPick={() => setSandboxPick(sandboxPick === "to" ? null : "to")}
+              onClear={() => clearEndpoint("to")}
+            />
             <div className="flex items-center gap-1.5">
               <select
                 value={voltage}
@@ -198,6 +160,12 @@ export function SandboxPanel({
                 Add
               </button>
             </div>
+            {sandboxPick && (
+              <p className="rounded-lg border border-accent/40 bg-accent/5 px-2 py-1.5 text-[10px] text-ink">
+                Click a <span className="font-semibold">substation</span> on the map to set the{" "}
+                <span className="font-semibold">{sandboxPick}</span> endpoint.
+              </p>
+            )}
             {previewKm !== null && (
               <p className="text-[10px] text-ink-2">
                 Assumed length ≈ {fmt1(previewKm)} km (great-circle; real routes run longer) ·
@@ -221,5 +189,57 @@ export function SandboxPanel({
         </p>
       </div>
     </Card>
+  );
+}
+
+function EndpointRow({
+  label,
+  ss,
+  picking,
+  onPick,
+  onClear,
+}: {
+  label: string;
+  ss: SubstationProps | null;
+  picking: boolean;
+  onPick: () => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1.5">
+      <span className="w-8 shrink-0 text-[10px] font-semibold uppercase text-ink-2">{label}</span>
+      {ss ? (
+        <div className="min-w-0 flex-1 text-[11px] text-ink">
+          <p className="truncate font-medium">{ss.name}</p>
+          <p className="flex items-center gap-1 text-[10px] text-ink-2">
+            <VoltTag v={ss.voltage} />
+            {ss.circle && <span>{ss.circle}</span>}
+          </p>
+        </div>
+      ) : (
+        <span className="flex-1 text-[11px] text-ink-2/70">Not picked</span>
+      )}
+      <button
+        type="button"
+        onClick={onPick}
+        className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-medium ${
+          picking
+            ? "bg-accent text-white"
+            : "border border-line bg-surface-2 text-ink hover:bg-surface-3"
+        }`}
+      >
+        {picking ? "Picking…" : "Pick on map"}
+      </button>
+      {ss && (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label={`Clear ${label} endpoint`}
+          className="shrink-0 rounded px-1 text-sm text-ink-2 hover:text-ink"
+        >
+          ×
+        </button>
+      )}
+    </div>
   );
 }

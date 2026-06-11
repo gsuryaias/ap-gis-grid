@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAppStore } from "../state/store.ts";
-import { parseHash, serializeHash } from "./hash.ts";
+import { defaultMapLayout, parseHash, serializeHash } from "./hash.ts";
 
 /**
  * Two-way sync between the app store and the URL hash.
@@ -9,9 +9,21 @@ import { parseHash, serializeHash } from "./hash.ts";
  */
 export function useHashSync(): void {
   useEffect(() => {
-    useAppStore.getState().applyHash(parseHash(window.location.hash));
+    const parsed = parseHash(window.location.hash);
+    if (!parsed.mapLayout) {
+      const ws = parsed.workspace ?? useAppStore.getState().workspace;
+      parsed.mapLayout = ws === "atlas" ? "atlas-only" : defaultMapLayout();
+    }
+    useAppStore.getState().applyHash(parsed);
 
-    const onHash = () => useAppStore.getState().applyHash(parseHash(window.location.hash));
+    const onHash = () => {
+      const h = parseHash(window.location.hash);
+      if (!h.mapLayout) {
+        const ws = h.workspace ?? useAppStore.getState().workspace;
+        h.mapLayout = ws === "atlas" ? "atlas-only" : defaultMapLayout();
+      }
+      useAppStore.getState().applyHash(h);
+    };
     window.addEventListener("hashchange", onHash);
     window.addEventListener("popstate", onHash);
 

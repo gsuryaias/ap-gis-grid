@@ -15,12 +15,26 @@ export function FreshnessBadge({ manifest, now = Date.now() }: { manifest: Datas
     );
   }
   if (state === "stale") {
+    const issueUrl = manifest!.pipelineFailureIssueUrl;
     return (
       <span
         title={`Last successful update: ${manifest!.lastSuccess}`}
         className="inline-flex items-center gap-1 rounded-full bg-amber-100/70 px-2 py-0.5 text-[10px] font-medium text-amber-900 dark:bg-amber-500/15 dark:text-amber-200"
       >
         stale · as of {manifest!.vintage}
+        {issueUrl ? (
+          <>
+            {" · "}
+            <a
+              href={issueUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-amber-700/50 hover:decoration-amber-900 dark:decoration-amber-200/50"
+            >
+              pipeline issue
+            </a>
+          </>
+        ) : null}
       </span>
     );
   }

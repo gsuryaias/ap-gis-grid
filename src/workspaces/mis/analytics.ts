@@ -118,6 +118,200 @@ export function anomalies(
   return out;
 }
 
+/** Day-of-year (1–366) from an ISO date string. */
+export function dayOfYear(iso: string): number {
+  const d = new Date(`${iso}T00:00:00Z`);
+  const start = Date.UTC(d.getUTCFullYear(), 0, 0);
+  return Math.floor((d.getTime() - start) / 86400000);
+}
+
+/** Month-day key (MM-DD) for same-calendar-day matching across leap years. */
+export function monthDay(iso: string): string {
+  return iso.slice(5, 10);
+}
+
+/** Calendar span of a sorted ISO date array, in fractional years. */
+export function spanYears(dates: string[]): number {
+  if (dates.length < 2) return 0;
+  const t0 = Date.parse(`${dates[0]}T00:00:00Z`);
+  const t1 = Date.parse(`${dates[dates.length - 1]}T00:00:00Z`);
+  return (t1 - t0) / (365.25 * 86_400_000);
+}
+
+export type BaselineMethod = "doy" | "trailing14";
+
+export interface DoyBaselinePoint {
+  mean: number | null;
+  sigma: number | null;
+  method: BaselineMethod;
+  /** Sample count used for the baseline at this index. */
+  n: number;
+}
+
+/**
+ * Per-day baseline: trailing 3-year same-DOY mean ± σ when ≥1 calendar year of history exists;
+ * otherwise falls back to the trailing 14-day window (excluding the current day).
+ */
+export function doyBaselineSeries(
+  dates: string[],
+  values: Array<number | null>,
+  trailingYears = 3,
+  fallbackWindow = 14,
+): DoyBaselinePoint[] {
+  const enoughHistory = spanYears(dates) >= 1;
+  return dates.map((d, i) => {
+    const v = values[i];
+    if (v == null) return { mean: null, sigma: null, method: "trailing14" as BaselineMethod, n: 0 };
+
+    if (enoughHistory) {
+      const md = monthDay(d);
+      const year = Number(d.slice(0, 4));
+      const sameDoy: number[] = [];
+      for (let j = 0; j < i; j++) {
+        if (monthDay(dates[j]!) !== md) continue;
+        const yv = values[j];
+        if (yv == null) continue;
+        const y = Number(dates[j]!.slice(0, 4));
+        if (y >= year - trailingYears && y < year) sameDoy.push(yv);
+      }
+      if (sameDoy.length >= 2) {
+        return {
+          mean: mean(sameDoy),
+          sigma: stddev(sameDoy),
+          method: "doy",
+          n: sameDoy.length,
+        };
+      }
+    }
+
+    const prior = values.slice(Math.max(0, i - fallbackWindow), i);
+    const n = prior.filter((p) => p != null).length;
+    return {
+      mean: mean(prior),
+      sigma: stddev(prior),
+      method: "trailing14",
+      n,
+    };
+  });
+}
+
+/** Z-scores against the DOY / trailing-14 baseline at each index. */
+export function doyZScores(dates: string[], values: Array<number | null>): Array<number | null> {
+  const baselines = doyBaselineSeries(dates, values);
+  return values.map((v, i) => {
+    if (v == null) return null;
+    const b = baselines[i]!;
+    if (b.mean == null || b.sigma == null || b.sigma === 0) return null;
+    return (v - b.mean) / b.sigma;
+  });
+}
+
+export interface SeasonalDecomp {
+  trend: Array<number | null>;
+  seasonal: Array<number | null>;
+  residual: Array<number | null>;
+}
+
+function tricube(x: number): number {
+  const a = Math.abs(x);
+  if (a >= 1) return 0;
+  const t = 1 - a * a * a;
+  return t * t * t;
+}
+
+/** Local LOESS smooth (pure TS, no deps). Nulls are skipped; bandwidth is a fraction of n. */
+export function loessSmooth(values: Array<number | null>, bandwidth = 0.25): Array<number | null> {
+  const n = values.length;
+  if (n === 0) return [];
+  const half = Math.max(1, Math.floor(bandwidth * n));
+  return values.map((_, i) => {
+    let sumW = 0;
+    let sumWV = 0;
+    for (let j = Math.max(0, i - half); j <= Math.min(n - 1, i + half); j++) {
+      const v = values[j];
+      if (v == null) continue;
+      const w = tricube((j - i) / half);
+      sumW += w;
+      sumWV += w * v;
+    }
+    return sumW > 0 ? sumWV / sumW : null;
+  });
+}
+
+/**
+ * Simple seasonal decomposition: LOESS trend + DOY-averaged seasonal + residual.
+ * Indicative — not a full STL; suitable for dashboard overlays.
+ */
+export function seasonalDecompose(dates: string[], values: Array<number | null>): SeasonalDecomp {
+  const trend = loessSmooth(values, 0.2);
+  const detrended = values.map((v, i) => (v != null && trend[i] != null ? v - trend[i]! : null));
+
+  const doyBuckets = new Map<string, number[]>();
+  for (let i = 0; i < dates.length; i++) {
+    const d = detrended[i];
+    if (d == null) continue;
+    const md = monthDay(dates[i]!);
+    const arr = doyBuckets.get(md) ?? [];
+    arr.push(d);
+    doyBuckets.set(md, arr);
+  }
+  const doyMean = new Map<string, number>();
+  for (const [md, arr] of doyBuckets) {
+    const m = mean(arr);
+    if (m != null) doyMean.set(md, m);
+  }
+
+  const seasonal = dates.map((d, i) => {
+    if (values[i] == null) return null;
+    return doyMean.get(monthDay(d)) ?? null;
+  });
+  const residual = values.map((v, i) => {
+    if (v == null || trend[i] == null) return null;
+    const s = seasonal[i] ?? 0;
+    return v - trend[i]! - s;
+  });
+  return { trend, seasonal, residual };
+}
+
+export type DateRange = { start: string; end: string };
+
+/** Slice a sorted date axis and parallel series arrays to an inclusive ISO range. */
+export function sliceByDateRange<T>(
+  dates: string[],
+  range: DateRange | null,
+  ...series: Array<Array<T>>
+): { dates: string[]; series: Array<Array<T>> } {
+  if (!range) return { dates, series };
+  const idx: number[] = [];
+  const outDates: string[] = [];
+  dates.forEach((d, i) => {
+    if (d >= range.start && d <= range.end) {
+      idx.push(i);
+      outDates.push(d);
+    }
+  });
+  return { dates: outDates, series: series.map((s) => idx.map((i) => s[i]!)) };
+}
+
+/** Map a date range to ECharts dataZoom start/end percentages (0–100). */
+export function dateRangeToZoom(dates: string[], range: DateRange | null): { start: number; end: number } | null {
+  if (!range || dates.length === 0) return null;
+  let startIdx = -1;
+  let endIdx = -1;
+  dates.forEach((d, i) => {
+    if (d >= range.start && d <= range.end) {
+      if (startIdx < 0) startIdx = i;
+      endIdx = i;
+    }
+  });
+  if (startIdx < 0) return null;
+  const n = dates.length;
+  return {
+    start: (startIdx / n) * 100,
+    end: ((endIdx + 1) / n) * 100,
+  };
+}
+
 /** "+3.2" / "−1.4" / "0.0" with a true minus sign; null-safe. */
 export function fmtSigned(v: number | null, digits = 1): string {
   if (v == null) return "—";

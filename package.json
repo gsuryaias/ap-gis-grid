@@ -10,8 +10,11 @@
     "preview": "vite preview",
     "build:data": "tsx scripts/build-data.mts",
     "pipeline:psp": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/psp-daily.mts",
+    "pipeline:psp-frequency": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/psp-frequency.mts",
     "pipeline:vidyut": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/vidyut-daily.mts",
-    "pipelines": "npm run pipeline:psp && npm run pipeline:vidyut",
+    "pipeline:vidyut-blocks": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/vidyut-blocks.mts",
+    "pipeline:cea": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/cea-monthly.mts",
+    "pipelines": "npm run pipeline:psp && npm run pipeline:psp-frequency && npm run pipeline:vidyut && npm run pipeline:vidyut-blocks && npm run pipeline:cea",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

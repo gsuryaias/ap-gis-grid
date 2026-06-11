@@ -3,9 +3,14 @@ name: Data pipelines
 # Daily ingestion of official power-supply publications into the dedicated `data`
 # branch (never main, so the Pages deploy workflow is never triggered).
 # 01:30 UTC = 07:00 IST — after Grid-India publishes the previous-day PSP report.
+# Vidyut 15-min blocks: 6×/day (every 4 h IST-aligned) — not true 15-min cadence
+# (96 runs/day would be aggressive for a static GH Action; bump if needed).
 on:
   schedule:
     - cron: "30 1 * * *"
+    - cron: "30 3,7,11,15,19,23 * * *"
+    # 5th of each month 02:30 UTC = 08:00 IST — CEA monthly reports typically lag ~1 month.
+    - cron: "30 2 5 * *"
   workflow_dispatch:
 
 permissions:
@@ -41,8 +46,20 @@ jobs:
             git worktree remove --force /tmp/data-prev
           fi
 
-      - name: Run pipelines
-        run: npm run pipelines
+      - name: Run daily pipelines
+        if: github.event.schedule == '30 1 * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          npm run pipeline:psp
+          npm run pipeline:psp-frequency
+          npm run pipeline:vidyut
+
+      - name: Run Vidyut block pipeline
+        if: github.event.schedule != '30 1 * * *' || github.event_name == 'workflow_dispatch'
+        run: npm run pipeline:vidyut-blocks
+
+      - name: Run CEA monthly pipeline
+        if: github.event.schedule == '30 2 5 * *' || github.event_name == 'workflow_dispatch'
+        run: npm run pipeline:cea
 
       - name: Publish data branch
         run: |

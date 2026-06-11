@@ -106,6 +106,7 @@ export function fiscalYear(date: Date): string {
 // Manifest writer (the consumer-facing dataset contract, per the DSS design spec)
 // ---------------------------------------------------------------------------
 
+/** Aligned with `DatasetManifest` in `src/data/manifests.ts` (the consumer contract). */
 export interface Manifest {
   id: string;
   /** Column name → DuckDB type, exactly the schema of the emitted parquet. */
@@ -113,13 +114,17 @@ export interface Manifest {
   source: { name: string; url: string };
   licence: string;
   attribution: string;
-  cadence: "daily" | "weekly" | "monthly" | "annual" | "one-time";
+  cadence: "15min" | "daily" | "weekly" | "monthly" | "annual" | "static" | "one-time";
   /** Latest data date present in the dataset (YYYY-MM-DD). */
   vintage: string;
   /** ISO timestamp of the last successful pipeline run. */
   lastSuccess: string;
   /** Paths relative to the data branch root. */
   paths: string[];
+  /** Total rows after the merge (optional; enables client-side integrity gates). */
+  rowCount?: number;
+  /** Open GitHub Issue URL when a labelled pipeline-failure issue exists. */
+  pipelineFailureIssueUrl?: string;
 }
 
 export function writeManifest(manifest: Manifest): string {

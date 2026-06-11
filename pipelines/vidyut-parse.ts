@@ -20,6 +20,20 @@ export type VidyutDailyRow = {
   exchange_price_inr_kwh: number | null;
 };
 
+export type VidyutBlockRow = {
+  /** Snapshot date printed on the exchange block header (YYYY-MM-DD). */
+  date: string;
+  state: string;
+  /** Block start time HH:MM (IST). */
+  block_start: string;
+  /** Block end time HH:MM (IST). */
+  block_end: string;
+  /** State demand met for the current block (MW). */
+  demand_mw: number | null;
+  /** Power-exchange price for the current block (₹/kWh); null when the page shows "-". */
+  exchange_price: number | null;
+};
+
 const MONTHS: Record<string, number> = {
   jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
   jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
@@ -74,5 +88,44 @@ export function parseVidyutStateHtml(html: string): VidyutDailyRow {
     energy_shortage_mu: energy.value,
     energy_shortage_pct: energy.pct,
     exchange_price_inr_kwh: parseVidyutNumber(textOf(".value_PrevExchangePrice_en")),
+  };
+}
+
+/** Parse the exchange time-block label, e.g. "00:15 - 00:30". */
+export function parseVidyutBlockLabel(raw: string): { block_start: string; block_end: string } {
+  const m = raw.replace(/\u00a0/g, " ").match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+  gate(m, `exchange time block not found in "${raw.trim()}"`);
+  return { block_start: m[1], block_end: m[2] };
+}
+
+/** Parse a Vidyut Pravah state page into one current 15-min block row. */
+export function parseVidyutBlockHtml(html: string): VidyutBlockRow {
+  const dated = html.match(/DATED\s+(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/);
+  gate(dated, "snapshot date ('DATED dd MON yyyy') not found on page");
+  const month = MONTHS[dated[2].toLowerCase()];
+  gate(month !== undefined, `unrecognised month "${dated[2]}" in snapshot date`);
+  const snapshot = new Date(Date.UTC(Number(dated[3]), month, Number(dated[1])));
+
+  const blockHeader = html.match(/FOR TIME BLOCK\s*<b>\s*(\d{2}:\d{2}\s*-\s*\d{2}:\d{2})\s*<\/b>/i);
+  gate(blockHeader, "exchange time block header not found on page");
+  const { block_start, block_end } = parseVidyutBlockLabel(blockHeader[1]);
+
+  const root = parseHtml(html);
+  const textOf = (selector: string): string => {
+    const el = root.querySelector(selector);
+    gate(el, `element ${selector} not found (layout changed?)`);
+    return el.text.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  };
+
+  const state = textOf(".statenames_en");
+  gate(state.length > 0, "state name is empty");
+
+  return {
+    date: isoDate(snapshot),
+    state,
+    block_start,
+    block_end,
+    demand_mw: parseVidyutNumber(textOf(".value_DemandMET_en")),
+    exchange_price: parseVidyutNumber(textOf(".value_ExchangePrice_en")),
   };
 }
