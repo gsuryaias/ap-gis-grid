@@ -1,19 +1,17 @@
 // Planning Studio v1 (DSS revamp spec §4, milestone M5) — load-growth scenarios vs corridor
 // headroom, a full N-1 contingency screen and a what-if network sandbox, all computed by the
 // indicative DC flow (src/lib/dcflow.ts) inside a web worker (flow.worker.ts). An ANALYSIS
-// workspace: rows sync selection + fly-to on the persistent embedded map pane. Scenario and
+// workspace: no map — rows deep-link into the Atlas (setWorkspace + select). Scenario and
 // sandbox state are transient local React state: no store slice, no hash keys.
 //
 // Three flow cases run per scenario:
 //   reference — no growth (years 0): the KPI baseline       ("no-growth base")
 //   horizon   — per-circle CAGR growth to the horizon year  (the main readout)
 //   sandbox   — horizon + the what-if lines (when present)  (drives the delta view)
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Circuit, GridData, Voltage } from "../../data/types.ts";
-import { MethodCard } from "../../components/MethodCard.tsx";
 import { csvCell, downloadText, toCsv } from "../../lib/export.ts";
-import { defaultPlanningMap, useAppStore } from "../../state/store.ts";
-import { HEADROOM_PULSE_PCT } from "../../map/planning-map.ts";
+import { useAppStore } from "../../state/store.ts";
 import {
   BASE_YEAR,
   DEFAULT_CAGR_PCT,
@@ -73,35 +71,16 @@ export default function PlanningStudio() {
 
 function Studio({ data }: { data: GridData }) {
   const select = useAppStore((s) => s.select);
-  const setWorkspaceContext = useAppStore((s) => s.setWorkspaceContext);
-  const setPlanningMap = useAppStore((s) => s.setPlanningMap);
-  const workspaceContext = useAppStore((s) => s.workspaceContext);
-  const setRegionCircle = useAppStore((s) => s.setRegionCircle);
+  const setWorkspace = useAppStore((s) => s.setWorkspace);
 
-  // ---- Scenario state (horizon + circle synced to URL hash) -------------------------
+  // ---- Scenario state (local, transient) -------------------------------------------
   const circles = data.meta.circles;
   const [cagrByCircle, setCagrByCircle] = useState<Record<string, number>>(() =>
     Object.fromEntries(circles.map((c) => [c, DEFAULT_CAGR_PCT])),
   );
-  const [horizonYear, setHorizonYear] = useState(() => workspaceContext.horizon ?? BASE_YEAR + 5);
+  const [horizonYear, setHorizonYear] = useState(BASE_YEAR + 5);
   const [genMode, setGenMode] = useState<GenMode>("generators");
   const [sandbox, setSandbox] = useState<SandboxLine[]>([]);
-
-  useEffect(() => {
-    if (workspaceContext.horizon != null && workspaceContext.horizon !== horizonYear) {
-      setHorizonYear(workspaceContext.horizon);
-    }
-  }, [workspaceContext.horizon, horizonYear]);
-
-  useEffect(() => {
-    if (workspaceContext.horizon === horizonYear) return;
-    setWorkspaceContext({ horizon: horizonYear });
-  }, [horizonYear, setWorkspaceContext, workspaceContext.horizon]);
-
-  useEffect(() => {
-    const c = useAppStore.getState().filters.circle;
-    if (c) setWorkspaceContext({ circle: c });
-  }, [setWorkspaceContext]);
 
   const debouncedCagr = useDebounced(cagrByCircle, 300);
 
@@ -152,36 +131,6 @@ function Studio({ data }: { data: GridData }) {
 
   const computing = [referenceRun, horizonRun, sandboxRun].find((r) => r.status === "computing");
 
-  const [n1PreviewId, setN1PreviewId] = useState<string | null>(null);
-
-  // ---- Sync indicative flow results to the embedded map pane -------------------------
-  useEffect(() => {
-    if (!activeResult) {
-      setPlanningMap({ active: false, utilByLine: {}, pulseLineIds: [], n1Preview: null });
-      return;
-    }
-    const utilByLine = Object.fromEntries(activeResult.util.map((u) => [u.lineId, u.pct]));
-    const pulseLineIds = activeResult.util
-      .filter((u): u is UtilRow & { pct: number } => u.pct !== null && u.pct >= HEADROOM_PULSE_PCT)
-      .map((u) => u.lineId);
-    setPlanningMap({ active: true, utilByLine, pulseLineIds });
-  }, [activeResult, setPlanningMap]);
-
-  useEffect(() => {
-    if (!activeResult || !n1PreviewId) {
-      setPlanningMap({ n1Preview: null });
-      return;
-    }
-    const row = activeResult.n1.find((r) => r.outageLineId === n1PreviewId);
-    setPlanningMap(
-      row
-        ? { n1Preview: { outageLineId: row.outageLineId, islandedSsIds: row.islanded } }
-        : { n1Preview: null },
-    );
-  }, [activeResult, n1PreviewId, setPlanningMap]);
-
-  useEffect(() => () => setPlanningMap(defaultPlanningMap()), [setPlanningMap]);
-
   // ---- Derived readouts ---------------------------------------------------------------
   const lineInfo = useMemo(() => {
     return (id: string): LineInfo | null => {
@@ -224,28 +173,10 @@ function Studio({ data }: { data: GridData }) {
   const kpis = activeResult ? kpisFor(activeResult) : null;
   const baseKpis = referenceRun.result ? kpisFor(referenceRun.result) : null;
 
-  const focusOnMap = (id: string) => {
+  const openInAtlas = (id: string) => {
     if (id.startsWith(SANDBOX_ID_PREFIX) || id.endsWith(INFERRED_DC_SUFFIX)) return;
-    const f = data.byId.get(id);
-    const circle = f && "circle" in f ? f.circle ?? undefined : undefined;
-    setWorkspaceContext({ circle });
-    if (circle) setRegionCircle(circle);
+    setWorkspace("atlas");
     select(id, { fly: true });
-  };
-
-  const exportScenarioJson = () => {
-    const payload = {
-      horizonYear,
-      baseYear: BASE_YEAR,
-      baseDemandMw: BASE_DEMAND_MW,
-      cagrPctByCircle: debouncedCagr,
-      genMode,
-      sandboxLines: sandbox,
-      networkVintage: data.meta.generatedAt.slice(0, 10),
-      honestyNote: HONESTY_NOTE,
-      exportedAt: new Date().toISOString(),
-    };
-    downloadText(`planning-scenario-${horizonYear}.json`, "application/json", JSON.stringify(payload, null, 2));
   };
 
   // ---- CSV exports (honesty note embedded in every file) ------------------------------
@@ -335,6 +266,7 @@ function Studio({ data }: { data: GridData }) {
         <main className="min-w-0 flex-1 space-y-3">
           <header className="flex flex-wrap items-end justify-between gap-2 px-1 pt-1">
             <div>
+              <h1 className="text-lg font-bold text-ink">Planning Studio</h1>
               <p className="text-xs text-ink-2">
                 Corridor headroom · N−1 screen · what-if sandbox — indicative DC flow at{" "}
                 <span className="font-semibold text-ink">{horizonYear}</span>
@@ -343,14 +275,6 @@ function Studio({ data }: { data: GridData }) {
             </div>
             <div className="flex items-center gap-2">
               {computing && <ComputingBadge phase={computing.phase} />}
-              {activeResult && (
-                <>
-                  <MiniButton onClick={exportScenarioJson}>Scenario JSON</MiniButton>
-                  <MiniButton onClick={exportHeadroomCsv} disabled={headroomRows.length === 0}>
-                    Utilisation CSV
-                  </MiniButton>
-                </>
-              )}
               {activeResult && (
                 <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-[10px] font-medium text-ink-2">
                   {fmtInt(activeResult.totalLoadMw)} MW demand · {fmtInt(activeResult.generatorCount)} gen buses ·{" "}
@@ -372,7 +296,7 @@ function Studio({ data }: { data: GridData }) {
               after={sandboxRun.result}
               computing={sandboxRun.status === "computing" || horizonRun.status === "computing"}
               lineInfo={lineInfo}
-              onOpen={focusOnMap}
+              onOpen={openInAtlas}
             />
           )}
 
@@ -405,7 +329,7 @@ function Studio({ data }: { data: GridData }) {
                       return (
                         <tr
                           key={u.lineId}
-                          onClick={() => focusOnMap(u.lineId)}
+                          onClick={() => openInAtlas(u.lineId)}
                           className={`border-b border-line/60 text-ink ${
                             info?.sandbox ? "" : "cursor-pointer hover:bg-surface-2"
                           }`}
@@ -475,15 +399,10 @@ function Studio({ data }: { data: GridData }) {
                       return (
                         <tr
                           key={r.outageLineId}
-                          onClick={() => {
-                            setN1PreviewId(r.outageLineId);
-                            focusOnMap(r.outageLineId);
-                          }}
-                          onMouseEnter={() => setN1PreviewId(r.outageLineId)}
-                          onMouseLeave={() => setN1PreviewId((cur) => (cur === r.outageLineId ? null : cur))}
+                          onClick={() => openInAtlas(r.outageLineId)}
                           className={`border-b border-line/60 text-ink ${
                             info?.sandbox ? "" : "cursor-pointer hover:bg-surface-2"
-                          } ${n1PreviewId === r.outageLineId ? "bg-amber-50/80 dark:bg-amber-500/10" : ""}`}
+                          }`}
                         >
                           <td className="px-3 py-1.5 tabular-nums text-ink-2">{i + 1}</td>
                           <td className="max-w-[240px] truncate px-2 py-1.5" title={info?.name ?? r.outageLineId}>
@@ -539,14 +458,6 @@ function Studio({ data }: { data: GridData }) {
             Network data: AP-TRANSCO (vintage {data.meta.generatedAt.slice(0, 10)}) · connectivity inferred
             geometrically · {activeResult ? `${fmtInt(activeResult.assumedLengthLines)} lines solved on an assumed default length` : ""}
           </p>
-
-          <MethodCard
-            metric="Corridor utilisation (% of indicative thermal rating)"
-            source="AP-TRANSCO Gridmap ETL + inferred conductor ampacity (capacity.ts)"
-            vintage={data.meta.generatedAt.slice(0, 10)}
-            method="Indicative DC flow at voltage-weighted demand (132 kV primary) with per-circle CAGR growth to the horizon year"
-            limitation="Screening only — not a load-flow or system study; demand and generation are crude assumptions"
-          />
         </main>
       </div>
     </div>
