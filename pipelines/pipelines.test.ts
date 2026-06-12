@@ -18,7 +18,7 @@ import {
   normalizeCeaSource,
   buToMu,
 } from "./cea-parse.ts";
-import { istToday, addDays, isoDate, fiscalYear } from "./lib.ts";
+import { istToday, addDays, isoDate, fiscalYear, mergedCaBundle, fetchText } from "./lib.ts";
 
 const fixture = (name: string): Buffer =>
   readFileSync(new URL(`./fixtures/${name}`, import.meta.url));
@@ -33,6 +33,25 @@ describe("pipeline date helpers", () => {
     expect(fiscalYear(new Date("2026-04-01T00:00:00Z"))).toBe("2026-27");
     expect(isoDate(addDays(new Date("2026-06-01T00:00:00Z"), -1))).toBe("2026-05-31");
   });
+
+  it("loads the extra CA bundle without comment lines", () => {
+    const cas = mergedCaBundle();
+    expect(cas?.length).toBeGreaterThan(1);
+    expect(cas!.some((c) => c.includes("BEGIN CERTIFICATE"))).toBe(true);
+    expect(cas!.every((c) => !c.startsWith("#"))).toBe(true);
+  });
+
+  it("fetches Vidyut Pravah without NODE_EXTRA_CA_CERTS (programmatic TLS)", async () => {
+    const prev = process.env.NODE_EXTRA_CA_CERTS;
+    delete process.env.NODE_EXTRA_CA_CERTS;
+    try {
+      const html = await fetchText("https://vidyutpravah.in/state-data/andhra-pradesh", { timeoutMs: 30_000 });
+      expect(html).toContain("Andhra Pradesh");
+    } finally {
+      if (prev === undefined) delete process.env.NODE_EXTRA_CA_CERTS;
+      else process.env.NODE_EXTRA_CA_CERTS = prev;
+    }
+  }, 45_000);
 });
 
 describe("Grid-India daily PSP parser", () => {

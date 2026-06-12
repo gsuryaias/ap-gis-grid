@@ -2,10 +2,37 @@
 // Mirrors the ETL conventions: pure logic kept testable, hard `assert`-style validation
 // gates that fail the run loudly, and outputs written to the git-ignored data-branch/
 // working dir (published to the dedicated `data` branch by CI, never to main).
-import { mkdirSync, writeFileSync, existsSync, renameSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, renameSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import tls from "node:tls";
+import { Agent, fetch as undiciFetch, type RequestInit as UndiciRequestInit } from "undici";
 import { DuckDBInstance } from "@duckdb/node-api";
+
+/** Path to intermediate CAs for Indian gov hosts that serve incomplete TLS chains. */
+export const EXTRA_CA_PATH = join(dirname(fileURLToPath(import.meta.url)), "certs", "extra-cas.pem");
+
+/** System trust store + `extra-cas.pem` (comment lines stripped — Linux OpenSSL rejects them). */
+export function mergedCaBundle(): string[] | undefined {
+  if (!existsSync(EXTRA_CA_PATH)) return undefined;
+  const extra = readFileSync(EXTRA_CA_PATH, "utf8")
+    .split("\n")
+    .filter((line) => !line.startsWith("#") && line.trim().length > 0)
+    .join("\n");
+  if (!extra.includes("BEGIN CERTIFICATE")) return undefined;
+  const cas: string[] = [];
+  if (typeof tls.getCACertificates === "function") {
+    for (const buf of tls.getCACertificates("default")) cas.push(buf.toString());
+  }
+  cas.push(extra);
+  return cas;
+}
+
+const tlsDispatcher = (() => {
+  const ca = mergedCaBundle();
+  return ca ? new Agent({ connect: { ca } }) : undefined;
+})();
 
 /** Root of the pipeline working dir (synced onto the `data` branch by CI). */
 export const DATA_DIR = resolve(process.cwd(), "data-branch");
@@ -34,12 +61,17 @@ export async function fetchWithRetry(url: string, opts: FetchOptions = {}): Prom
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, 2_000 * 2 ** (attempt - 1)));
     try {
-      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+      const req: UndiciRequestInit = {
+        ...(init as UndiciRequestInit | undefined),
+        signal: AbortSignal.timeout(timeoutMs),
+        dispatcher: tlsDispatcher,
+      };
+      const res = await undiciFetch(url, req);
       if (res.status >= 500) {
         lastError = new Error(`HTTP ${res.status} for ${url}`);
         continue; // retry server errors
       }
-      return res; // 4xx is a real answer (e.g. report not published yet) — do not retry
+      return res as unknown as Response;
     } catch (err) {
       lastError = err;
     }

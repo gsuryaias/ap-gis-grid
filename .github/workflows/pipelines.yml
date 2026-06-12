@@ -24,6 +24,9 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      # Absolute path — relative paths in npm scripts can fail on some runners.
+      NODE_EXTRA_CA_CERTS: ${{ github.workspace }}/pipelines/certs/extra-cas.pem
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +50,7 @@ jobs:
           fi
 
       - name: Run daily pipelines
+        id: daily_pipelines
         if: github.event.schedule == '30 1 * * *' || github.event_name == 'workflow_dispatch'
         run: |
           npm run pipeline:psp
@@ -54,14 +58,21 @@ jobs:
           npm run pipeline:vidyut
 
       - name: Run Vidyut block pipeline
+        id: vidyut_blocks
+        continue-on-error: true
         if: github.event.schedule != '30 1 * * *' || github.event_name == 'workflow_dispatch'
         run: npm run pipeline:vidyut-blocks
 
       - name: Run CEA monthly pipeline
+        id: cea
         if: github.event.schedule == '30 2 5 * *' || github.event_name == 'workflow_dispatch'
         run: npm run pipeline:cea
 
       - name: Publish data branch
+        if: |
+          steps.daily_pipelines.outcome == 'success' ||
+          steps.vidyut_blocks.outcome == 'success' ||
+          steps.cea.outcome == 'success'
         run: |
           cd data-branch
           rm -rf .git
@@ -69,13 +80,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
+          if git diff --staged --quiet; then
+            echo "No dataset changes — skipping publish."
+            exit 0
+          fi
           git commit -q -m "data: pipeline run $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Open or update failure issue
-        if: failure()
+        if: failure() && steps.daily_pipelines.outcome == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
