@@ -71,7 +71,7 @@ jobs:
       - name: Publish data branch
         if: |
           steps.daily_pipelines.outcome == 'success' ||
-          steps.vidyut_blocks.outcome == 'success' ||
+          steps.vidyut_blocks.outcome != 'skipped' ||
           steps.cea.outcome == 'success'
         run: |
           cd data-branch
