@@ -2,12 +2,14 @@ name: Data pipelines
 
 # Daily ingestion of official power-supply publications into the dedicated `data`
 # branch (never main, so the Pages deploy workflow is never triggered).
-# 01:30 UTC = 07:00 IST — after Grid-India publishes the previous-day PSP report.
+# 05:30 UTC = 11:00 IST — comfortably after Grid-India/Vidyut publish the previous-day
+# figures (the earlier 01:30 UTC slot ran while the sources were still rolling over and
+# the daily run failed every day; 11:00 IST matches the one slot proven to work on CI).
 # Vidyut 15-min blocks: 6×/day (every 4 h IST-aligned) — not true 15-min cadence
 # (96 runs/day would be aggressive for a static GH Action; bump if needed).
 on:
   schedule:
-    - cron: "30 1 * * *"
+    - cron: "30 5 * * *"
     - cron: "30 3,7,11,15,19,23 * * *"
     # 5th of each month 02:30 UTC = 08:00 IST — CEA monthly reports typically lag ~1 month.
     - cron: "30 2 5 * *"
@@ -51,16 +53,28 @@ jobs:
 
       - name: Run daily pipelines
         id: daily_pipelines
-        if: github.event.schedule == '30 1 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '30 5 * * *' || github.event_name == 'workflow_dispatch'
+        # Run each source independently: one source being unreachable from the runner must NOT
+        # stop the others from publishing. (Historically these were chained with `&&` under
+        # `set -e`, so the first failure aborted the step and the Publish step was skipped —
+        # even sources that had succeeded never reached the data branch.)
         run: |
-          npm run pipeline:psp
-          npm run pipeline:psp-frequency
-          npm run pipeline:vidyut
+          set +e
+          ok=""; failed=""
+          for p in psp psp-frequency vidyut; do
+            if npm run "pipeline:$p"; then ok="$ok $p"; else failed="$failed $p"; fi
+          done
+          { echo "ok=$ok"; echo "failed=$failed"; } >> "$GITHUB_OUTPUT"
+          if [ -n "$failed" ]; then
+            echo "::warning title=Data pipeline::failed:$failed · succeeded:$ok (succeeded sources are still published)"
+          fi
+          # Fail the job only on a total outage (nothing to publish); a partial run stays green.
+          if [ -z "$ok" ]; then echo "::error::all daily sources failed"; exit 1; fi
 
       - name: Run Vidyut block pipeline
         id: vidyut_blocks
         continue-on-error: true
-        if: github.event.schedule != '30 1 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule != '30 5 * * *' || github.event_name == 'workflow_dispatch'
         run: npm run pipeline:vidyut-blocks
 
       - name: Run CEA monthly pipeline
@@ -90,14 +104,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Open or update failure issue
-        if: failure() && steps.daily_pipelines.outcome == 'failure'
+        # Fire whenever any daily source failed — including a partial failure where the job
+        # stays green because other sources published.
+        if: always() && steps.daily_pipelines.outputs.failed != ''
         uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
             const label = "pipeline-failure";
+            const failed = `${{ steps.daily_pipelines.outputs.failed }}`.trim();
+            const ok = `${{ steps.daily_pipelines.outputs.ok }}`.trim();
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            const body = `A scheduled data-pipeline run failed.\n\n- Run: ${runUrl}\n- Time: ${new Date().toISOString()}\n\nCheck the run log for the failing source (validation gates print the parse error). If the source layout changed, refresh the committed fixture under \`pipelines/fixtures/\` and update the parser.`;
+            const body = `A scheduled data-pipeline source failed.\n\n- Failed source(s): \`${failed || "unknown"}\`\n- Succeeded (published): \`${ok || "none"}\`\n- Run: ${runUrl}\n- Time: ${new Date().toISOString()}\n\nNote: these Indian government endpoints (Grid-India / Vidyut Pravah) sometimes refuse GitHub-hosted runner IPs while working fine locally — re-running often succeeds. Check the run log for the parse/fetch error; if the source layout changed, refresh the committed fixture under \`pipelines/fixtures/\` and update the parser.`;
             try {
               await github.rest.issues.getLabel({ owner, repo, name: label });
             } catch {
