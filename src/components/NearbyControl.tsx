@@ -48,7 +48,7 @@ export function NearbyControl() {
           : null;
 
   return (
-    <div className="pointer-events-auto flex w-[208px] flex-col gap-1.5 rounded-[var(--radius-panel)] border border-line bg-surface/95 p-1.5 shadow-[var(--shadow-panel)] backdrop-blur">
+    <div className="pointer-events-auto flex w-full flex-col gap-1.5 rounded-[var(--radius-panel)] border border-line bg-surface/95 p-1.5 shadow-[var(--shadow-panel)] backdrop-blur sm:w-[208px]">
       <div className="flex items-center gap-1">
         <button
           onClick={locateMe}

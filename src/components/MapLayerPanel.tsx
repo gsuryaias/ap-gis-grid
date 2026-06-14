@@ -22,6 +22,8 @@ export interface MapLayerPanelProps {
   /** sidebar = Atlas left column; overlay = floating on embedded map pane */
   variant?: MapLayerPanelVariant;
   workspace?: WorkspaceId;
+  /** Initial expanded state (defaults: sidebar open, overlay collapsed). Used to collapse on mobile. */
+  defaultOpen?: boolean;
 }
 
 function LayerBody({
@@ -58,8 +60,8 @@ function LayerBody({
 }
 
 /** Contextual GIS layer controls — shows only what the active workspace needs. */
-export function MapLayerPanel({ data, preset, variant = "sidebar", workspace }: MapLayerPanelProps) {
-  const [open, setOpen] = useState(variant === "sidebar");
+export function MapLayerPanel({ data, preset, variant = "sidebar", workspace, defaultOpen }: MapLayerPanelProps) {
+  const [open, setOpen] = useState(defaultOpen ?? variant === "sidebar");
 
   if (variant === "overlay") {
     return (

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, type ComponentType, type LazyExoticComponent } from "react";
 import { useAppStore } from "./state/store.ts";
+import { useIsMobile } from "./lib/useMediaQuery.ts";
 import { WORKSPACES, type WorkspaceId } from "./workspaces/registry.ts";
 import { useHashSync } from "./url/useHashSync.ts";
 import { MapPane, type MapPaneMode } from "./map/MapPane.tsx";
@@ -93,6 +94,8 @@ export function App() {
   const tableOpen = useAppStore((s) => s.tableOpen);
   const toggleTable = useAppStore((s) => s.toggleTable);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
+  const selectedId = useAppStore((s) => s.selectedId);
+  const isMobile = useIsMobile();
   const workspace = useAppStore((s) => s.workspace);
   const mapLayout = useAppStore((s) => s.mapLayout);
   const workspaceContext = useAppStore((s) => s.workspaceContext);
@@ -171,25 +174,51 @@ export function App() {
 
             {isAtlas && (
               <>
-                <div className="pointer-events-none absolute left-3 top-3 z-20 flex max-h-[calc(100dvh-5.5rem)] w-[268px] max-w-[calc(100vw-1.5rem)] flex-col gap-2.5">
-                  <div className="pointer-events-auto">
-                    <SearchBar data={data} />
-                  </div>
-                  <div className="pointer-events-none flex min-h-0 flex-1 flex-col">
-                    <ControlPanel data={data} />
-                  </div>
-                </div>
+                {isMobile ? (
+                  <>
+                    {/* Mobile: one full-width top stack so panels never overlap each other or block the map.
+                        Layers default collapsed; detail/nearby move to a bottom sheet. */}
+                    <div className="pointer-events-none absolute inset-x-2 top-2 z-20 flex flex-col gap-2">
+                      <div className="pointer-events-auto">
+                        <SearchBar data={data} />
+                      </div>
+                      <div className="pointer-events-auto flex flex-col gap-2">
+                        <MeasureControl />
+                        <NearbyControl />
+                      </div>
+                      <div className="pointer-events-auto flex max-h-[52dvh] min-h-0 flex-col">
+                        <ControlPanel data={data} defaultOpen={false} />
+                      </div>
+                    </div>
 
-                <div className="pointer-events-none absolute left-1/2 top-3 z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap items-start justify-center gap-2">
-                  <MeasureControl />
-                  <NearbyControl />
-                </div>
+                    {/* Bottom sheet — DetailPanel renders null when nothing is selected, so this is empty/idle otherwise. */}
+                    <div className="pointer-events-none absolute inset-x-2 bottom-2 z-30 flex max-h-[55dvh] flex-col">
+                      {nearbyOrigin ? <NearbyPanel data={data} /> : <DetailPanel data={data} />}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="pointer-events-none absolute left-3 top-3 z-20 flex max-h-[calc(100dvh-5.5rem)] w-[268px] max-w-[calc(100vw-1.5rem)] flex-col gap-2.5">
+                      <div className="pointer-events-auto">
+                        <SearchBar data={data} />
+                      </div>
+                      <div className="pointer-events-none flex min-h-0 flex-1 flex-col">
+                        <ControlPanel data={data} />
+                      </div>
+                    </div>
 
-                <div className="pointer-events-none absolute right-3 top-3 z-20 flex max-h-[calc(100dvh-5.5rem)] max-w-[calc(100vw-1.5rem)] flex-col">
-                  {nearbyOrigin ? <NearbyPanel data={data} /> : <DetailPanel data={data} />}
-                </div>
+                    <div className="pointer-events-none absolute left-1/2 top-3 z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap items-start justify-center gap-2">
+                      <MeasureControl />
+                      <NearbyControl />
+                    </div>
 
-                {!tableOpen && (
+                    <div className="pointer-events-none absolute right-3 top-3 z-20 flex max-h-[calc(100dvh-5.5rem)] max-w-[calc(100vw-1.5rem)] flex-col">
+                      {nearbyOrigin ? <NearbyPanel data={data} /> : <DetailPanel data={data} />}
+                    </div>
+                  </>
+                )}
+
+                {!tableOpen && !(isMobile && (nearbyOrigin || selectedId)) && (
                   <button
                     onClick={() => toggleTable(true)}
                     className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 py-2 text-sm font-medium text-ink shadow-[var(--shadow-panel)] backdrop-blur hover:bg-surface-2"
@@ -198,7 +227,7 @@ export function App() {
                   </button>
                 )}
 
-                <div className="pointer-events-none absolute bottom-1 left-2 z-10 text-[10px] text-ink-2/70">
+                <div className="pointer-events-none absolute bottom-1 left-2 z-10 max-w-[58%] text-[10px] leading-tight text-ink-2/70 sm:max-w-none">
                   Network data: AP-TRANSCO · Places: GeoNames (CC BY 4.0) · Weather: Open-Meteo · Radar: RainViewer · Cyclones: GDACS
                 </div>
               </>
