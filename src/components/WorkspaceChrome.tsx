@@ -4,8 +4,6 @@ import { MapIcon } from "./icons.tsx";
 
 const MAP_WIDTH: Record<Exclude<WorkspaceId, "atlas">, string> = {
   risk: "min(44%, 520px)",
-  planning: "min(46%, 540px)",
-  mis: "min(34%, 380px)",
 };
 
 export function workspaceMapWidth(workspace: WorkspaceId): string | undefined {

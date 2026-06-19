@@ -49,14 +49,8 @@ export interface WorkspaceContext {
   scenario?: string;
   /** @deprecated alias kept for map focus — prefer `scenario`. */
   hazard?: string;
-  /** MIS focused publication date (`date=` hash key). */
-  date?: string;
-  /** MIS focused entity name (`entity=` hash key). */
-  entity?: string;
   /** Risk register sort column (`sort=` hash key). */
   sort?: string;
-  /** Planning horizon year (`horizon=` hash key). */
-  horizon?: number;
   /** Map fly-to circle (also mirrored by the global `circle=` filter when set from Risk). */
   circle?: string;
   /** Risk Room: composite scores keyed by substation id (transient map overlay). */
@@ -74,38 +68,6 @@ export interface NearbyOrigin {
   fly: boolean;
   /** Explicit target zoom for search-picked places (may zoom OUT, e.g. to a district); GPS/picks leave it unset. */
   zoom?: number;
-}
-
-/** Planning Studio ↔ embedded map overlay (transient — never in hash). */
-export interface PlanningMapState {
-  /** True while Planning Studio is mounted with flow results to paint. */
-  active: boolean;
-  /** Line id → indicative utilisation % (`null` = unrated). */
-  utilByLine: Record<string, number | null>;
-  /** Corridors at or above the headroom threshold — pulse on the map. */
-  pulseLineIds: string[];
-  /** Hover/click N-1 contingency preview. */
-  n1Preview: { outageLineId: string; islandedSsIds: string[] } | null;
-  /** Sandbox endpoint pick mode (mutually exclusive with measure / nearby). */
-  sandboxPick: "from" | "to" | null;
-  /** Last map-picked sandbox endpoint (SandboxPanel consumes via `ts`). */
-  sandboxPickResult: { role: "from" | "to"; ssId: string; ts: number } | null;
-  /** Highlight picked endpoints on the map while composing a what-if line. */
-  sandboxFromId: string | null;
-  sandboxToId: string | null;
-}
-
-export function defaultPlanningMap(): PlanningMapState {
-  return {
-    active: false,
-    utilByLine: {},
-    pulseLineIds: [],
-    n1Preview: null,
-    sandboxPick: null,
-    sandboxPickResult: null,
-    sandboxFromId: null,
-    sandboxToId: null,
-  };
 }
 
 interface AppState {
@@ -164,9 +126,6 @@ interface AppState {
   places: PlaceItem[] | null;
   placesStatus: GenStatus;
 
-  // Planning Studio map overlay (transient — never persisted)
-  planningMap: PlanningMapState;
-
   init: () => Promise<void>;
   setWorkspace: (w: WorkspaceId) => void;
   setMapLayout: (layout: MapLayout) => void;
@@ -200,9 +159,6 @@ interface AppState {
   setNearbyOrigin: (o: NearbyOrigin | null) => void;
   clearNearby: () => void;
   ensurePlaces: () => void;
-  setPlanningMap: (patch: Partial<PlanningMapState>) => void;
-  setSandboxPick: (role: "from" | "to" | null) => void;
-  completeSandboxPick: (ssId: string) => void;
   applyHash: (h: Partial<HashState>) => void;
   hashState: () => HashState;
 }
@@ -285,8 +241,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   places: null,
   placesStatus: "idle",
 
-  planningMap: defaultPlanningMap(),
-
   init: async () => {
     try {
       const data = await loadGridData();
@@ -306,7 +260,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       workspace,
       mapLayout: workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout,
       workspaceContext: workspace === s.workspace ? s.workspaceContext : {},
-      planningMap: workspace === "planning" ? s.planningMap : defaultPlanningMap(),
     })),
 
   setMapLayout: (mapLayout) => set({ mapLayout }),
@@ -453,30 +406,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   setNearbyOrigin: (nearbyOrigin) => set({ nearbyOrigin }),
   clearNearby: () => set({ nearbyMode: false, nearbyOrigin: null }),
 
-  setPlanningMap: (patch) => set((s) => ({ planningMap: { ...s.planningMap, ...patch } })),
-
-  setSandboxPick: (role) =>
-    set((s) => ({
-      planningMap: { ...s.planningMap, sandboxPick: role },
-      ...(role ? { nearbyMode: false, nearbyOrigin: null, measureMode: null, measureStats: null } : {}),
-    })),
-
-  completeSandboxPick: (ssId) =>
-    set((s) => {
-      const role = s.planningMap.sandboxPick;
-      if (!role) return s;
-      const nextRole = role === "from" && !s.planningMap.sandboxToId ? "to" : null;
-      return {
-        planningMap: {
-          ...s.planningMap,
-          sandboxPick: nextRole,
-          sandboxPickResult: { role, ssId, ts: Date.now() },
-          sandboxFromId: role === "from" ? ssId : s.planningMap.sandboxFromId,
-          sandboxToId: role === "to" ? ssId : s.planningMap.sandboxToId,
-        },
-      };
-    }),
-
   // Lazy-fetch the search gazetteer on first focus of the search box; cache thereafter.
   // A failed fetch resets to idle so the next focus retries (search degrades gracefully meanwhile).
   ensurePlaces: () => {
@@ -523,14 +452,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         h.mapLayout ??
         (workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);
       const workspaceContext = { ...s.workspaceContext };
-      if (h.date !== undefined) workspaceContext.date = h.date ?? undefined;
-      if (h.entity !== undefined) workspaceContext.entity = h.entity ?? undefined;
       if (h.scenario !== undefined) {
         workspaceContext.scenario = h.scenario ?? undefined;
         workspaceContext.hazard = h.scenario ?? undefined;
       }
       if (h.sort !== undefined) workspaceContext.sort = h.sort ?? undefined;
-      if (h.horizon !== undefined) workspaceContext.horizon = h.horizon ?? undefined;
       if (h.circle !== undefined && h.circle) workspaceContext.circle = h.circle;
       return {
         workspace,
@@ -577,11 +503,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       showGeneration: s.filters.showGeneration,
       showPowerGrid: s.filters.showPowerGrid,
       showWeather: s.filters.showWeather,
-      date: ctx.date ?? null,
-      entity: ctx.entity ?? null,
       scenario: ctx.scenario ?? ctx.hazard ?? null,
       sort: ctx.sort ?? null,
-      horizon: ctx.horizon ?? null,
     };
   },
 }));

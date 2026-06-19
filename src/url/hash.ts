@@ -32,16 +32,10 @@ export interface HashState {
   coastalBand?: 0 | 1 | 2 | 3 | null;
   /** Split-layout map pane (`map=` key; `atlas-only` when the Atlas workspace is active). */
   mapLayout: MapLayout;
-  /** MIS workspace: focused publication date (YYYY-MM-DD). */
-  date?: string | null;
-  /** MIS workspace: focused entity name. */
-  entity?: string | null;
   /** Risk workspace: scenario preset id. */
   scenario?: string | null;
   /** Risk workspace: register sort column. */
   sort?: string | null;
-  /** Planning workspace: horizon year. */
-  horizon?: number | null;
 }
 
 const RISK_SCENARIOS = new Set(["normal", "watch", "severe", "active"]);
@@ -86,16 +80,9 @@ export function serializeHash(s: HashState): string {
   if (s.circle) p.set("circle", s.circle);
   if (s.coastalBand != null) p.set("coast", String(s.coastalBand)); // band 0 is a real value
   if (s.workspace !== "atlas" && s.mapLayout !== defaultMapLayout()) p.set("map", s.mapLayout);
-  if (s.workspace === "mis") {
-    if (s.date) p.set("date", s.date);
-    if (s.entity) p.set("entity", s.entity);
-  }
   if (s.workspace === "risk") {
     if (s.scenario && s.scenario !== "normal") p.set("scenario", s.scenario);
     if (s.sort && s.sort !== "composite") p.set("sort", s.sort);
-  }
-  if (s.workspace === "planning") {
-    if (s.horizon != null) p.set("horizon", String(s.horizon));
   }
   return `#${p.toString()}`;
 }
@@ -155,23 +142,11 @@ export function parseHash(hash: string): Partial<HashState> {
   const map = p.get("map");
   if (map === "open" || map === "collapsed" || map === "atlas-only") out.mapLayout = map;
 
-  const date = p.get("date");
-  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) out.date = date;
-
-  const entity = p.get("entity");
-  if (entity) out.entity = entity;
-
   const scenario = p.get("scenario");
   if (scenario && RISK_SCENARIOS.has(scenario)) out.scenario = scenario;
 
   const sort = p.get("sort");
   if (sort && RISK_SORT_KEYS.has(sort)) out.sort = sort;
-
-  const horizon = p.get("horizon");
-  if (horizon != null) {
-    const n = Number(horizon);
-    if (Number.isInteger(n) && n >= 2020 && n <= 2100) out.horizon = n;
-  }
 
   return out;
 }

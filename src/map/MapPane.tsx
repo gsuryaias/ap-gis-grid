@@ -27,17 +27,6 @@ import {
 } from "./layer-presets.ts";
 import { fitToCircle, flyToFeature, setFeatState } from "./map-helpers.ts";
 import { MeasureController } from "./measure.ts";
-import {
-  applyN1Preview,
-  applyPulsePhase,
-  applySandboxMarkers,
-  applyUtilisation,
-  disablePlanningPaint,
-  enablePlanningPaint,
-  HEADROOM_PULSE_PCT,
-  resetPlanningStates,
-  UTIL_COLOR,
-} from "./planning-map.ts";
 
 /** Module-level handle for the live map instance (embedded or full). */
 let liveMap: MlMap | null = null;
@@ -75,7 +64,7 @@ export interface MapPaneProps {
 /** Feature hover/selection is suppressed while a click-capturing tool is active. */
 const clickSuppressed = (): boolean => {
   const s = useAppStore.getState();
-  return s.measureMode != null || s.nearbyMode || s.planningMap.sandboxPick != null;
+  return s.measureMode != null || s.nearbyMode;
 };
 
 function choroplethColor(src: ChoroplethSource): unknown {
@@ -139,7 +128,6 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
   const spotlight = useAppStore((s) => s.spotlight);
   const workspaceContext = useAppStore((s) => s.workspaceContext);
   const workspace = useAppStore((s) => s.workspace);
-  const planningMap = useAppStore((s) => s.planningMap);
 
   const currentSpotlight = useCallback((): SpotlightSets | null => {
     const st = useAppStore.getState();
@@ -278,11 +266,6 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       const setHover = useAppStore.getState().setHover;
       for (const lid of INTERACTIVE_LAYERS) {
         map.on("mousemove", lid, (ev) => {
-          const st2 = useAppStore.getState();
-          if (st2.planningMap.sandboxPick) {
-            map.getCanvas().style.cursor = "crosshair";
-            return;
-          }
           if (clickSuppressed()) return;
           const f = ev.features?.[0];
           if (f?.id != null) {
@@ -296,12 +279,6 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
           map.getCanvas().style.cursor = "";
         });
         map.on("click", lid, (ev) => {
-          const st2 = useAppStore.getState();
-          if (st2.planningMap.sandboxPick && lid === LAYER.substations) {
-            const f = ev.features?.[0];
-            if (f?.id != null) st2.completeSandboxPick(String(f.id));
-            return;
-          }
           if (clickSuppressed()) return;
           const f = ev.features?.[0];
           if (f?.id != null) select(String(f.id));
@@ -465,13 +442,6 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       if (choroplethSource && map.getLayer(LAYER.substations)) {
         map.setPaintProperty(LAYER.substations, "circle-color", choroplethColor(choroplethSource) as maplibregl.ExpressionSpecification);
       }
-      const pm = st.planningMap;
-      if (st.workspace === "planning" && pm.active) {
-        enablePlanningPaint(map);
-        applyUtilisation(map, pm.utilByLine);
-        applyN1Preview(map, pm.n1Preview);
-        applySandboxMarkers(map, pm.sandboxFromId, pm.sandboxToId);
-      }
     };
     map.once("styledata", onStyle);
   }, [basemap, bindCoreInteractive, choroplethSource, currentSpotlight, data, layers.grid, mountGeneration, mountPowerGrid, mountWeather, mountRisk]);
@@ -618,91 +588,12 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
     if (map && readyRef.current && flySignal) flyToFeature(map, data, generation, powergrid, flySignal.id);
   }, [flySignal, data, generation, powergrid]);
 
-  // --- Planning Studio overlays (utilisation choropleth, N-1 preview, pulse) --
-  const planningActive = workspace === "planning" && planningMap.active;
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !layers.grid) return;
-    if (planningActive) enablePlanningPaint(map);
-    else {
-      disablePlanningPaint(map);
-      resetPlanningStates(map, data);
-    }
-  }, [planningActive, data, layers.grid]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !planningActive) return;
-    applyUtilisation(map, planningMap.utilByLine);
-  }, [planningActive, planningMap.utilByLine]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !planningActive) return;
-    applyN1Preview(map, planningMap.n1Preview);
-  }, [planningActive, planningMap.n1Preview]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !planningActive) return;
-    applySandboxMarkers(map, planningMap.sandboxFromId, planningMap.sandboxToId);
-  }, [planningActive, planningMap.sandboxFromId, planningMap.sandboxToId]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !planningActive || planningMap.pulseLineIds.length === 0) return;
-    let on = true;
-    let alive = true;
-    applyPulsePhase(map, planningMap.pulseLineIds, on);
-    const lineIds = planningMap.pulseLineIds;
-    const t = window.setInterval(() => {
-      if (!alive) return;
-      on = !on;
-      applyPulsePhase(map, lineIds, on);
-    }, 650);
-    return () => {
-      alive = false;
-      window.clearInterval(t);
-      if (mapRef.current) applyPulsePhase(mapRef.current, [], false);
-    };
-  }, [planningActive, planningMap.pulseLineIds]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current) return;
-    if (planningMap.sandboxPick) map.getCanvas().style.cursor = "crosshair";
-    else if (!nearbyMode && measureMode == null) map.getCanvas().style.cursor = "";
-  }, [planningMap.sandboxPick, nearbyMode, measureMode]);
-
-  const showUtilLegend = planningActive && !isHidden;
-
   return (
     <div
       className={isHidden ? "pointer-events-none invisible h-full w-full" : "relative h-full w-full"}
       aria-hidden={isHidden}
     >
       <div ref={containerRef} className="h-full w-full" aria-label="AP-TRANSCO network map" role="application" />
-      {showUtilLegend && (
-        <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[220px] rounded-lg border border-line bg-surface/95 px-2.5 py-2 text-[10px] text-ink shadow-[var(--shadow-panel)] backdrop-blur">
-          <p className="font-semibold text-ink">Indicative corridor loading</p>
-          <ul className="mt-1 space-y-0.5 text-ink-2">
-            <li className="flex items-center gap-1.5">
-              <span className="h-2 w-5 rounded-sm" style={{ background: UTIL_COLOR.low }} />
-              &lt; {HEADROOM_PULSE_PCT}%
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="h-2 w-5 rounded-sm" style={{ background: UTIL_COLOR.warn }} />
-              {HEADROOM_PULSE_PCT}–99% (pulses)
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="h-2 w-5 rounded-sm" style={{ background: UTIL_COLOR.crit }} />
-              ≥ 100%
-            </li>
-          </ul>
-          <p className="mt-1 leading-snug text-ink-2/80">Screening only — not a load-flow study.</p>
-        </div>
-      )}
     </div>
   );
 }

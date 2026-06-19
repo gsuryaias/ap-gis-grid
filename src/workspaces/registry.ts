@@ -2,7 +2,7 @@
 // one folder under src/workspaces/<id>/ + one entry here; the shell handles switcher + routing).
 import type { ComponentType } from "react";
 
-export type WorkspaceId = "atlas" | "risk" | "planning" | "mis";
+export type WorkspaceId = "atlas" | "risk";
 
 export interface WorkspaceDef {
   id: WorkspaceId;
@@ -28,22 +28,8 @@ export const WORKSPACES: WorkspaceDef[] = [
     load: () => import("./risk/RiskRoom.tsx"),
     requiredManifests: [],
   },
-  {
-    id: "planning",
-    label: "Planning Studio",
-    description: "Load-growth scenarios, what-if network sandbox and siting screens.",
-    load: () => import("./planning/PlanningStudio.tsx"),
-    requiredManifests: [],
-  },
-  {
-    id: "mis",
-    label: "MIS",
-    description: "Daily demand, energy-mix and KPI dashboards from official public reports.",
-    load: () => import("./mis/MisDashboards.tsx"),
-    requiredManifests: ["psp-daily"],
-  },
 ];
 
 export function isWorkspaceId(v: unknown): v is WorkspaceId {
-  return v === "atlas" || v === "risk" || v === "planning" || v === "mis";
+  return v === "atlas" || v === "risk";
 }

@@ -4,7 +4,7 @@ import { useAppStore } from "../state/store.ts";
 import { WORKSPACES, type WorkspaceId } from "../workspaces/registry.ts";
 import { CloudIcon, InfoIcon, LayersIcon } from "./icons.tsx";
 
-const TAB_LABEL: Record<WorkspaceId, string> = { atlas: "Atlas", risk: "Risk", planning: "Plan", mis: "MIS" };
+const TAB_LABEL: Record<WorkspaceId, string> = { atlas: "Atlas", risk: "Risk" };
 
 export function BrandHeader({
   data,
@@ -26,7 +26,7 @@ export function BrandHeader({
       className={
         variant === "bar"
           ? "flex shrink-0 gap-0.5 rounded-lg border border-line bg-surface-2/70 p-0.5"
-          : "mt-2 grid grid-cols-4 gap-0.5 rounded-lg border border-line bg-surface-2/70 p-0.5"
+          : "mt-2 grid grid-cols-2 gap-0.5 rounded-lg border border-line bg-surface-2/70 p-0.5"
       }
     >
       {WORKSPACES.map((w) => {
