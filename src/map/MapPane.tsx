@@ -401,6 +401,23 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
     return () => window.clearTimeout(t);
   }, [mode, isHidden]);
 
+  // Keep the canvas in sync with ANY container size change (split-pane drag, window resize).
+  // MapLibre doesn't auto-resize; a ResizeObserver (rAF-coalesced) covers every case at once.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    let frame = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => mapRef.current?.resize());
+    });
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
+  }, []);
+
   // Toggle pointer handlers when `interactive` flips (embedded read-only ↔ selectable).
   useEffect(() => {
     const map = mapRef.current;

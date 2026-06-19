@@ -6,11 +6,14 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { FeatureCollection } from "geojson";
 import { FreshnessBadge } from "../../components/FreshnessBadge.tsx";
 import { MethodCard } from "../../components/MethodCard.tsx";
+import { PagerBar, usePager } from "../../components/Pager.tsx";
 import { CycloneIcon, DownloadIcon, RefreshIcon } from "../../components/icons.tsx";
 import { VoltageBadge } from "../../components/VoltageBadge.tsx";
+import { VOLTAGES, type Voltage } from "../../data/types.ts";
 import type { DatasetManifest } from "../../data/manifests.ts";
 import { downloadText } from "../../lib/export.ts";
 import { COASTAL_BAND_LABEL, type RiskTier } from "../../lib/risk.ts";
+import { VOLTAGE_COLOR } from "../../theme/palette.ts";
 import { useAppStore, type RiskSelectionContext } from "../../state/store.ts";
 import { BriefingPack } from "./BriefingPack.tsx";
 import {
@@ -238,6 +241,10 @@ export default function RiskRoom() {
     return { key: k && k in SORT_VALUE ? k : "composite", dir: -1 };
   });
   const [briefingOpen, setBriefingOpen] = useState(false);
+  const [volts, setVolts] = useState<Record<Voltage, boolean>>({ 400: true, 220: true, 132: true });
+  const [tiers, setTiers] = useState<Record<RiskTier, boolean>>({ high: true, elevated: true, moderate: true, low: true });
+  const [onlySingleFed, setOnlySingleFed] = useState(false);
+  const [onlyInCone, setOnlyInCone] = useState(false);
 
   const circle = regionCircle ?? "";
 
@@ -307,29 +314,37 @@ export default function RiskRoom() {
     return c;
   }, [rows]);
 
-  // Text + circle filters, then the active column sort, then the top-50 cut.
-  const shown = useMemo(() => {
+  // Name + circle + voltage + tier + single-fed/in-cone facets, then the active column sort.
+  const filtered = useMemo(() => {
     if (!rows) return [];
     const q = query.trim().toLowerCase();
-    const filtered = rows.filter(
-      (r) => (!q || r.ss.name.toLowerCase().includes(q)) && (!circle || r.ss.circle === circle),
+    return rows.filter(
+      (r) =>
+        (!q || r.ss.name.toLowerCase().includes(q)) &&
+        (!circle || r.ss.circle === circle) &&
+        volts[r.ss.voltage] &&
+        tiers[r.tier] &&
+        (!onlySingleFed || r.feedDegree <= 1) &&
+        (!onlyInCone || r.inCone),
     );
-    const v = SORT_VALUE[sort.key];
-    return filtered
-      .sort((a, b) => {
-        const av = v(a);
-        const bv = v(b);
-        const cmp = typeof av === "string" ? av.localeCompare(bv as string) : (av as number) - (bv as number);
-        return cmp !== 0 ? sort.dir * cmp : b.composite - a.composite;
-      })
-      .slice(0, 50);
-  }, [rows, query, circle, sort]);
+  }, [rows, query, circle, volts, tiers, onlySingleFed, onlyInCone]);
 
-  const filteredTotal = useMemo(() => {
-    if (!rows) return 0;
-    const q = query.trim().toLowerCase();
-    return rows.filter((r) => (!q || r.ss.name.toLowerCase().includes(q)) && (!circle || r.ss.circle === circle)).length;
-  }, [rows, query, circle]);
+  const sorted = useMemo(() => {
+    const v = SORT_VALUE[sort.key];
+    return [...filtered].sort((a, b) => {
+      const av = v(a);
+      const bv = v(b);
+      const cmp = typeof av === "string" ? av.localeCompare(bv as string) : (av as number) - (bv as number);
+      return cmp !== 0 ? sort.dir * cmp : b.composite - a.composite;
+    });
+  }, [filtered, sort]);
+
+  const pager = usePager(sorted, 50);
+  const { setPage } = pager;
+  // Snap back to the first page whenever the filtered set or sort changes.
+  useEffect(() => {
+    setPage(0);
+  }, [filtered, sort, setPage]);
 
   // Per-hazard mini-registers (top-10 by each hazard sub-axis, under the active scenario).
   const topWind = useMemo(
@@ -423,6 +438,18 @@ export default function RiskRoom() {
   const exportCsv = () => {
     if (!rows) return;
     downloadText(`risk-register-${scenario.id}.csv`, "text/csv", registerToCsv(rows));
+  };
+
+  const riskFiltersActive =
+    !!query || !!circle || !volts[400] || !volts[220] || !volts[132] ||
+    !tiers.high || !tiers.elevated || !tiers.moderate || !tiers.low || onlySingleFed || onlyInCone;
+  const clearRiskFilters = () => {
+    setQuery("");
+    setVolts({ 400: true, 220: true, 132: true });
+    setTiers({ high: true, elevated: true, moderate: true, low: true });
+    setOnlySingleFed(false);
+    setOnlyInCone(false);
+    setRegionCircle(null);
   };
 
   return (
@@ -589,7 +616,7 @@ export default function RiskRoom() {
                 <h2 className="mr-auto text-sm font-semibold text-ink">
                   At-risk register
                   <span className="ml-2 text-xs font-normal text-ink-2">
-                    top {Math.min(50, filteredTotal)} of {filteredTotal} · {scenario.label}
+                    {filtered.length.toLocaleString("en-IN")} of {rows.length.toLocaleString("en-IN")} · {scenario.label}
                   </span>
                 </h2>
                 <input
@@ -615,6 +642,72 @@ export default function RiskRoom() {
                   ))}
                 </select>
               </div>
+
+              {/* ---- Facet filters: voltage · tier · single-fed · in-cone ---- */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface-2/40 px-4 py-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-ink-2">kV</span>
+                  {VOLTAGES.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      aria-pressed={volts[v]}
+                      onClick={() => setVolts((s) => ({ ...s, [v]: !s[v] }))}
+                      className={`rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors ${
+                        volts[v] ? "border-transparent text-white" : "border-line text-ink-2 hover:text-ink"
+                      }`}
+                      style={volts[v] ? { background: VOLTAGE_COLOR[v] } : undefined}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-ink-2">Tier</span>
+                  {TIER_ORDER.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-pressed={tiers[t]}
+                      onClick={() => setTiers((s) => ({ ...s, [t]: !s[t] }))}
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium capitalize transition-opacity ${TIER_CHIP[t]} ${
+                        tiers[t] ? "" : "opacity-40"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  aria-pressed={onlySingleFed}
+                  onClick={() => setOnlySingleFed((v) => !v)}
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                    onlySingleFed ? "border-accent bg-accent/10 text-accent" : "border-line text-ink-2 hover:text-ink"
+                  }`}
+                >
+                  Single-fed
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={onlyInCone}
+                  onClick={() => setOnlyInCone((v) => !v)}
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                    onlyInCone ? "border-accent bg-accent/10 text-accent" : "border-line text-ink-2 hover:text-ink"
+                  }`}
+                >
+                  In cone
+                </button>
+                {riskFiltersActive && (
+                  <button
+                    onClick={clearRiskFilters}
+                    className="ml-auto rounded-md border border-line px-2 py-1 text-[11px] font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -631,7 +724,7 @@ export default function RiskRoom() {
                     </tr>
                   </thead>
                   <tbody>
-                    {shown.map((r) => (
+                    {pager.pageItems.map((r) => (
                       <tr
                         key={r.ss.id}
                         onClick={() => focusOnMap(r)}
@@ -677,14 +770,17 @@ export default function RiskRoom() {
                         </td>
                       </tr>
                     ))}
+                    {pager.pageItems.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-8 text-center text-sm text-ink-2">
+                          No assets match these filters.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
-              {filteredTotal > 50 && (
-                <p className="border-t border-line px-4 py-2 text-xs text-ink-2">
-                  +{filteredTotal - 50} more — the CSV export carries the full register.
-                </p>
-              )}
+              <PagerBar pager={pager} label="assets" />
               <p className="border-t border-line px-4 py-2.5 text-[11px] leading-relaxed text-ink-2">
                 Indicative screening values only — not a hazard model, reliability study or load-flow
                 result. Wind zones are an approximate digitisation of IS 875 (Part 3); connectivity

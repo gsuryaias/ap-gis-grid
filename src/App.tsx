@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ComponentType, type LazyExoticComponent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ComponentType, type LazyExoticComponent } from "react";
 import { useAppStore } from "./state/store.ts";
 import { useIsMobile } from "./lib/useMediaQuery.ts";
 import { WORKSPACES, type WorkspaceId } from "./workspaces/registry.ts";
@@ -86,6 +86,59 @@ function MapResizeHandle() {
   );
 }
 
+/** Draggable divider between the map pane and the analysis column (split workspaces only). */
+function PaneSplitter({ onDrag, onReset, onNudge }: { onDrag: (clientX: number) => void; onReset: () => void; onNudge: (dx: number) => void }) {
+  const dragging = useRef(false);
+
+  const begin = (e: React.PointerEvent) => {
+    dragging.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+  const move = (e: React.PointerEvent) => {
+    if (dragging.current) onDrag(e.clientX);
+  };
+  const end = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  };
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize map pane"
+      tabIndex={0}
+      onPointerDown={begin}
+      onPointerMove={move}
+      onPointerUp={end}
+      onPointerCancel={end}
+      onDoubleClick={onReset}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowLeft") onNudge(-24);
+        else if (e.key === "ArrowRight") onNudge(24);
+        else if (e.key === "Home") onReset();
+      }}
+      title="Drag to resize · double-click to reset"
+      className="group relative z-30 flex w-1.5 shrink-0 cursor-col-resize touch-none items-center justify-center bg-line/40 hover:bg-accent/40 focus:bg-accent/40 focus:outline-none"
+    >
+      <span className="h-9 w-0.5 rounded-full bg-line group-hover:bg-accent group-focus:bg-accent" />
+    </div>
+  );
+}
+
+const MIN_MAP_PANE = 320;
+const MIN_ANALYSIS_PANE = 380;
+const MAP_PANE_STORAGE_KEY = "dss-map-pane-w";
+
 export function App() {
   const status = useAppStore((s) => s.status);
   const error = useAppStore((s) => s.error);
@@ -100,6 +153,55 @@ export function App() {
   const mapLayout = useAppStore((s) => s.mapLayout);
   const workspaceContext = useAppStore((s) => s.workspaceContext);
   const init = useAppStore((s) => s.init);
+
+  // Draggable map / analysis split (split workspaces only). Width persists across reloads;
+  // null = fall back to the responsive CSS default. The MapPane ResizeObserver redraws the canvas.
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [mapPaneWidth, setMapPaneWidth] = useState<number | null>(null);
+
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(MAP_PANE_STORAGE_KEY));
+    if (Number.isFinite(saved) && saved >= MIN_MAP_PANE) setMapPaneWidth(saved);
+  }, []);
+
+  const clampPaneWidth = useCallback((w: number) => {
+    const max = Math.max(MIN_MAP_PANE, window.innerWidth - MIN_ANALYSIS_PANE);
+    return Math.round(Math.min(Math.max(w, MIN_MAP_PANE), max));
+  }, []);
+
+  const resizeMapPane = useCallback(
+    (clientX: number) => {
+      const left = rowRef.current?.getBoundingClientRect().left ?? 0;
+      const next = clampPaneWidth(clientX - left);
+      setMapPaneWidth(next);
+      localStorage.setItem(MAP_PANE_STORAGE_KEY, String(next));
+    },
+    [clampPaneWidth],
+  );
+
+  const nudgeMapPane = useCallback(
+    (dx: number) => {
+      setMapPaneWidth((w) => {
+        const base = w ?? Math.min(520, Math.round(window.innerWidth * 0.44));
+        const next = clampPaneWidth(base + dx);
+        localStorage.setItem(MAP_PANE_STORAGE_KEY, String(next));
+        return next;
+      });
+    },
+    [clampPaneWidth],
+  );
+
+  const resetMapPane = useCallback(() => {
+    setMapPaneWidth(null);
+    localStorage.removeItem(MAP_PANE_STORAGE_KEY);
+  }, []);
+
+  // Keep a px width within bounds when the browser window shrinks.
+  useEffect(() => {
+    const onResize = () => setMapPaneWidth((w) => (w == null ? w : clampPaneWidth(w)));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [clampPaneWidth]);
 
   useHashSync();
 
@@ -139,17 +241,21 @@ export function App() {
           <BrandHeader data={data} variant="bar" />
         </header>
 
-        <div className="flex min-h-0 flex-1">
-          {/* Map column — full in Atlas; workspace-tuned split in analysis workspaces */}
+        <div ref={rowRef} className="flex min-h-0 flex-1">
+          {/* Map column — full in Atlas; resizable split in analysis workspaces */}
           <div
             className={
               isAtlas
                 ? "relative min-h-0 flex-1"
                 : mapCollapsed
                   ? "relative min-h-0 w-0 min-w-0 shrink-0 overflow-hidden"
-                  : "relative min-h-0 shrink-0 border-r border-line"
+                  : "relative min-h-0 shrink-0"
             }
-            style={!isAtlas && !mapCollapsed && mapWidth ? { width: mapWidth, minWidth: 280 } : undefined}
+            style={
+              !isAtlas && !mapCollapsed
+                ? { width: mapPaneWidth != null ? `${mapPaneWidth}px` : mapWidth, minWidth: MIN_MAP_PANE }
+                : undefined
+            }
           >
             <div
               className={
@@ -239,6 +345,10 @@ export function App() {
               </div>
             )}
           </div>
+
+          {!isAtlas && !mapCollapsed && (
+            <PaneSplitter onDrag={resizeMapPane} onReset={resetMapPane} onNudge={nudgeMapPane} />
+          )}
 
           {!isAtlas && (
             <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-surface-2">
