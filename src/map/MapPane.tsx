@@ -313,6 +313,10 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       attributionControl: false,
       minZoom: 4,
       maxZoom: 19,
+      // MapLibre's built-in auto-resize fires resize() on EVERY container size change — i.e. every
+      // frame of a split-pane drag — and each resize() clears the GL canvas → flicker. We own resize
+      // ourselves via the debounced ResizeObserver below (covers drag + window resize + collapse).
+      trackResize: false,
     });
     mapRef.current = map;
     liveMap = map;
@@ -401,19 +405,22 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
     return () => window.clearTimeout(t);
   }, [mode, isHidden]);
 
-  // Keep the canvas in sync with ANY container size change (split-pane drag, window resize).
-  // MapLibre doesn't auto-resize; a ResizeObserver (rAF-coalesced) covers every case at once.
+  // Keep the canvas in sync with container size changes (split-pane drag, window resize).
+  // MapLibre CLEARS + re-renders its GL canvas on every resize(), so calling it each animation
+  // frame during a drag produces a blank frame each time → flicker. Instead we DEBOUNCE: while the
+  // size is actively changing the canvas simply CSS-stretches (smooth, GPU-composited, never
+  // cleared); a single crisp resize() fires once motion settles (~90 ms after the last change).
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    let frame = 0;
+    let settle = 0;
     const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => mapRef.current?.resize());
+      window.clearTimeout(settle);
+      settle = window.setTimeout(() => mapRef.current?.resize(), 90);
     });
     ro.observe(el);
     return () => {
-      cancelAnimationFrame(frame);
+      window.clearTimeout(settle);
       ro.disconnect();
     };
   }, []);
