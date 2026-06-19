@@ -13,11 +13,17 @@ plus a Google-Earth KML (generation plants) and a GeoNames AP place extract (sea
 a build-time ETL turns it into clean static assets the browser loads. Deploys to GitHub Pages (project site, base `/ap-gis-grid/`).
 
 The reference map is the **Atlas** workspace. On top of it sits a **decision-support (DSS) shell** with
-three more workspaces — **Risk Room**, **Planning Studio**, and **MIS** — each a lazy-loaded chunk
-sharing one embedded map. The Atlas + all overlays are pure static assets; the MIS workspace is the
-one part fed by **scheduled data pipelines** that publish official public-sector power data (NLDC PSP,
-Vidyut Pravah, CEA) as Parquet to a separate `data` git branch, queried in-browser with DuckDB-wasm.
-Still no backend — the pipelines run in GitHub Actions, not at request time.
+one more workspace — **Risk Room** — a lazy-loaded chunk sharing one embedded map. Everything the app
+renders is pure static assets, so there is no backend at request time.
+
+> **Removed workspaces (2026-06):** the **Planning Studio** and **MIS** workspaces were removed from the
+> app and preserved on the `archive/planning-studio` and `archive/mis-workspace` branches (cut from
+> `main` before removal). `WorkspaceId` is now `atlas | risk`. The **MIS data pipelines** (`pipelines/`,
+> the `data` branch, the freshness manifests) and the pure analytics libs (`dcflow.ts`, `dlr.ts`) are
+> **still in the repo** — they no longer have an in-app consumer (the MIS dashboards that read the
+> parquet, and the Planning Studio that drove `dcflow`, are gone). The pipelines section below is
+> retained for reference; if you don't intend to revive MIS, the `pipelines.yml` CI job and the `data`
+> branch can be disabled separately (out of scope of the removal).
 
 ## Commands
 
@@ -41,6 +47,8 @@ npm run pipeline:cea           # CEA monthly generation mix (JSON)
 
 Run a single test file with `npx vitest run src/lib/graph.test.ts` (add `-t "<name>"` to filter by
 test name). After ANY ETL or component change, run `npm run typecheck` (strict, `noUnusedLocals`).
+**There is no ESLint/Prettier step** — the only quality gates are `npm run typecheck` (strict;
+`noUnusedLocals` + `noUnusedParameters`, so unused imports/params *fail* the build) and `npm test`.
 
 ## Architecture
 
@@ -59,9 +67,9 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Pipelines | `pipelines/*.mts` + `pipelines/*-parse.ts` + `pipelines/lib.ts` | live MIS ETL → `data` branch parquet (see "MIS data pipelines") |
 | Data | `src/data/` | `types.ts` (canonical types), `load.ts` (fetch via `import.meta.env.BASE_URL`), `selectors.ts`, `graph-data.ts` (memoised topology), `manifests.ts` (dataset freshness), `weather.ts` |
 | State | `src/state/store.ts` (Zustand) + `src/url/` | versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
-| Map | `src/map/` | `MapView.tsx` (Atlas full-screen) / `MapPane.tsx` (shared embeddable wrapper), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `risk-layers.ts`, `planning-map.ts` |
+| Map | `src/map/` | `MapView.tsx` (Atlas full-screen) / `MapPane.tsx` (shared embeddable wrapper), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `risk-layers.ts`, `map-helpers.ts` (shared map utils) |
 | Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, `FreshnessBadge`, SearchBar, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
-| Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `risk` / `planning` / `mis` — lazy chunks (see "Workspaces (DSS shell)") |
+| Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `risk` (lazy chunk). Planning + MIS removed — see "Workspaces (DSS shell)" |
 | Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `dcflow.ts`, `risk.ts`, `risk-engine.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
 
@@ -252,7 +260,9 @@ honesty convention.
 The topological criticality / N-1 islanding work that earlier docs flagged as *deferred* is now built.
 All of it is **pure, side-effect-free, unit-tested** (node env) and **indicative only** — it runs on the
 inferred geometric connectivity, hand-digitised wind zones and assumed impedances, never authoritative
-ratings or a real load-flow. Used by the Planning and Risk workspaces (below) but importable anywhere.
+ratings or a real load-flow. `graph.ts`/`risk-engine.ts`/`risk.ts` drive the Risk Room; `dcflow.ts` and
+`dlr.ts` were the analytical foundation of the removed Planning Studio and currently have no in-app
+consumer (kept, tested, importable — see the intro note).
 
 - **`src/lib/graph.ts`** — a multigraph over substation ids (parallel circuits are distinct edges, since
   N-1 line loss ≠ corridor loss). `buildGridGraph(substations, lines)`, then `connectedComponents()`,
@@ -281,39 +291,31 @@ ratings or a real load-flow. Used by the Planning and Risk workspaces (below) bu
 ## Workspaces (DSS shell)
 
 The app is a **multi-workspace shell** (`src/App.tsx` + `src/workspaces/registry.ts`). `WorkspaceId` =
-`atlas | risk | planning | mis`. Adding a workspace = one folder under `src/workspaces/<id>/` + one entry
-in `registry.ts` (the shell handles switcher + routing + overlay pre-fetch).
+`atlas | risk` (Planning Studio + MIS were removed — see the intro note). Adding a workspace = one folder
+under `src/workspaces/<id>/` + one entry in `registry.ts` (the shell handles switcher + routing + overlay
+pre-fetch); the shell is workspace-agnostic, so a registry entry is all it takes to add/remove a tab.
 
-- **Code-split**: `atlas` is the inline default (never split out); `risk`/`planning`/`mis` declare a
-  `load: () => import(...)` and mount lazily in a `<Suspense>` boundary. Each declares `requiredManifests`
-  the shell can gate/badge on (only MIS has one: `psp-daily`).
-- **Map embedding**: `MapPane` renders the shared map in `full` (Atlas), `embedded` (split layout, width
-  tuned per workspace in `WorkspaceChrome`/`workspaceMapWidth`) or `hidden` (collapsed) modes; the
-  collapse is `mapLayout` (`open|collapsed|atlas-only`). `WORKSPACE_LAYER_PRESETS[ws]` (in
-  `map/layer-presets.ts`) declares which overlays each workspace expects; `App` auto-toggles them on
-  switch (visibility stays user-controlled via `MapLayerPanel`).
-- **`workspaceContext`** (store) carries cross-workspace focus that *is* hash-synced: `scenario` (Risk),
-  `sort` (Risk register), `date`/`entity` (MIS), `horizon` (Planning). Transient map overlays
-  (`riskScores`, `highlightIds`, `riskSelection`, the whole `planningMap` slice) are **never** hashed.
+- **Code-split**: `atlas` is the inline default (never split out); `risk` declares a
+  `load: () => import(...)` and mounts lazily in a `<Suspense>` boundary. Each declares `requiredManifests`
+  the shell can gate/badge on (both are now `[]`).
+- **Map embedding**: `MapPane` renders the shared map in `full` (Atlas), `embedded` (split layout) or
+  `hidden` (collapsed) modes; the collapse is `mapLayout` (`open|collapsed|atlas-only`). The split is
+  **drag-resizable** — `App`'s `PaneSplitter` sets the map-column width (persisted to localStorage under
+  `dss-map-pane-w`, clamped to `[320, innerWidth−380]`), and a `ResizeObserver` in `MapPane` redraws the
+  canvas on any container size change. `WORKSPACE_LAYER_PRESETS[ws]` (in `map/layer-presets.ts`) declares
+  which overlays each workspace expects; `App` auto-toggles them on switch (visibility stays
+  user-controlled via `MapLayerPanel`).
+- **`workspaceContext`** (store) carries cross-workspace focus that *is* hash-synced: `scenario` +
+  `sort` (Risk). Transient map overlays (`riskScores`, `highlightIds`, `riskSelection`) are **never** hashed.
 
 - **Risk Room** (`workspaces/risk/`): `model.ts` composes `graphAnalysis` + `risk-engine` + GDACS live
   cyclone cones + wind zones into per-SS `BaseRow`s, then four scenario presets (`normal|watch|severe|
-  active`, each a hazard multiplier) re-rank assets by `compositeRisk`. `RiskRoom.tsx` is the sortable
-  at-risk register (row → fly-to + map halo via `risk-layers.ts`); `BriefingPack.tsx` exports a
-  print-ready pack.
-- **Planning Studio** (`workspaces/planning/`): load-growth + **what-if network sandbox**. `scenario.ts`
-  is the pure, serialisable model (`FlowCaseSpec` → `runFlowCase` calls `dcflow.ts` + `graph.ts`); it runs
-  off-main-thread in `flow.worker.ts` (a Vite module worker), driven by `useFlowEngine.ts`
-  (`FlowEngine`/`useFlowCase`, keeps the prior result visible while recomputing). Demand is
-  voltage-weighted (132 kV = load sink, 400 kV = pass-through). `ScenarioControls.tsx` (per-circle CAGR
-  sliders, horizon year) + `SandboxPanel.tsx` (pick ≤ 3 hypothetical lines on the map). Map overlay =
-  utilisation choropleth + N-1 preview + headroom pulse (`planning-map.ts`).
-- **MIS** (`workspaces/mis/`): daily demand / energy-mix / KPI dashboards from the pipeline parquet.
-  `duck.ts` lazily boots **DuckDB-wasm** (bundle from jsDelivr, worker wrapped in a same-origin Blob) and
-  registers the parquet files by their `DATA_BRANCH_BASE + path` URL — queries read over HTTP, no backend.
-  `queries.ts` = typed SQL loaders; `analytics.ts` = pure time-series math (rolling means, anomalies,
-  per-DOY baselines, seasonal decomposition — unit-tested); `Chart.tsx` + `echarts-lazy.ts` lazy-load a
-  tree-shaken ECharts.
+  active`, each a hazard multiplier) re-rank assets by `compositeRisk`. `RiskRoom.tsx` is the **paginated,
+  faceted** at-risk register (filters: name, circle, voltage chips, tier, single-fed, in-cone; sort by any
+  column; row → fly-to + map halo via `risk-layers.ts` + factor breakdown); `BriefingPack.tsx` exports a
+  print-ready pack. Pagination is the shared `usePager`/`PagerBar` in `components/Pager.tsx` (also used by
+  the Atlas `DataTableSheet`, which carries the same voltage/circle/circuit facets + a drag-resizable
+  sheet height).
 
 ## MIS data pipelines (`pipelines/`, CI-scheduled → `data` branch)
 
@@ -401,6 +403,9 @@ left in the repo but is **no longer a source** (generation still uses `generatio
 ## Gotchas / conventions
 
 - **Never install to global space** — all deps are project-local (`npm install`, `npx`/`tsx`).
+- **`xlsx` is pinned to the SheetJS CDN tarball** (`https://cdn.sheetjs.com/xlsx-0.20.3/...tgz` in
+  `package.json`), NOT the npm-registry package (which SheetJS froze/deprecated). Don't "fix" it to a
+  `^x` registry range — keep the CDN URL when bumping. It's used only by the `.xls` PSP pipeline parser.
 - **MapLibre + Tailwind v4 CSS layering**: MapLibre's unlayered `.maplibregl-map { position: relative }`
   beats Tailwind's layered `.absolute`. Size the map container with `h-full w-full`, NOT `absolute inset-0`.
 - **MapLibre paint expressions**: `["zoom"]` must be the TOP-LEVEL input of `interpolate`/`step`.
@@ -446,6 +451,11 @@ its npm script (which sets the cert bundle); it writes to a `data-branch/` workt
 user/org site, `/<repo>/` if renamed). Repo: Settings → Pages → Source = GitHub Actions. The
 **`data` branch is separate** — written only by `pipelines.yml`, consumed at runtime over HTTP
 (`DATA_BRANCH_BASE`), and never triggers a Pages deploy.
+
+## Design docs
+
+In-repo design specs live under `docs/specs/` (e.g. `2026-06-11-dss-revamp-design.md`, the rationale
+for the multi-workspace DSS shell). Read the relevant spec before reworking a feature it covers.
 
 ## Where non-repo artifacts live
 
