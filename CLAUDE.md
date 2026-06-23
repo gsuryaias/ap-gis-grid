@@ -55,8 +55,14 @@ test name). After ANY ETL or component change, run `npm run typecheck` (strict, 
 ```
 data/raw/{generation.kml, gridmap/*.shp+dbf,    ─(build:data ETL)─▶ public/data/*.{geojson,json}  ─┐
           geonames-ap.tsv, coastline-ap.geojson}    [committed]                                     ├▶ React + MapLibre + DSS shell ─▶ GitHub Pages
-NLDC / Vidyut Pravah / CEA (live public sources) ─(pipelines, CI)─▶ `data` branch /timeseries/*.parquet ─┘  (DuckDB-wasm reads over HTTP)
+NLDC / Vidyut Pravah / CEA (live public sources) ─(pipelines, CI)─▶ `data` branch /timeseries/*.parquet ─┘  (manifests/*.json read over HTTP)
 ```
+
+> **No in-app parquet reader since the MIS removal.** The app fetches only the data-branch
+> `manifests/*.json` at runtime (`manifests.ts` → `FreshnessBadge`/`MethodCard`/Risk Room — freshness
+> only); nothing reads the `timeseries/*.parquet` anymore. Consequently `@duckdb/duckdb-wasm` and
+> `echarts` are now **dependencies with no importer in `src`** (they powered the removed MIS dashboards)
+> — leave them unless you're deliberately pruning, but don't reach for them expecting a live consumer.
 
 `build:data` reads the shapefiles via the `shapefile` dep (build-time only). All source layers are
 WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference but is **no longer a source**.
@@ -175,8 +181,11 @@ A client-side **distance / area** measure tool (top-centre `MeasureControl` pill
 
 - **Controller**: `src/map/measure.ts` (`MeasureController`) owns a dedicated `src-measure` GeoJSON
   source + overlay layers (magenta — outside every other palette) and all click/move/dbl-click/keyboard
-  handling. One instance per map, created in `MapView`; `setMode(mode|null)` toggles it. `ensureLayers`
-  is idempotent and **re-run on `styledata`** like the grid/generation layers (setStyle drops them).
+  handling. One instance per map, created in `MapPane` (full/Atlas mode only) **once the map's `load`
+  has fired** — creation is gated on a `mapReady` state so the effect re-runs after the async load
+  (a ref alone can't, which is what silently left the tool dead on a fresh Atlas load); `setMode(mode|null)`
+  toggles it. `ensureLayers` is idempotent and **re-run on `styledata`** like the grid/generation layers
+  (setStyle drops them).
 - Click adds vertices, a dashed rubber-band tracks the cursor, **double-click / Enter** finishes,
   **Esc** clears (or exits if empty), **Backspace** undoes. Live readout published to the store
   (`measureMode` / `measureStats` — **transient, never in the URL hash**).
@@ -321,9 +330,10 @@ pre-fetch); the shell is workspace-agnostic, so a registry entry is all it takes
 
 The only live-ETL part of the system. Five scheduled jobs fetch official, keyless public-sector data,
 parse it, gate it, upsert into Parquet, write a manifest, and force-publish to a dedicated **`data` git
-branch** (never to `main`, never triggers a Pages deploy). Outputs are read at runtime by DuckDB-wasm and
-the freshness badges over `DATA_BRANCH_BASE` (raw.githubusercontent.com of the `data` branch by default;
-overridable via env, see `src/data/manifests.ts`).
+branch** (never to `main`, never triggers a Pages deploy). Since the MIS removal the parquet has **no
+in-app reader** — only the `manifests/*.json` are still fetched at runtime (for the freshness badges)
+over `DATA_BRANCH_BASE` (raw.githubusercontent.com of the `data` branch by default; overridable via env,
+see `src/data/manifests.ts`).
 
 | Pipeline | Source | Output (on `data` branch) |
 |----------|--------|---------------------------|

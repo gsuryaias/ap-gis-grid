@@ -108,6 +108,11 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
   const pgBound = useRef(false);
   const interactiveBound = useRef(false);
   const [windZones, setWindZones] = useState<FeatureCollection | null>(null);
+  // Flips true once the map's `load` fires. `readyRef` (a ref) can't wake the measure-controller
+  // creation effect, so this state does — without it the controller is never built on a fresh
+  // Atlas load (isFull is true from render 1 and never changes, so a [isFull]-only effect that
+  // early-returns while !readyRef.current never re-runs).
+  const [mapReady, setMapReady] = useState(false);
 
   const isFull = mode === "full";
   const isHidden = mode === "hidden";
@@ -337,6 +342,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       }
       map.fitBounds(data.meta.bounds as LngLatBoundsLike, { padding: 60, duration: 0 });
       readyRef.current = true;
+      setMapReady(true);
 
       const st = useAppStore.getState();
       setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
@@ -353,6 +359,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
     return () => {
       disposed = true;
       readyRef.current = false;
+      setMapReady(false);
       measureRef.current?.destroy();
       measureRef.current = null;
       nearbyMarkerRef.current?.remove();
@@ -395,7 +402,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       measureRef.current = null;
       useAppStore.getState().setMeasureMode(null);
     }
-  }, [isFull]);
+  }, [isFull, mapReady]);
 
   // Resize when pane visibility / layout changes (split ↔ collapsed ↔ atlas).
   useEffect(() => {
