@@ -1,0 +1,25 @@
+{
+  "id": "vidyut-daily",
+  "schema": {
+    "date": "DATE",
+    "state": "VARCHAR",
+    "demand_met_mw": "DOUBLE",
+    "peak_shortage_mw": "DOUBLE",
+    "peak_shortage_pct": "DOUBLE",
+    "energy_shortage_mu": "DOUBLE",
+    "energy_shortage_pct": "DOUBLE",
+    "exchange_price_inr_kwh": "DOUBLE"
+  },
+  "source": {
+    "name": "Vidyut Pravah (Ministry of Power, Government of India) — Andhra Pradesh state snapshot",
+    "url": "https://vidyutpravah.in/state-data/andhra-pradesh"
+  },
+  "licence": "Official public dashboard, Ministry of Power (GoI); informational use only per site disclaimer. Attribution required.",
+  "attribution": "Data: Vidyut Pravah, Ministry of Power, Government of India",
+  "cadence": "daily",
+  "vintage": "2026-06-11",
+  "lastSuccess": "2026-06-12T06:45:59.738Z",
+  "paths": [
+    "timeseries/vidyut-daily.parquet"
+  ]
+}
