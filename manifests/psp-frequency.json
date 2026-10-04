@@ -1,0 +1,29 @@
+{
+  "id": "psp-frequency",
+  "schema": {
+    "date": "DATE",
+    "entity": "VARCHAR",
+    "entity_type": "VARCHAR",
+    "fvi": "DOUBLE",
+    "pct_lt_49_7": "DOUBLE",
+    "pct_49_7_49_8": "DOUBLE",
+    "pct_49_8_49_9": "DOUBLE",
+    "pct_lt_49_9": "DOUBLE",
+    "pct_49_9_50_05": "DOUBLE",
+    "pct_gt_50_05": "DOUBLE",
+    "interchange_mw": "DOUBLE",
+    "source_file": "VARCHAR"
+  },
+  "source": {
+    "name": "Grid-India (NLDC) — Daily PSP report, section B frequency profile + TimeSeries net exchange",
+    "url": "https://grid-india.in/en/reports/daily-psp-report"
+  },
+  "licence": "Official public report published under IEGC 2023 Art. 38(1); © Grid-India. Informational reuse with attribution; not for commercial redistribution.",
+  "attribution": "Data: Grid Controller of India Ltd (Grid-India), National Load Despatch Centre",
+  "cadence": "daily",
+  "vintage": "2026-06-11",
+  "lastSuccess": "2026-06-12T06:45:32.298Z",
+  "paths": [
+    "timeseries/psp-frequency.parquet"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "psp-daily",
+  "schema": {
+    "date": "DATE",
+    "entity": "VARCHAR",
+    "entity_type": "VARCHAR",
+    "energy_met_mu": "DOUBLE",
+    "energy_shortage_mu": "DOUBLE",
+    "max_demand_met_mw": "DOUBLE",
+    "peak_shortage_mw": "DOUBLE",
+    "evening_peak_demand_mw": "DOUBLE",
+    "source_file": "VARCHAR"
+  },
+  "source": {
+    "name": "Grid-India (Grid Controller of India, NLDC) — Daily Power Supply Position report",
+    "url": "https://grid-india.in/en/reports/daily-psp-report"
+  },
+  "licence": "Official public report published under IEGC 2023 Art. 38(1); © Grid-India. Informational reuse with attribution; not for commercial redistribution.",
+  "attribution": "Data: Grid Controller of India Ltd (Grid-India), National Load Despatch Centre",
+  "cadence": "daily",
+  "vintage": "2026-06-11",
+  "lastSuccess": "2026-06-12T06:45:14.958Z",
+  "paths": [
+    "timeseries/psp-daily.parquet"
+  ]
+}
