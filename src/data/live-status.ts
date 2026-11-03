@@ -40,17 +40,17 @@ export interface LiveStatus {
 }
 
 /**
- * The publisher syncs every 6 h but only pushes on a network change or a daily heartbeat, so the
- * deployed `lastSuccess` can legitimately be up to ~24 h old. Older than this ⇒ flagged stale.
+ * Updates are run manually (`npm run update`), so "fresh" is generous: data synced within this
+ * window shows a green dot, older shows amber (still correct — just not recently re-checked).
  */
-export const STALE_AFTER_HOURS = 36;
+export const STALE_AFTER_DAYS = 7;
 
 export type LiveFreshness = "live" | "stale" | "snapshot";
 
 export function liveFreshness(s: LiveStatus | null, now = Date.now()): LiveFreshness {
   if (!s?.lastSuccess) return "snapshot";
-  const ageH = (now - Date.parse(s.lastSuccess)) / 3_600_000;
-  return ageH <= STALE_AFTER_HOURS ? "live" : "stale";
+  const ageDays = (now - Date.parse(s.lastSuccess)) / 86_400_000;
+  return ageDays <= STALE_AFTER_DAYS ? "live" : "stale";
 }
 
 export function timeAgo(iso: string | null, now = Date.now()): string {

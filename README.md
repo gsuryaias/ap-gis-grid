@@ -5,9 +5,9 @@ grid, the **APSPDCL / APEPDCL 33 kV** sub-transmission networks, generation, PGC
 HT-consumer substations — over **27 RTGS reference layers** (districts, mandals, constituencies, highways,
 rail, reserve forests, wildlife, CRZ, rivers, reservoirs, flood, seismic and cyclone layers).
 
-**Live:** the network is pulled automatically from the AP-TRANSCO enterprise GIS (`gis.aptransco.gov.in`,
-ArcGIS REST) every 6 hours; changes are committed (git history is the network's audit trail) and the site
-redeploys. The header badge shows when the data was last synced, and opens a per-layer status + change log.
+**Live data:** one command pulls the current network from the AP-TRANSCO enterprise GIS
+(`gis.aptransco.gov.in`, ArcGIS REST), commits any changes (git history is the network's audit trail) and
+redeploys the site. The header badge shows when the data was last synced and opens a per-layer status + change log.
 
 Static and client-side at request time: no backend, no database, no API keys. Installable (PWA) and works
 offline for areas already viewed. Deploys to GitHub Pages: https://gsuryaias.github.io/ap-gis-grid/
@@ -21,19 +21,17 @@ gis.aptransco.gov.in (ArcGIS REST) ──npm run sync:live──▶ data/raw/liv
                                          npm run build:data ──▶ public/data/* ──▶ git push ──▶ Pages
 ```
 
-The State Data Centre firewall only accepts connections from India, so GitHub's cloud runners cannot reach
-it. The sync therefore runs from a machine in India:
+To update, from the project folder (on a connection in India — the State Data Centre firewall blocks
+foreign traffic, which is also why this can't run on GitHub's cloud runners):
 
 ```bash
-bash scripts/install-sync-agent.sh              # Mac: LaunchAgent, every 6 h (05:45/11:45/17:45/23:45)
-tail -f ~/Library/Logs/ap-gis-grid-sync.log     # watch it
-bash scripts/install-sync-agent.sh --uninstall  # remove
+git checkout main
+npm run update               # sync → rebuild → test → commit → push; the site redeploys in ~2 min
+npm run update -- --no-push  # same, but don't push
 ```
 
-…or register a **self-hosted GitHub Actions runner in India** and set the repo variable `SYNC_RUNNER` to its
-label — `.github/workflows/sync-live.yml` then takes over. APCPDCL's network is behind a GIS login: add
-`AP_GIS_USERNAME` / `AP_GIS_PASSWORD` (or `AP_GIS_TOKEN`) as env/secrets and its layers can be added in
-`scripts/live-sources.ts` (`npm run sync:live -- --discover APCPDCL` lists them).
+APCPDCL's network is behind a GIS login: add `AP_GIS_USERNAME` / `AP_GIS_PASSWORD` (or `AP_GIS_TOKEN`) to
+your environment and its layers can be added in `scripts/live-sources.ts` (`npm run sync:live -- --discover APCPDCL` lists them).
 
 ![screenshot](atlas-preview.png)
 

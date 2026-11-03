@@ -9,12 +9,12 @@ const DOT: Record<string, string> = {
   snapshot: "bg-slate-400",
 };
 
-/** Header pill: "Live · synced 2 h ago". Opens the sync status + change-log sheet. */
+/** Header pill: "Synced · 2 h ago". Opens the sync status + change-log sheet. */
 export function LiveStatusBadge() {
   const s = useLiveStatus();
   const [open, setOpen] = useState(false);
   const f = liveFreshness(s);
-  const label = f === "snapshot" ? "Snapshot" : f === "live" ? "Live" : "Stale";
+  const label = f === "snapshot" ? "Snapshot" : "Synced";
   return (
     <>
       <button
@@ -23,9 +23,7 @@ export function LiveStatusBadge() {
         title={s?.lastSuccess ? `Last synced from the AP-TRANSCO GIS: ${new Date(s.lastSuccess).toLocaleString("en-IN")}` : "Network data source"}
         className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2/70 px-2 py-1 text-[11px] font-medium text-ink hover:bg-surface-3"
       >
-        <span className={`relative h-2 w-2 rounded-full ${DOT[f]}`}>
-          {f === "live" && <span className={`absolute inset-0 animate-ping rounded-full ${DOT[f]} opacity-60`} />}
-        </span>
+        <span className={`h-2 w-2 rounded-full ${DOT[f]}`} />
         {label}
         {s?.lastSuccess && <span className="text-ink-2">· {timeAgo(s.lastSuccess)}</span>}
       </button>
@@ -78,15 +76,15 @@ function LiveStatusSheet({ status, onClose }: { status: LiveStatus | null; onClo
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Live network sync status"
+        aria-label="Network data sync status"
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[88dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-line bg-surface shadow-[var(--shadow-panel)] sm:rounded-2xl"
       >
         <header className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
           <div>
-            <h2 className="text-sm font-bold text-ink">Live network sync</h2>
+            <h2 className="text-sm font-bold text-ink">Network data sync</h2>
             <p className="mt-0.5 text-xs text-ink-2">
-              Pulled automatically from the AP-TRANSCO enterprise GIS{" "}
+              Pulled from the AP-TRANSCO enterprise GIS{" "}
               {status?.source && <span className="break-all">({new URL(status.source).host})</span>}. Last successful sync{" "}
               <b className="text-ink">{timeAgo(status?.lastSuccess ?? null)}</b>
               {status?.lastSuccess && <> · {new Date(status.lastSuccess).toLocaleString("en-IN")}</>}.
@@ -129,7 +127,7 @@ function LiveStatusSheet({ status, onClose }: { status: LiveStatus | null; onClo
 
           <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-2">Recent changes</h3>
           {!status?.changes.length && (
-            <p className="mt-1 text-xs text-ink-2">No network changes detected since sync began. Changes made in the source GIS appear here after the next sync.</p>
+            <p className="mt-1 text-xs text-ink-2">No network changes detected since sync began. Changes made in the source GIS appear here after the next update.</p>
           )}
           <ol className="mt-1 space-y-2">
             {status?.changes.map((c) => (

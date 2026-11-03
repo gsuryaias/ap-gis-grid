@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "sync:live": "tsx scripts/sync-live.mts",
-    "build:ref": "tsx scripts/build-ref-layers.mts"
+    "build:ref": "tsx scripts/build-ref-layers.mts",
+    "update": "bash scripts/update.sh"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev45.0",

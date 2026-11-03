@@ -112,18 +112,20 @@ Data Centre — the same server the Google-Earth KMZ `NetworkLink`s in the user'
   borrows its surveyed polygon from the snapshot by SAP id (325), else the nearest same-voltage polygon ≤ 300 m
   (51), else a synthetic 150 m footprint (13 genuinely new SS). Counts in `data-quality.json → substationFootprints`.
 
-### ⚠ Where the sync can run — India only
+### Updating — one manual command, India-only network
 The State Data Centre firewall **drops traffic from outside India** (verified 2026-11-03: GitHub-hosted runners
-time out even on the raw IP; public DNS is also flaky — 8.8.8.8 returns nothing, 1.1.1.1 resolves). So:
-- **Default publisher = the owner's Mac**: `scripts/install-sync-agent.sh` installs LaunchAgent
-  `com.gsuryaias.ap-gis-grid.sync` (05:45/11:45/17:45/23:45; runs on wake if asleep) which runs a copy of
-  `scripts/sync-publish.sh` in a **dedicated clone** `~/.ap-gis-grid-sync` (never the working copy):
-  reset to origin/main → sync → if the network changed **or** the last published sync is ≥ 20 h old (daily
-  heartbeat, keeps the badge honest) → `build:data` → tests → commit → push → `deploy.yml` redeploys Pages.
-  Log: `~/Library/Logs/ap-gis-grid-sync.log`. Re-run the installer after editing `sync-publish.sh`.
-- **`.github/workflows/sync-live.yml`** does the same in CI but is gated on the repo variable `SYNC_RUNNER`
-  (label of a **self-hosted runner in India**, e.g. an AWS ap-south-1 VM); skipped otherwise.
-- Badge: "Live" while `lastSuccess` ≤ 36 h (`STALE_AFTER_HOURS`), amber "Stale" after, grey "Snapshot" if never.
+time out even on the raw IP; public DNS is flaky too — 8.8.8.8 returns nothing, 1.1.1.1 resolves). So there is
+**no scheduled/CI sync by design** — the owner runs, from the project folder on an Indian connection:
+
+```bash
+npm run update              # scripts/update.sh: pull main → sync:live → build:data → tests → commit → push
+npm run update -- --no-push # stop before pushing
+```
+
+It requires a clean tree on `main`, exits 3 with a clear message if the GIS is unreachable, and always commits
+(even "no changes", so the deployed `lastSuccess` reflects the check). The push triggers `deploy.yml` → Pages.
+Badge: green "Synced · N ago" while `lastSuccess` ≤ 7 days (`STALE_AFTER_DAYS`), amber after, grey "Snapshot"
+if never synced. (A self-hosted runner in India could automate this later; deliberately not set up.)
 
 ## DISCOM 33 kV overlay (`scripts/etl-discom.ts`, lazy)
 
