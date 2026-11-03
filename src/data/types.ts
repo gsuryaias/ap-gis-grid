@@ -73,6 +73,8 @@ export interface LineProps {
   circuits?: number;
   /** This row's share of physical route km (sibling Ckt rows split their corridor). Sum it for route-km. */
   routeKm?: number | null;
+  /** Tower summary from the live tower layers (matched by line name): count, CP/SP, top tower types. */
+  towers?: { n: number; cp: number; sp: number; types: Array<[string, number]> };
   // ---- Optional fields added in the coastal-exposure milestone ----
   /** Indicative straight-line distance to the Bay-of-Bengal coast (Natural Earth coastline), km, 1 dp — the MINIMUM over the line's vertices. */
   coastalKm?: number;

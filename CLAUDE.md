@@ -35,6 +35,7 @@ renders is pure static assets, so there is no backend at request time.
 
 ```bash
 npm run sync:live    # pull TRANSCO + DISCOM layers from gis.aptransco.gov.in → data/raw/live/* (India-only network!)
+npm run sync:towers  # pull the ~114k transmission towers (400/220/132 kV) → data/raw/live/towers-*.json (~8 s)
 npm run build:ref    # RTGS shapefile library (OneDrive, RTGS_DIR) → public/data/ref/* — run locally, commit outputs
 npm run dev          # Vite dev server → http://localhost:5173/ap-gis-grid/
 npm run build:data   # ETL: data/raw/{gridmap/*.shp, generation.kml, geonames-ap.tsv, coastline-ap.geojson} → public/data/*
@@ -134,6 +135,30 @@ It requires a clean tree on `main`, exits 3 with a clear message if the GIS is u
 Badge: green "Synced · N ago" while `lastSuccess` ≤ 7 days (`STALE_AFTER_DAYS`), amber after, grey "Snapshot"
 if never synced. (A self-hosted runner in India could automate this later; deliberately not set up.)
 
+## Transmission towers (`scripts/sync-towers.mts` + `scripts/towers-lib.ts`, lazy overlay)
+
+~114k tower points from the open `AP_Grid_Map/gridmapkml` layers 2/3/4 (400 kV 16,353 · 220 kV 44,053 ·
+132 kV 53,555). Fields: tower_number, cp_sp (CP / SP / Boom / Gantry, spelling varies → `canonicalCpSp`),
+tower_type ("DA+3": design type + body extension), tower_ckts_conductor ("DCT, 2C, Quad Moose"), conductor,
+circuit type, commissioning date, relay-setting length, circle/zone/division/subdivision; the 132 kV layer
+also has ~24 structural/insulator fields that are currently empty (the popup shows any that get filled).
+- **Storage — grouped by line, not GeoJSON** (~40 MB as GeoJSON): `groupTowers` keeps each line's shared
+  attributes once and one row per tower (`[lineIdx, lng, lat, …cols]`, natural tower-number order, one row
+  per text line for small diffs) → `data/raw/live/towers-<kv>.json` (15 MB total, lossless vs the fields
+  kept; objectid/globalid/lat-lng duplicates/`linename_sd_merge` dropped). Change detection keys on
+  line + tower number (`towerKeys`/`diffTowers`); gates: per-layer floor + >15% drop rejected.
+  `towers-manifest.json` = per-layer status. `npm run update` runs it after `sync:live` (non-fatal).
+- **ETL** (`buildTowers` in build-data): `buildWebTowers` dictionary-encodes low-cardinality columns →
+  `public/data/towers-<kv>.json` (≈ 180 / 480 / 620 KB gz), matches each tower line to a core line by
+  normalised name (99.6% of towers), and folds a per-line summary into `lines.geojson` as
+  `LineProps.towers` `{n, cp, sp, types}`; counts in `live-status.json → towers`.
+- **UI**: overlay defs `TOWER_DEFS` (`overlays/catalog.ts`, `format: "towers"`, `aboveGrid` — drawn between
+  the grid lines and the SS dots, unlike every other overlay), decoded by `overlays/towers.ts`; per-voltage
+  toggles in the layer panel ("Transmission · towers"), minzoom 9 (400 kV 8), CP towers larger + ringed,
+  labels (tower no.) from z14. A tower tap wins over the line beneath and opens a popup with every
+  attribute + a link to the line. `components/LineTowers.tsx` (line DetailPanel + MIS line dossier): count,
+  CP/SP split, top types, "Show towers on map".
+
 ## DISCOM 33 kV overlay (`scripts/etl-discom.ts`, lazy)
 
 `buildDiscom()` → `public/data/discom-ss.geojson` (33/11 kV SS: polygon → centroid; EPDCL carries circle →
@@ -226,8 +251,8 @@ none of its code path runs until the user enables it.
 
 ## Power-grid overlay (lazy-loaded)
 
-A third, optional layer **group** sourced from ESRI shapefiles (`data/raw/gridmap/`, copied — Towers
-and admin-boundary layers excluded). Like the generation overlay it is **lazy**: nothing runs until the
+A third, optional layer **group** sourced from ESRI shapefiles (`data/raw/gridmap/`, copied — tower
+and admin-boundary shapefiles excluded; towers now come live, see "Transmission towers"). Like the generation overlay it is **lazy**: nothing runs until the
 user enables it. It bundles **three classes** behind one master toggle, each with its own sub-toggle
 (mirrors the generation per-energy-type sub-toggles):
 

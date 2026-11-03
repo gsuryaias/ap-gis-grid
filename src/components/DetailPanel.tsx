@@ -1,3 +1,4 @@
+import { LineTowers } from "./LineTowers.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { graphAnalysis } from "../data/graph-data.ts";
 import { connectedLines, connectedSubstations } from "../data/selectors.ts";
@@ -305,6 +306,7 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
         label="Commissioned"
         value={line.commissioned ? `${line.commissioned}${age != null ? ` · ${formatAge(age)}` : ""}` : undefined}
       />
+      <LineTowers line={line} />
       <Field label="Circle" value={line.circle} />
       <Field
         label="Coast"

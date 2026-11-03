@@ -34,9 +34,11 @@ rc=$?
 set -e
 if [ $rc -eq 3 ]; then echo "Can't reach gis.aptransco.gov.in — it only accepts connections from India (check VPN / network)."; exit 3; fi
 if [ $rc -ne 0 ]; then echo "Sync failed (exit $rc) — nothing was changed."; exit $rc; fi
+# Towers (~114k points, grouped by line). Non-fatal: a failed/rejected tower pull keeps the previous files.
+npm run -s sync:towers || echo "Tower sync failed — keeping the previous tower data."
 
 changed=false
-[ -n "$(git status --porcelain -- data/raw/live ':!data/raw/live/manifest.json')" ] && changed=true
+[ -n "$(git status --porcelain -- data/raw/live ':!data/raw/live/manifest.json' ':!data/raw/live/towers-manifest.json')" ] && changed=true
 
 say "3/5  Rebuilding the map data"
 npm run -s build:data > /dev/null

@@ -1,6 +1,7 @@
 // Network MIS — the last drill level: a dossier for the selected substation or line, built from
 // the same enriched rows the aggregates use (so its numbers reconcile with the tables above).
 import { DiscomDownstream } from "../../components/DiscomDownstream.tsx";
+import { LineTowers } from "../../components/LineTowers.tsx";
 import { CloseIcon } from "../../components/icons.tsx";
 import { VoltageBadge } from "../../components/VoltageBadge.tsx";
 import { useAppStore } from "../../state/store.ts";
@@ -174,6 +175,7 @@ export function LineDossier({ model, row, onClose }: { model: MisModel; row: Lin
         Age band: <b className="text-ink">{AGE_BAND_LABEL[row.ageBand]}</b>. Route share {nf1(row.routeKm)} km of a{" "}
         {nf1(l.lengthKm ?? 0)} km line{row.circuits === 1 && l.circuit === "DC" ? " (one circuit of a double-circuit tower line)" : ""}.
       </p>
+      <LineTowers line={l} />
       <div className="flex flex-wrap items-center gap-1">
         <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Ends</span>
         {ends.map((n) => (
