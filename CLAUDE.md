@@ -13,12 +13,18 @@ plus a Google-Earth KML (generation plants) and a GeoNames AP place extract (sea
 a build-time ETL turns it into clean static assets the browser loads. Deploys to GitHub Pages (project site, base `/ap-gis-grid/`).
 
 The reference map is the **Atlas** workspace. On top of it sits a **decision-support (DSS) shell** with
-one more workspace — **Risk Room** — a lazy-loaded chunk sharing one embedded map. Everything the app
+one more workspace — **Network MIS** — a lazy-loaded chunk sharing one embedded map. Everything the app
 renders is pure static assets, so there is no backend at request time.
+
+> **Risk Room removed, Network MIS added (2026-11):** the Risk Room workspace (`workspaces/risk/`,
+> `map/risk-layers.ts`) was replaced by the **Network MIS** (`workspaces/mis/`) and preserved on the
+> local `archive/risk-room` branch. `WorkspaceId` is now `atlas | mis`. `lib/risk.ts` stays (DetailPanel,
+> SummaryView, WeatherView use it); `lib/risk-engine.ts` + `public/data/wind-zones.geojson` now have no
+> in-app consumer (kept, tested — like `dcflow.ts`).
 
 > **Removed workspaces (2026-06):** the **Planning Studio** and **MIS** workspaces were removed from the
 > app and preserved on the `archive/planning-studio` and `archive/mis-workspace` branches (cut from
-> `main` before removal). `WorkspaceId` is now `atlas | risk`. The **MIS data pipelines** (`pipelines/`,
+> `main` before removal). The **MIS data pipelines** (`pipelines/`,
 > the `data` branch, the freshness manifests) and the pure analytics libs (`dcflow.ts`, `dlr.ts`) are
 > **still in the repo** — they no longer have an in-app consumer (the MIS dashboards that read the
 > parquet, and the Planning Studio that drove `dcflow`, are gone). The pipelines section below is
@@ -61,7 +67,7 @@ NLDC / Vidyut Pravah / CEA (live public sources) ─(pipelines, CI)─▶ `data`
 ```
 
 > **No in-app parquet reader since the MIS removal.** The app fetches only the data-branch
-> `manifests/*.json` at runtime (`manifests.ts` → `FreshnessBadge`/`MethodCard`/Risk Room — freshness
+> `manifests/*.json` at runtime (`manifests.ts` → `FreshnessBadge`/`MethodCard` — freshness
 > only); nothing reads the `timeseries/*.parquet` anymore. Consequently `@duckdb/duckdb-wasm` and
 > `echarts` are now **dependencies with no importer in `src`** (they powered the removed MIS dashboards)
 > — leave them unless you're deliberately pruning, but don't reach for them expecting a live consumer.
@@ -75,9 +81,9 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Pipelines | `pipelines/*.mts` + `pipelines/*-parse.ts` + `pipelines/lib.ts` | live MIS ETL → `data` branch parquet (see "MIS data pipelines") |
 | Data | `src/data/` | `types.ts` (canonical types), `load.ts` (fetch via `import.meta.env.BASE_URL`), `selectors.ts`, `graph-data.ts` (memoised topology), `manifests.ts` (dataset freshness), `weather.ts` |
 | State | `src/state/store.ts` (Zustand) + `src/url/` | versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
-| Map | `src/map/` | `MapView.tsx` (Atlas full-screen) / `MapPane.tsx` (shared embeddable wrapper), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `risk-layers.ts`, `map-helpers.ts` (shared map utils) |
+| Map | `src/map/` | `MapView.tsx` (Atlas full-screen) / `MapPane.tsx` (shared embeddable wrapper), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `mis-layers.ts` (MIS thematic layer), `map-helpers.ts` (shared map utils) |
 | Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, `FreshnessBadge`, SearchBar, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
-| Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `risk` (lazy chunk). Planning + MIS removed — see "Workspaces (DSS shell)" |
+| Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
 | Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `dcflow.ts`, `risk.ts`, `risk-engine.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
 
@@ -372,22 +378,24 @@ honesty convention.
   folds the source's conductor-name typos ("Zeebra"→Zebra, "Panter"→Panther) → **1181/1190 lines
   rated (~99%)**; the rest (bare "UG Cable", "AL59" alloy) return null → UI shows nothing. `DetailPanel`
   shows it per line (≈ 610 MVA, with a per-circuit split for DC) + an honesty footnote; `SummaryView`
-  shows the network total (≈ 560 GVA) with coverage. **Indicative only** — not a load-flow result;
+  shows the network total (≈ 300 GVA) with coverage. A row is rated for the circuits IT carries
+  (`LineProps.circuits`, see "Circuit-km" below), so Ckt-1 + Ckt-2 rows of one corridor sum to 2 circuits. **Indicative only** — not a load-flow result;
   real ratings depend on ambient/conductor temperature, sag and bundle geometry.
 - **Asset age** — `commissionYear()` / `ageYears()` / `formatAge()` in `src/lib/format.ts`
   (unit-tested in `format.test.ts`). Parses the year from the `commissioned` "Mon YYYY" string and
   derives age vs. `new Date().getFullYear()` (kept pure by passing the reference year in).
-  `DetailPanel` appends "· 9 yrs" to the Commissioned field. (A dedicated age choropleth / filter is a
-  natural follow-up.)
+  `DetailPanel` appends "· 9 yrs" to the Commissioned field; the Network MIS adds the age bands, the
+  commissioning histogram and the line-age map theme.
 
 ## Connectivity graph + power-flow + risk (pure analytics libs)
 
 The topological criticality / N-1 islanding work that earlier docs flagged as *deferred* is now built.
 All of it is **pure, side-effect-free, unit-tested** (node env) and **indicative only** — it runs on the
 inferred geometric connectivity, hand-digitised wind zones and assumed impedances, never authoritative
-ratings or a real load-flow. `graph.ts`/`risk-engine.ts`/`risk.ts` drive the Risk Room; `dcflow.ts` and
-`dlr.ts` were the analytical foundation of the removed Planning Studio and currently have no in-app
-consumer (kept, tested, importable — see the intro note).
+ratings or a real load-flow. `graph.ts` (via `graph-data.ts`) drives the Network MIS N-1 screening and the
+map spotlight; `risk.ts` the DetailPanel / Summary / Weather vulnerability read-outs. `risk-engine.ts`
+(the removed Risk Room), `dcflow.ts` and `dlr.ts` (the removed Planning Studio) currently have no in-app
+consumer (kept, tested, importable — see the intro notes).
 
 - **`src/lib/graph.ts`** — a multigraph over substation ids (parallel circuits are distinct edges, since
   N-1 line loss ≠ corridor loss). `buildGridGraph(substations, lines)`, then `connectedComponents()`,
@@ -416,11 +424,11 @@ consumer (kept, tested, importable — see the intro note).
 ## Workspaces (DSS shell)
 
 The app is a **multi-workspace shell** (`src/App.tsx` + `src/workspaces/registry.ts`). `WorkspaceId` =
-`atlas | risk` (Planning Studio + MIS were removed — see the intro note). Adding a workspace = one folder
-under `src/workspaces/<id>/` + one entry in `registry.ts` (the shell handles switcher + routing + overlay
-pre-fetch); the shell is workspace-agnostic, so a registry entry is all it takes to add/remove a tab.
+`atlas | mis` (Planning Studio, the old MIS and Risk Room were removed — see the intro notes). Adding a
+workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts` (the shell handles switcher
++ routing); the shell is workspace-agnostic, so a registry entry is all it takes to add/remove a tab.
 
-- **Code-split**: `atlas` is the inline default (never split out); `risk` declares a
+- **Code-split**: `atlas` is the inline default (never split out); `mis` declares a
   `load: () => import(...)` and mounts lazily in a `<Suspense>` boundary. Each declares `requiredManifests`
   the shell can gate/badge on (both are now `[]`).
 - **Map embedding**: `MapPane` renders the shared map in `full` (Atlas), `embedded` (split layout) or
@@ -428,19 +436,40 @@ pre-fetch); the shell is workspace-agnostic, so a registry entry is all it takes
   **drag-resizable** — `App`'s `PaneSplitter` sets the map-column width (persisted to localStorage under
   `dss-map-pane-w`, clamped to `[320, innerWidth−380]`), and a `ResizeObserver` in `MapPane` redraws the
   canvas on any container size change. `WORKSPACE_LAYER_PRESETS[ws]` (in `map/layer-presets.ts`) declares
-  which overlays each workspace expects; `App` auto-toggles them on switch (visibility stays
-  user-controlled via `MapLayerPanel`).
-- **`workspaceContext`** (store) carries cross-workspace focus that *is* hash-synced: `scenario` +
-  `sort` (Risk). Transient map overlays (`riskScores`, `highlightIds`, `riskSelection`) are **never** hashed.
+  which overlay groups the embedded map may mount (no auto-toggling — visibility stays user-controlled
+  via `MapLayerPanel`). An analysis workspace that needs overlay DATA without showing the layer calls the
+  store's `ensureGeneration()` / `ensurePowerGrid()`.
+- **`workspaceContext`** (store) carries cross-workspace focus. Hash-synced (only while `w=mis`): `misBy`
+  (`by=`, default circle), `misFilters` (`mf=`, the drill path `dim:value~dim:value`), `misTab` (`tab=`),
+  `misTheme` (`theme=`). Transient, never hashed: `misMap` (thematic classes + scope ids for the map) and
+  `fit` (`{key, bounds}` — MapPane fits once per new key).
 
-- **Risk Room** (`workspaces/risk/`): `model.ts` composes `graphAnalysis` + `risk-engine` + GDACS live
-  cyclone cones + wind zones into per-SS `BaseRow`s, then four scenario presets (`normal|watch|severe|
-  active`, each a hazard multiplier) re-rank assets by `compositeRisk`. `RiskRoom.tsx` is the **paginated,
-  faceted** at-risk register (filters: name, circle, voltage chips, tier, single-fed, in-cone; sort by any
-  column; row → fly-to + map halo via `risk-layers.ts` + factor breakdown); `BriefingPack.tsx` exports a
-  print-ready pack. Pagination is the shared `usePager`/`PagerBar` in `components/Pager.tsx` (also used by
-  the Atlas `DataTableSheet`, which carries the same voltage/circle/circuit facets + a drag-resizable
-  sheet height).
+- **Network MIS** (`workspaces/mis/`) — an analyst's view of the network built on the live GIS data
+  (the old parquet-based MIS is dead: the PSP/Vidyut feeds stopped at 2026-06-11).
+  - `model.ts` (pure, `model.test.ts`): `buildModel` joins core SS/lines with `graphAnalysis` (feed degree,
+    cut points, bridge impacts), line age (`commissionYear`), conductor family, indicative MVA and the
+    TRANSCO→33 kV index (`transco-33kv.json`) into `SsRow`/`LineRow`. **Pivot, not a tree** — zone/circle/
+    division do NOT nest in the source (3 circles straddle zones, 9 divisions span circles), so the drill is
+    "add a `(dim = value)` filter, then regroup": `DIMENSIONS` (circle, zone, division, voltage, line-age
+    band, conductor, N-1 role, coastal band) each with an SS and/or line accessor; `applyScope` (a line-only
+    filter keeps the SS those lines touch; an SS-only filter keeps lines touching those SS); `groupBy` /
+    `metrics` (ckm-weighted mean age, share ≥ 35 yrs = CERC useful life, distinct 33/11 kV SS); lines take
+    zone/division from their first resolved end SS (lines carry neither). `bridgeImpacts` ranks bridges by
+    downstream 33/11 kV SS stranded.
+  - UI: `MisWorkspace.tsx` (sticky drill breadcrumb + map-theme switch, KPI tiles, breakdown, thematic tabs,
+    register, provenance footer), `tables.tsx` (`Breakdown` pivot — click row = drill + auto-regroup via
+    `nextDim`; `Register` — paginated SS/line lists, hover = map hover, click = dossier + fly), `themes.tsx`
+    (Asset age · N-1 exposure · 33 kV downstream · Conductors & rating · Generation & interfaces),
+    `Dossier.tsx` (SS / line dossier — the core-feature detail card is suppressed on the map in MIS),
+    `charts.tsx` / `ui.tsx` (dependency-free SVG/HTML marks per the dataviz conventions; voltage palette for
+    stacks, validated blue ordinal ramp for age). Every view has a CSV export.
+  - Map (`map/mis-layers.ts`): `mis-line-theme` + `mis-ss-theme` ride the CORE sources via feature-state
+    (`misC` class / `misV` value), filtered to the scope; themes = line age (ordinal ramp, reversed on
+    dark/satellite), N-1 (status red/orange: bridges, cut-point / single-fed rings), 33 kV load
+    (proportional circles ∝ √ 33/11 SS served). Out-of-scope features are dimmed through `applySpotlight`
+    (a selection spotlight, when armed, wins).
+  - Pagination is the shared `usePager`/`PagerBar` in `components/Pager.tsx` (also used by the Atlas
+    `DataTableSheet`).
 
 ## MIS data pipelines (`pipelines/`, CI-scheduled → `data` branch)
 
@@ -503,7 +532,14 @@ left in the repo but is **no longer a source** (generation still uses `generatio
   the same Gridmap layers) is a real connection, captured as `externalEndpoints` and snapped the same
   way. Counting both, **~95% of lines connect at both ends** (`pctBothEndsResolved`); only ~5% have an
   end beyond 1 km of anything. Connections shown as **inferred**, never authoritative.
-- **Circuit-km** = `lengthKm` (`line_lengt`) × per-circuit multiplier (SC ×1; DC / DC-SC / MC ×2).
+- **Circuit-km / route-km** (`lineAccounting` in `etl-lib.ts`, fixed 2026-11 — the old rule overstated
+  the network as 33,327 route-km / 62,543 ckm). Each row carries `circuits` (circuits THIS row represents)
+  and `routeKm` (its share of the physical route): a per-circuit row (`circuitTag` finds "Ckt-n" anywhere
+  in the name) = 1 circuit, and sibling Ckt rows of one DC tower corridor (`corridorKey` = voltage + name
+  minus the Ckt token) split the route (÷ min(siblings, 2)); a whole-line row = `lineCircuitMultiplier`
+  (SC 1, **DC/SC 1 — DC towers, single circuit strung**, DC 2, MC 2) and owns its route. `ckm = lengthKm ×
+  circuits`; `meta` route totals sum `routeKm`. Current: **24,287 route-km · 33,474 ckm** (400 kV 5,708 ·
+  220 kV 13,549 · 132 kV 14,217).
 - **Lines are per-circuit (~1190 features)** — `Ckt-1`/`Ckt-2` are separate rows. **"(P)" in a line
   name is NOT "proposed"** — it's a naming token (616/686 such lines have real past commissioning
   dates), so there is no proposed-filter. New per-line fields: `conductor`, `commissioned` ("Mon YYYY",
@@ -522,7 +558,7 @@ left in the repo but is **no longer a source** (generation still uses `generatio
   `APTransco SS` layer has no commissioning date (`doc` is null) and no per-SS capacity.
 - **Coastal exposure** is derived at ETL time from `data/raw/coastline-ap.geojson`: each SS/line gets
   `coastalKm` (nearest-coast distance) and `coastalBand` (`0` <10 km / `1` 10–25 / `2` 25–50 / `3` >50),
-  reported in `data-quality.json` and consumed by the Risk workspace + the `coast=` band filter.
+  reported in `data-quality.json` and consumed by the Network MIS coastal dimension + the Atlas `coast=` band filter.
 - Counts (validation gate, lower-bound asserts): **376 substations, ~1190 lines** (0 dropped in current
   data). The old fixed 499/715 KML gate is retired. Places gazetteer gate is **> 25k rows**.
 

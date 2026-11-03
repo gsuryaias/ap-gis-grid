@@ -36,7 +36,9 @@ import {
   ENERGY_TYPES,
   formatMonthYear,
   haversineMeters,
-  lineCircuitMultiplier,
+  circuitTag,
+  corridorKey,
+  lineAccounting,
   mapLineCircuit,
   dedupePlaces,
   normalizeKv,
@@ -1040,8 +1042,6 @@ async function main(): Promise<void> {
       adjEnds.push([endKind(fromSS, fromExt), endKind(toSS, toExt)]);
       for (const e of [fromExt, toExt]) if (e) extCategory[e.category] = (extCategory[e.category] ?? 0) + 1;
 
-      const ckm = lengthKm != null ? Math.round(lengthKm * lineCircuitMultiplier(props.circuit_ty) * 1000) / 1000 : null;
-
       lines.push({
         id,
         kind: "line",
@@ -1049,7 +1049,9 @@ async function main(): Promise<void> {
         voltage,
         circuit,
         lengthKm,
-        ckm,
+        ckm: null, // circuit/route accounting needs the whole corridor — filled in below
+        circuits: 1,
+        routeKm: null,
         circle,
         connectsSS,
         endpointLabels: parseEndpointLabels(name),
@@ -1065,6 +1067,21 @@ async function main(): Promise<void> {
       });
       lineGeoms.set(id, positions);
     }
+  }
+
+  // ---- Circuit / route accounting ------------------------------------------
+  // Each circuit of a DC tower line is usually its own row ("…, Ckt-1" / "…, Ckt-2"). Group those
+  // siblings into corridors so route-km is counted once per tower line and circuit-km once per
+  // circuit (see `lineAccounting`).
+  const corridorSize = new Map<string, number>();
+  for (const l of lines) {
+    if (circuitTag(l.name) == null) continue;
+    const k = corridorKey(l.name, l.voltage);
+    corridorSize.set(k, (corridorSize.get(k) ?? 0) + 1);
+  }
+  for (const l of lines) {
+    const size = corridorSize.get(corridorKey(l.name, l.voltage)) ?? 1;
+    Object.assign(l, lineAccounting(l.name, l.circuitType, l.lengthKm, size));
   }
 
   console.log(
@@ -1162,7 +1179,7 @@ async function main(): Promise<void> {
   }
   for (const l of lines) {
     const c = l.circle ?? UNASSIGNED;
-    const route = l.lengthKm ?? 0;
+    const route = l.routeKm ?? 0;
     const ckm = l.ckm ?? 0;
     for (const a of [byVoltage[l.voltage], ensure(byCircle, c), ensure(matrix[l.voltage], c)]) {
       a.lines++;
@@ -1178,7 +1195,7 @@ async function main(): Promise<void> {
   const circles = Object.keys(byCircle).sort((a, b) =>
     a === UNASSIGNED ? 1 : b === UNASSIGNED ? -1 : a.localeCompare(b),
   );
-  const totalLengthKm = rnd1(lines.reduce((a, l) => a + (l.lengthKm ?? 0), 0));
+  const totalLengthKm = rnd1(lines.reduce((a, l) => a + (l.routeKm ?? 0), 0));
   const totalCircuitKm = rnd1(lines.reduce((a, l) => a + (l.ckm ?? 0), 0));
 
   // ---- Adjacency stats -----------------------------------------------------
@@ -1285,6 +1302,8 @@ async function main(): Promise<void> {
           circuit: l.circuit,
           lengthKm: l.lengthKm,
           ckm: l.ckm,
+          circuits: l.circuits,
+          routeKm: l.routeKm,
           circle: l.circle,
           connectsSS: l.connectsSS,
           endpointLabels: l.endpointLabels,

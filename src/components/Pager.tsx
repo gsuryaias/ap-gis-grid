@@ -1,5 +1,5 @@
 // Shared, dependency-free pagination — a hook that slices any array into pages and a compact
-// presentational footer. Used by the Atlas data table and the Risk Room register so both paginate
+// presentational footer. Used by the Atlas data table and the Network MIS registers so they paginate
 // identically. Page clamping is done in render (no effects), so shrinking the filtered set never
 // strands the view on an empty page.
 import { useState } from "react";

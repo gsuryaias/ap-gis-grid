@@ -73,13 +73,62 @@ export function mapLineCircuit(raw: unknown): Circuit {
 }
 
 /**
- * Circuit-km multiplier for a Gridmap line `circuit_ty`: SC=1, DC=2, "DC/SC"=2, MC=2, null=1.
- * (Per-circuit-aware; replaces the old route×circuits derivation.)
+ * Circuits STRUNG on a whole-line row, from the Gridmap `circuit_ty`: SC=1, DC=2, MC=2, null=1.
+ * "DC/SC" (and its "SC/DC" spelling) is the Indian convention for **double-circuit towers with a
+ * single circuit strung** → 1. (The tower type is still "DC" — see `mapLineCircuit` — so the map
+ * keeps drawing it on DC structures.)
  */
 export function lineCircuitMultiplier(raw: unknown): number {
   const t = String(raw ?? "").toUpperCase().replace(/\s+/g, "");
-  if (t === "DC" || t === "DC/SC" || t === "SC/DC" || t === "MC") return 2;
-  return 1; // SC / null / unknown
+  if (t === "DC" || t === "MC") return 2;
+  return 1; // SC / DC-SC / null / unknown
+}
+
+const CKT_TOKEN = /\bckt[\s.-]*(\d+)/i;
+
+/**
+ * The circuit number when a line row is ONE circuit of a multi-circuit corridor — the source
+ * digitises each circuit of a DC tower line as its own row ("…QMDC Line, Ckt-2",
+ * "…Ckt-1(idle)", "…Ckt-2 DC/SC Line (TM)"). Null for a whole-line row.
+ */
+export function circuitTag(name: string): number | null {
+  const m = CKT_TOKEN.exec(name);
+  return m ? Number(m[1]) : null;
+}
+
+/** Corridor key shared by the per-circuit rows of one tower line: name minus its Ckt token + voltage. */
+export function corridorKey(name: string, voltage: number): string {
+  const base = name
+    .replace(CKT_TOKEN, " ")
+    .toLowerCase()
+    .replace(/[^a-z0-9()]+/g, " ")
+    .trim();
+  return `${voltage}|${base}`;
+}
+
+/**
+ * Circuit + route accounting for one line row.
+ * - `circuits`: circuits this ROW represents — 1 for a per-circuit row ("Ckt-n"), else
+ *   `lineCircuitMultiplier(circuit_ty)`.
+ * - `routeKm`: this row's share of the physical route. Per-circuit rows on a DC tower split the
+ *   route between the sibling rows of their corridor (`corridorSize`, capped at 2 circuits per
+ *   tower); everything else owns its full length.
+ * Summing `lengthKm × circuits` gives true circuit-km and summing `routeKm` gives true route-km —
+ * the previous rule (every DC row × 2, own length) double-counted both for split corridors.
+ */
+export function lineAccounting(
+  name: string,
+  circuitTy: unknown,
+  lengthKm: number | null,
+  corridorSize: number,
+): { circuits: number; routeKm: number | null; ckm: number | null } {
+  const tagged = circuitTag(name) != null;
+  const circuits = tagged ? 1 : lineCircuitMultiplier(circuitTy);
+  if (lengthKm == null) return { circuits, routeKm: null, ckm: null };
+  const onDcTower = mapLineCircuit(circuitTy) === "DC";
+  const share = tagged && onDcTower ? Math.min(Math.max(corridorSize, 1), 2) : 1;
+  const r3 = (x: number) => Math.round(x * 1000) / 1000;
+  return { circuits, routeKm: r3(lengthKm / share), ckm: r3(lengthKm * circuits) };
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -177,8 +226,12 @@ export interface LineFeature {
   voltage: Voltage;
   circuit: Circuit;
   lengthKm: number | null;
-  /** Circuit-km = route length × a per-circuit-aware multiplier (SC ×1, DC/MC/DC-SC ×2). */
+  /** Circuit-km = lengthKm × `circuits` (see `lineAccounting`). */
   ckm: number | null;
+  /** Circuits this row represents (1 for a per-circuit "Ckt-n" row or DC/SC; 2 for a whole DC line). */
+  circuits: number;
+  /** This row's share of the physical route km (sibling Ckt rows of a DC corridor split it). */
+  routeKm: number | null;
   /** Authoritative circle from the source line layer (may be inherited from a connected SS if null). */
   circle: string | null;
   connectsSS: string[];

@@ -153,7 +153,6 @@ export function App() {
   const isMobile = useIsMobile();
   const workspace = useAppStore((s) => s.workspace);
   const mapLayout = useAppStore((s) => s.mapLayout);
-  const workspaceContext = useAppStore((s) => s.workspaceContext);
   const init = useAppStore((s) => s.init);
 
   // Draggable map / analysis split (split workspaces only). Width persists across reloads;
@@ -217,16 +216,6 @@ export function App() {
     document.documentElement.classList.toggle("dark", basemap !== "light");
   }, [basemap]);
 
-  // Pre-fetch overlays the active workspace expects; visibility stays user-controlled via MapLayerPanel.
-  useEffect(() => {
-    if (workspace === "atlas") return;
-    const preset = WORKSPACE_LAYER_PRESETS[workspace];
-    const st = useAppStore.getState();
-    if (preset.weather && !st.filters.showWeather) st.toggleWeather(true);
-    if (preset.powergrid && !st.filters.showPowerGrid) st.togglePowerGrid(true);
-    if (preset.generation && !st.filters.showGeneration) st.toggleGeneration(true);
-  }, [workspace]);
-
   if (status === "loading") return <Loading />;
   if (status === "error" || !data) return <ErrorScreen message={error ?? "Unknown error"} />;
 
@@ -271,7 +260,6 @@ export function App() {
                 mode={mapMode}
                 layers={layerPreset}
                 interactive
-                highlightIds={workspace === "risk" ? workspaceContext.highlightIds : undefined}
               />
             </div>
 
@@ -343,7 +331,8 @@ export function App() {
               </>
             )}
 
-            {!isAtlas && !mapCollapsed && (
+            {/* Core substations / lines open the MIS dossier instead; overlay features keep the card. */}
+            {!isAtlas && !mapCollapsed && !(selectedId && data.byId.has(selectedId)) && (
               <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex max-h-[min(280px,calc(100%-6rem))] max-w-[min(300px,calc(100%-1.5rem))] flex-col">
                 <DetailPanel data={data} />
               </div>

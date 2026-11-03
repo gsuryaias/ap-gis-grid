@@ -4,6 +4,7 @@ import { PG_CLASSES, WX_LAYERS, type FilterState, type PgClass, type WxLayer } f
 import { loadWeather, type WeatherData } from "../data/weather.ts";
 import { circlePoints } from "../lib/weather.ts";
 import type { MeasureMode, MeasureStats } from "../map/measure.ts";
+import type { MisMapState } from "../map/mis-layers.ts";
 import {
   CIRCUITS,
   ENERGY_TYPES,
@@ -29,37 +30,29 @@ export interface FlySignal {
   ts: number;
 }
 
-/** Query anchor for the nearest-substation tool. `fly` eases the map there (GPS), not for map picks. */
-/** Factor breakdown for a Risk Room register row (indicative screening — not in hash). */
-export interface RiskSelectionContext {
-  id: string;
-  hazard: number;
-  vulnerability: number;
-  criticality: number;
-  composite: number;
-  tier: string;
-  hazardFactors: string[];
-  vulnFactors: string[];
-  critFactors: string[];
+/** Map viewport request from an analysis workspace: fit `bounds` whenever `key` changes. */
+export interface FitRequest {
+  key: string;
+  bounds: [[number, number], [number, number]] | null;
 }
 
-/** Cross-workspace analysis focus — persisted in the URL hash when a DSS workspace is active. */
+/** Cross-workspace analysis focus. The `mis*` strings are URL-hash synced; the rest is transient. */
 export interface WorkspaceContext {
-  /** Risk Room scenario preset id (`scenario=` hash key). */
-  scenario?: string;
-  /** @deprecated alias kept for map focus — prefer `scenario`. */
-  hazard?: string;
-  /** Risk register sort column (`sort=` hash key). */
-  sort?: string;
-  /** Map fly-to circle (also mirrored by the global `circle=` filter when set from Risk). */
-  circle?: string;
-  /** Risk Room: composite scores keyed by substation id (transient map overlay). */
-  riskScores?: Record<string, number>;
-  /** Risk Room: substation ids to emphasize on the embedded map (transient). */
-  highlightIds?: string[];
-  /** Risk Room: active register row factor breakdown (transient). */
-  riskSelection?: RiskSelectionContext | null;
+  /** Network MIS: group-by dimension (`by=`). */
+  misBy?: string;
+  /** Network MIS: drill path "dim:value~dim:value" (`mf=`). */
+  misFilters?: string;
+  /** Network MIS: thematic tab (`tab=`). */
+  misTab?: string;
+  /** Network MIS: map theme (`theme=`). */
+  misTheme?: string;
+  /** Network MIS: thematic map classes + scope ids for the embedded map (transient). */
+  misMap?: MisMapState | null;
+  /** Fit the embedded map to the analysis scope (transient). */
+  fit?: FitRequest | null;
 }
+
+/** Query anchor for the nearest-substation tool. `fly` eases the map there (GPS), not for map picks. */
 
 export interface NearbyOrigin {
   lng: number;
@@ -144,6 +137,10 @@ interface AppState {
   setCoastalBand: (band: 0 | 1 | 2 | 3 | null) => void;
   toggleShow: (k: "showSubstations" | "showLines") => void;
   toggleGeneration: (open?: boolean) => void;
+  /** Fetch + cache the generation overlay data WITHOUT showing its map layer (analysis use). */
+  ensureGeneration: () => void;
+  /** Fetch + cache the power-grid overlay group WITHOUT showing its map layers (analysis use). */
+  ensurePowerGrid: () => void;
   toggleGenType: (t: EnergyType) => void;
   togglePowerGrid: (open?: boolean) => void;
   togglePgClass: (c: PgClass) => void;
@@ -315,14 +312,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     const next = open ?? !get().filters.showGeneration;
     set((s) => ({ filters: { ...s.filters, showGeneration: next } }));
     // Lazy-fetch the overlay the first time it's switched on; cache thereafter.
-    if (next && get().genStatus === "idle") {
-      set({ genStatus: "loading", genError: null });
-      loadGeneration()
-        .then((generation) => set({ generation, genStatus: "ready" }))
-        .catch((e) =>
-          set({ genStatus: "error", genError: e instanceof Error ? e.message : String(e) }),
-        );
-    }
+    if (next) get().ensureGeneration();
+  },
+
+  ensureGeneration: () => {
+    if (get().genStatus !== "idle") return;
+    set({ genStatus: "loading", genError: null });
+    loadGeneration()
+      .then((generation) => set({ generation, genStatus: "ready" }))
+      .catch((e) => set({ genStatus: "error", genError: e instanceof Error ? e.message : String(e) }));
+  },
+
+  ensurePowerGrid: () => {
+    if (get().pgStatus !== "idle") return;
+    set({ pgStatus: "loading", pgError: null });
+    loadPowerGrid()
+      .then((powergrid) => set({ powergrid, pgStatus: "ready" }))
+      .catch((e) => set({ pgStatus: "error", pgError: e instanceof Error ? e.message : String(e) }));
   },
 
   toggleGenType: (t) =>
@@ -332,14 +338,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const next = open ?? !get().filters.showPowerGrid;
     set((s) => ({ filters: { ...s.filters, showPowerGrid: next } }));
     // Lazy-fetch the overlay the first time it's switched on; cache thereafter.
-    if (next && get().pgStatus === "idle") {
-      set({ pgStatus: "loading", pgError: null });
-      loadPowerGrid()
-        .then((powergrid) => set({ powergrid, pgStatus: "ready" }))
-        .catch((e) =>
-          set({ pgStatus: "error", pgError: e instanceof Error ? e.message : String(e) }),
-        );
-    }
+    if (next) get().ensurePowerGrid();
   },
 
   togglePgClass: (c) =>
@@ -452,12 +451,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         h.mapLayout ??
         (workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);
       const workspaceContext = { ...s.workspaceContext };
-      if (h.scenario !== undefined) {
-        workspaceContext.scenario = h.scenario ?? undefined;
-        workspaceContext.hazard = h.scenario ?? undefined;
-      }
-      if (h.sort !== undefined) workspaceContext.sort = h.sort ?? undefined;
-      if (h.circle !== undefined && h.circle) workspaceContext.circle = h.circle;
+      if (h.misBy !== undefined) workspaceContext.misBy = h.misBy ?? undefined;
+      if (h.misFilters !== undefined) workspaceContext.misFilters = h.misFilters ?? undefined;
+      if (h.misTab !== undefined) workspaceContext.misTab = h.misTab ?? undefined;
+      if (h.misTheme !== undefined) workspaceContext.misTheme = h.misTheme ?? undefined;
       return {
         workspace,
         mapLayout,
@@ -503,8 +500,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       showGeneration: s.filters.showGeneration,
       showPowerGrid: s.filters.showPowerGrid,
       showWeather: s.filters.showWeather,
-      scenario: ctx.scenario ?? ctx.hazard ?? null,
-      sort: ctx.sort ?? null,
+      misBy: ctx.misBy ?? null,
+      misFilters: ctx.misFilters ?? null,
+      misTab: ctx.misTab ?? null,
+      misTheme: ctx.misTheme ?? null,
     };
   },
 }));

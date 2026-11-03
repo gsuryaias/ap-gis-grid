@@ -45,7 +45,7 @@ function LayerBody({
       {preset.grid && (
         <>
           <VoltageSection data={data} compact={compact} />
-          <RegionSection data={data} showCoastal={workspace === "risk"} />
+          <RegionSection data={data} showCoastal={workspace === "atlas"} />
           <ShowSection />
         </>
       )}

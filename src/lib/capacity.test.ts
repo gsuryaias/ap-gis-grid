@@ -5,6 +5,7 @@ import {
   CONDUCTOR_AMPACITY,
   formatMva,
   lineCapacity,
+  lineCapacityFor,
   totalIndicativeCapacity,
 } from "./capacity.ts";
 
@@ -106,6 +107,15 @@ describe("totalIndicativeCapacity", () => {
     expect(res.totalMva).toBe(840);
     expect(res.rated).toBe(2);
     expect(res.total).toBe(3);
+  });
+
+  it("rates a per-circuit row of a DC tower line as ONE circuit", () => {
+    // Ckt-1 + Ckt-2 rows of one DC corridor must sum to the corridor's 2 circuits, not 4.
+    const ckt = { conductor: "Zebra", voltage: 220 as const, circuit: "DC" as const, circuits: 1 };
+    expect(lineCapacityFor(ckt)?.totalMva).toBe(280);
+    expect(totalIndicativeCapacity([ckt, ckt]).totalMva).toBe(560);
+    // DC towers, single circuit strung.
+    expect(lineCapacityFor({ ...ckt, circuits: 1 })?.perCircuitMva).toBe(280);
   });
 });
 

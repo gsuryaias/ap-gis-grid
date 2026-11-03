@@ -17,6 +17,9 @@ import {
   formatMonthYear,
   haversineMeters,
   lineCircuitMultiplier,
+  circuitTag,
+  corridorKey,
+  lineAccounting,
   mapLineCircuit,
   normalizeKey,
   normalizeKv,
@@ -154,13 +157,40 @@ describe("etl-lib helpers", () => {
     expect(mapLineCircuit("weird")).toBe("SC");
   });
 
-  it("computes the per-circuit-aware circuit-km multiplier", () => {
+  it("counts circuits strung per whole-line row (DC/SC = DC towers, single circuit strung)", () => {
     expect(lineCircuitMultiplier("SC")).toBe(1);
     expect(lineCircuitMultiplier("DC")).toBe(2);
-    expect(lineCircuitMultiplier("DC/SC")).toBe(2);
+    expect(lineCircuitMultiplier("DC/SC")).toBe(1);
+    expect(lineCircuitMultiplier("SC/DC")).toBe(1);
     expect(lineCircuitMultiplier("MC")).toBe(2);
     expect(lineCircuitMultiplier(null)).toBe(1);
     expect(lineCircuitMultiplier("")).toBe(1);
+  });
+
+  it("detects per-circuit rows and groups them into corridors", () => {
+    expect(circuitTag("400KV Narnoor- Ghani QMDC Line, Ckt-2")).toBe(2);
+    expect(circuitTag("220KV Borampalli- Pampanurtanda DC Line (M), Ckt-1(idle)")).toBe(1);
+    expect(circuitTag("400KV Kalapaka- STPP Ckt-2 DC/SC Line (TM)")).toBe(2);
+    expect(circuitTag("400KV Kalapaka- Asupaka DC/SC Line (TM)")).toBeNull();
+    expect(corridorKey("400KV Narnoor- Ghani QMDC Line, Ckt-1", 400)).toBe(
+      corridorKey("400KV Narnoor- Ghani QMDC Line, Ckt-2", 400),
+    );
+    expect(corridorKey("X Line, Ckt-1", 220)).not.toBe(corridorKey("X Line, Ckt-1", 132));
+  });
+
+  it("accounts circuit-km once per circuit and route-km once per corridor", () => {
+    // Two per-circuit rows of one DC tower line: 1 circuit each, half the route each.
+    const ckt = lineAccounting("A- B QMDC Line, Ckt-1", "DC", 100, 2);
+    expect(ckt).toEqual({ circuits: 1, routeKm: 50, ckm: 100 });
+    // A whole DC line in one row: both circuits, full route.
+    expect(lineAccounting("A- B DC Line", "DC", 100, 1)).toEqual({ circuits: 2, routeKm: 100, ckm: 200 });
+    // DC towers, single circuit strung.
+    expect(lineAccounting("A- B DC/SC Line", "DC/SC", 100, 1)).toEqual({ circuits: 1, routeKm: 100, ckm: 100 });
+    // A lone Ckt row (sibling not digitised) owns its whole route.
+    expect(lineAccounting("A- B DC Line, Ckt-2", "DC", 100, 1)).toEqual({ circuits: 1, routeKm: 100, ckm: 100 });
+    // A Ckt-3 on SC towers owns its route.
+    expect(lineAccounting("A- B Ckt-3 SC Line", "SC", 40, 1)).toEqual({ circuits: 1, routeKm: 40, ckm: 40 });
+    expect(lineAccounting("A- B DC Line", "DC", null, 1)).toEqual({ circuits: 2, routeKm: null, ckm: null });
   });
 
   it("formats a commissioning date as Mon YYYY (1899/pre-1950 sentinel → null)", () => {

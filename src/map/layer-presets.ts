@@ -15,7 +15,7 @@ export {
   SRC,
 } from "./layers.ts";
 export { addWeatherLayers, applyWeatherVisibility, WX_LAYER, WX_SRC } from "./weather-layers.ts";
-export { addRiskLayers, applyRiskScores, applyRiskVisibility, RISK_LAYER, RISK_SRC } from "./risk-layers.ts";
+export { addMisLayers, applyMisTheme, MIS_LAYER } from "./mis-layers.ts";
 
 /** Which overlay groups MapPane may mount for a workspace context. */
 export interface LayerPreset {
@@ -32,20 +32,23 @@ export const ATLAS_LAYERS: LayerPreset = {
   weather: true,
 };
 
-export const RISK_LAYERS: LayerPreset = {
+// Network MIS: the core grid carries the thematic layer; every overlay stays user-toggleable from
+// the map's layer panel (the MIS loads generation / power-grid data itself via `ensure*`, without
+// switching their map layers on).
+export const MIS_LAYERS: LayerPreset = {
   grid: true,
-  generation: false,
+  generation: true,
   powergrid: true,
   weather: true,
 };
 
 export const WORKSPACE_LAYER_PRESETS: Record<WorkspaceId, LayerPreset> = {
   atlas: ATLAS_LAYERS,
-  risk: RISK_LAYERS,
+  mis: MIS_LAYERS,
 };
 
 /** One-line map context shown at the foot of each workspace's layer panel. */
 export const WORKSPACE_MAP_HINTS: Record<WorkspaceId, string> = {
   atlas: "",
-  risk: "Substations are tinted by composite risk score under the active scenario.",
+  mis: "Features outside the drill-down scope are dimmed. Pick a map theme in the MIS scope bar.",
 };

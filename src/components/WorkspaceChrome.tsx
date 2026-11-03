@@ -3,7 +3,7 @@ import { WORKSPACES, type WorkspaceId } from "../workspaces/registry.ts";
 import { MapIcon } from "./icons.tsx";
 
 const MAP_WIDTH: Record<Exclude<WorkspaceId, "atlas">, string> = {
-  risk: "min(44%, 520px)",
+  mis: "min(42%, 520px)",
 };
 
 export function workspaceMapWidth(workspace: WorkspaceId): string | undefined {
