@@ -145,6 +145,26 @@ conductor, pole count, km). **Never import its HT-consumer services, AB switches
 does not refresh these — re-run the import when APCPDCL supplies a newer export; the UI footnote shows the export
 date (`live-status.json → discom.APCPDCL.linesFrom`).
 
+## TRANSCO → 33 kV connectivity (`scripts/etl-connectivity.ts`, inferred)
+
+`buildDiscom()` links the DISCOM network to the TRANSCO grid (pure helpers, `scripts/connectivity.test.ts`):
+- **Feeder → source TRANSCO SS**: (a) `name` — the DISCOM's recorded source SS (APEPDCL `eht_ss_name`, APCPDCL
+  `SUBSTN`) matched to a TRANSCO SS within 40 km by `normSsName` + `namesMatch` (prefix / 1-edit / consonant
+  `skeleton` for transliteration variants like Narsapuram~Narasapuram) or `abbrevMatch` ("J R GUDEM" ~
+  Jangareddygudem), voltage hint honoured, nearest wins; (b) `proximity` — a feeder end ≤ 1.5 km from a TRANSCO
+  SS (APSPDCL records no source); (c) `feeder-group` — other runs of the same named feeder inherit.
+  Recorded sources absent from TRANSCO's data (Gundlapadu, Abburu, Jindal…) fall to (b); the popup shows both.
+- **Feeder → 33/11 kV SS served**: same-DISCOM SS within 300 m of the route (grid-indexed point-segment).
+- Current coverage: APEPDCL 531/532 feeders, APCPDCL 462/462, 33/11 kV SS traced to TRANSCO 909/972 and 916/949;
+  APSPDCL only 273/1,704 (its 33 kV map is partial — every DISCOM SS also gets `nearestTranscoSs`).
+- Outputs: link props on `discom-lines`/`discom-ss` (`transcoSsId`, `transcoSs`, `linkMethod`, `servesSs*`,
+  `feeders`, `nearestTranscoSs`); `transco-33kv.json` (lazy index for the detail panel: feeder tuples
+  `[id,name,discom,km,method,ssIds]` per TRANSCO SS + `ss` lookup); `transco-33kv-connectivity.csv` (statewide,
+  one row per feeder run); stats in `live-status.json → connectivity`.
+- UI: `components/DiscomDownstream.tsx` in the TRANSCO substation detail (feeder list → served SS, Show on map,
+  per-SS CSV/GeoJSON, statewide CSV link); selection sets the overlay store `focus` → amber highlight layers
+  `ov-focus-lines`/`ov-focus-ss` in `overlays/map.ts`; popups link "TRANSCO source" back to the SS (`data-select`).
+
 ## RTGS reference layers (`scripts/build-ref-layers.mts` → `public/data/ref/`, lazy)
 
 27 curated layers from the RTGS (AP Real-Time Governance Society) shapefile library on the owner's OneDrive

@@ -149,11 +149,18 @@ export function fieldLabel(k: string): string {
     lengthKm: "Length (km)",
     feedersIn: "Incoming feeders",
     feedersOut: "Outgoing feeders",
-    sourceSs: "Source EHT SS",
     ssType: "Type",
     urbanRural: "Urban / rural",
     discom: "DISCOM",
     code: "Code",
+    transcoSs: "TRANSCO source (inferred)",
+    linkMethod: "Linked by",
+    sourceSs: "Recorded source SS",
+    servesSsCount: "33/11 kV SS served",
+    servesSs: "Serves",
+    feeders: "On 33 kV feeder(s)",
+    nearestTranscoSs: "Nearest TRANSCO SS",
+    spans: "Spans / poles",
   };
   if (special[k]) return special[k];
   const s = k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase();

@@ -12,6 +12,14 @@ redeploys the site. The header badge shows when the data was last synced and ope
 Static and client-side at request time: no backend, no database, no API keys. Installable (PWA) and works
 offline for areas already viewed. Deploys to GitHub Pages: https://gsuryaias.github.io/ap-gis-grid/
 
+## TRANSCO → 33 kV connectivity
+
+Select any 220 / 132 kV substation to see the DISCOM **33 kV feeders** that leave it and the **33/11 kV
+substations** they serve: highlighted on the map, with per-substation **CSV / GeoJSON** downloads and a statewide
+table (`data/transco-33kv-connectivity.csv`). Links are inferred from each DISCOM's recorded source substation
+and the route geometry: APEPDCL and APCPDCL are almost fully linked, APSPDCL only partly (its 33 kV map is
+incomplete).
+
 ## Live data — how the auto-update works
 
 ```
