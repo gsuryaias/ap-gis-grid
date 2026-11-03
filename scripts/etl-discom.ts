@@ -73,6 +73,16 @@ export function titleCase(s: string | null): string | null {
     .replace(/(\d)(kv|mva|kva|mw)\b/gi, (_m, d: string, u: string) => d + u.toUpperCase());
 }
 
+/** "33/11KV Vullipalem Sub-Station" / "33_11KV Z.P.INDOOR SS" → "Vullipalem" / "Z.P.INDOOR". */
+export function cleanSsLabel(s: string | null): string | null {
+  if (!s) return s;
+  const t = s
+    .replace(/^\s*33\s*[/_\\-]?\s*11\s*k\.?v\.?\s*/i, "")
+    .replace(/\s*(sub[\s-]*station|s\.?s\.?)\s*$/i, "")
+    .trim();
+  return t || s;
+}
+
 const toInt = (v: unknown): number | null => {
   const n = Number(String(v ?? "").trim());
   return v == null || String(v).trim() === "" || !Number.isFinite(n) ? null : Math.round(n);
@@ -186,7 +196,26 @@ export function buildDiscomSubstations(discom: Discom, feats: RawFeature[]): Dis
     if (!c || !Number.isFinite(c[0]) || !Number.isFinite(c[1])) return;
     const p = f.properties;
     let s: Omit<DiscomSubstation, "id" | "lng" | "lat">;
-    if (discom === "APEPDCL") {
+    if (discom === "APCPDCL") {
+      s = {
+        kind: "discom-ss",
+        discom,
+        name: titleCase(cleanSsLabel(cleanText(p.sub_station_name))) ?? "Unnamed 33/11 kV SS",
+        code: cleanText(p.sub_station_id),
+        circle: titleCase(cleanText(p.circle_name)),
+        division: titleCase(cleanText(p.division_name)),
+        subdivision: titleCase(cleanText(p.sub_division_name)),
+        section: titleCase(cleanText(p.section_name)),
+        mandal: null,
+        district: null,
+        commissioned: null,
+        feedersIn: null,
+        feedersOut: null,
+        capacity: null,
+        ssType: titleCase(cleanText(p.sub_station_type)),
+        urbanRural: null,
+      };
+    } else if (discom === "APEPDCL") {
       s = {
         kind: "discom-ss",
         discom,
@@ -210,7 +239,7 @@ export function buildDiscomSubstations(discom: Discom, feats: RawFeature[]): Dis
       s = {
         kind: "discom-ss",
         discom,
-        name: titleCase(cleanText(p.ss_name)) ?? "Unnamed 33/11 kV SS",
+        name: titleCase(cleanSsLabel(cleanText(p.ss_name))) ?? "Unnamed 33/11 kV SS",
         code: code ? String(code) : null,
         circle: null,
         division: titleCase(cleanText(p.division)),
@@ -254,6 +283,32 @@ export function buildDiscomLines(discom: Discom, feats: RawFeature[], tolDeg = 0
     if (!parts.length || lengthKm <= 0) return;
     out.push({ props: { id: `${prefix}-${String(out.length).padStart(5, "0")}`, ...props, lengthKm }, parts });
   };
+
+  if (discom === "APCPDCL") {
+    // APCPDCL GIS export (scripts/import-apcpdcl.mts): one feature per feeder (main line + spurs merged).
+    for (const f of feats) {
+      const parts = partsOf(f.geometry).filter((p) => p.length >= 2);
+      if (!parts.length) continue;
+      const p = f.properties;
+      const raw = cleanText(p.feeder);
+      const name = raw ? raw.replace(/^33\s*k\.?v\.?\s*/i, "").replace(/\s+feeder$/i, "").trim() : null;
+      finish(
+        {
+          kind: "discom-line",
+          discom,
+          name: titleCase(name ? `33KV ${name}` : null),
+          code: null,
+          circle: titleCase(cleanText(p.circle)),
+          division: titleCase(cleanText(p.division)),
+          section: titleCase(cleanText(p.subdiv)),
+          sourceSs: titleCase(cleanText(p.substn)),
+          spans: toInt(p.n_poles) ?? parts.length,
+        },
+        parts,
+      );
+    }
+    return out;
+  }
 
   if (discom === "APEPDCL") {
     // Already one feature per 33 kV feeder, with an authoritative length.

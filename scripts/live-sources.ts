@@ -54,9 +54,9 @@ export const LIVE_LAYERS: LiveLayer[] = [
   { name: "discom-spdcl-lines", group: "discom", owner: "APSPDCL", label: "APSPDCL 33 kV lines", service: "SPDCL/SPDCL_Network_33KV/MapServer", layerId: 0, truncateKeys: false, minCount: 5000, keyFields: [] },
   { name: "discom-epdcl-ss", group: "discom", owner: "APEPDCL", label: "APEPDCL 33/11 kV substations", service: "EPDCL/Substations/MapServer", layerId: 0, truncateKeys: false, minCount: 700, keyFields: ["globalid", "ssid"] },
   { name: "discom-epdcl-lines", group: "discom", owner: "APEPDCL", label: "APEPDCL 33 kV feeders", service: "EPDCL/EPDCL_33KV_LINE/MapServer", layerId: 1, truncateKeys: false, minCount: 300, keyFields: ["feeder_code_33kv", "feeder_name_33kv"] },
-  // APCPDCL publishes its network under the token-protected `APCPDCL` folder. Its layer ids aren't
-  // discoverable without credentials — run `npm run sync:live -- --discover APCPDCL` with a token
-  // and add the 33 kV substation + line layers here (requiresToken: true).
+  // APCPDCL: its 33/11 kV substation yards are published openly as a hosted layer; its 33 kV
+  // feeder network sits in the token-protected `APCPDCL` folder (`--discover APCPDCL` with a token).
+  { name: "discom-cpdcl-ss", group: "discom", owner: "APCPDCL", label: "APCPDCL 33/11 kV substations", service: "Hosted/SUBSTATION_BOUNDERY/FeatureServer", layerId: 0, truncateKeys: false, minCount: 700, keyFields: ["sub_station_id", "sub_station_name"] },
 ];
 
 /** dBASE-style key truncation (first 10 chars); first key wins on a collision. */

@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "source": "https://gis.aptransco.gov.in/server/rest/services",
-  "lastRun": "2026-11-03T07:42:10.756Z",
-  "lastSuccess": "2026-11-03T07:42:10.756Z",
+  "lastRun": "2026-11-03T07:57:55.259Z",
+  "lastSuccess": "2026-11-03T07:57:55.259Z",
   "layers": {
     "aptransco-ss": {
       "label": "TRANSCO substations",
@@ -208,6 +208,22 @@
       "sha256": "dfe3d5d8c8ca1780b1fe0b99bc34acc899503da161f04af87895a4c2f211eee9",
       "diff": {
         "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "discom-cpdcl-ss": {
+      "label": "APCPDCL 33/11 kV substations",
+      "owner": "APCPDCL",
+      "group": "discom",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/Hosted/SUBSTATION_BOUNDERY/FeatureServer/0",
+      "status": "ok",
+      "count": 949,
+      "fetchedAt": "2026-11-03T07:57:55.259Z",
+      "lastChangedAt": "2026-11-03T07:57:55.259Z",
+      "sha256": "15df68cd67ef76905261b682c9295785abb9356df7d0e220568ab8b9b4e88c61",
+      "diff": {
+        "added": 949,
         "removed": 0,
         "modified": 0
       }

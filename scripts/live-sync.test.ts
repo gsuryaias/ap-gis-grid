@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { diffKeyed, featureKey, gatePull, LIVE_LAYERS, normalizeValue, truncateKeys } from "./live-sources.ts";
-import { buildDiscomLines, buildDiscomSubstations, cleanText, connectedParts, simplifyLine, titleCase } from "./etl-discom.ts";
+import { buildDiscomLines, buildDiscomSubstations, cleanSsLabel, cleanText, connectedParts, simplifyLine, titleCase } from "./etl-discom.ts";
 
 describe("live-sources helpers", () => {
   it("truncates keys to the 10-char dBASE names the snapshot ETL expects", () => {
@@ -77,6 +77,29 @@ describe("DISCOM ETL", () => {
     expect(ss).toHaveLength(1);
     expect(ss[0]).toMatchObject({ discom: "APEPDCL", name: "Revidi", circle: "Visakhapatnam", capacity: "13MVA" });
     expect(ss[0].id).toBe("ds-ep-1000-42-ss-1");
+  });
+
+  it("cleans 33/11 kV substation labels", () => {
+    expect(cleanSsLabel("33/11KV Vullipalem Sub-Station")).toBe("Vullipalem");
+    expect(cleanSsLabel("33_11KV Z.P.INDOOR SS")).toBe("Z.P.INDOOR");
+    expect(cleanSsLabel("REVIDI")).toBe("REVIDI");
+  });
+
+  it("builds APCPDCL substations (public hosted layer) and feeders (GIS export)", () => {
+    const ss = buildDiscomSubstations("APCPDCL", [
+      {
+        geometry: { type: "Polygon", coordinates: [[[80, 16], [80.001, 16], [80.001, 16.001], [80, 16]]] },
+        properties: { sub_station_name: "33/11KV Vullipalem Sub-Station", sub_station_id: "3027311402", circle_name: "BAPATLA", sub_station_type: "OUTDOOR" },
+      },
+    ]);
+    expect(ss[0]).toMatchObject({ discom: "APCPDCL", name: "Vullipalem", code: "3027311402", circle: "Bapatla", ssType: "Outdoor" });
+    const ln = buildDiscomLines("APCPDCL", [
+      {
+        geometry: { type: "MultiLineString", coordinates: [[[80, 16], [80.05, 16]]] },
+        properties: { feeder: "33 KV  CHIRALA D1 FEEDER", substn: "132 KV  CHIRALA  SS", circle: "BAPATLA", n_poles: 207 },
+      },
+    ]);
+    expect(ln[0].props).toMatchObject({ name: "33KV Chirala D1", sourceSs: "132 KV Chirala SS", spans: 207 });
   });
 
   it("groups SPDCL spans into feeder runs and drops 11 kV spans", () => {

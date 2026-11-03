@@ -84,6 +84,10 @@ export function DistributionSection() {
           })}
           <p className="pb-1 text-[10px] leading-snug text-ink-2/85">
             As digitised in each DISCOM’s GIS — coverage is partial (e.g. APSPDCL lines). Tap a feature for details.
+            {Object.entries(stats)
+              .filter(([, x]) => x.linesFrom)
+              .map(([d, x]) => ` ${d} 33 kV lines: ${x.linesFrom} (not refreshed by updates).`)
+              .join("")}
           </p>
         </div>
       )}

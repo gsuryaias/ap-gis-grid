@@ -30,8 +30,10 @@ npm run update               # sync → rebuild → test → commit → push; th
 npm run update -- --no-push  # same, but don't push
 ```
 
-APCPDCL's network is behind a GIS login: add `AP_GIS_USERNAME` / `AP_GIS_PASSWORD` (or `AP_GIS_TOKEN`) to
-your environment and its layers can be added in `scripts/live-sources.ts` (`npm run sync:live -- --discover APCPDCL` lists them).
+APCPDCL: its 33/11 kV substations sync from the open GIS; its 33 kV feeders come from an APCPDCL GIS export
+(`npx tsx scripts/import-apcpdcl.mts <folder>` then `npm run update` when a newer export arrives), because its
+network folder on the server is behind a login. With `AP_GIS_USERNAME` / `AP_GIS_PASSWORD` (or `AP_GIS_TOKEN`) its
+live layers could be added in `scripts/live-sources.ts` (`npm run sync:live -- --discover APCPDCL` lists them).
 
 ![screenshot](atlas-preview.png)
 

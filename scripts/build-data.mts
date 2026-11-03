@@ -617,7 +617,9 @@ async function buildPowerGrid(outDir: string): Promise<void> {
  * data/raw/live/discom-{spdcl,epdcl,cpdcl}-{ss,lines}.geojson. Skipped (with empty outputs) when no
  * DISCOM layer has been synced yet — the app hides the toggle when the files are empty.
  */
-async function buildDiscom(outDir: string): Promise<Record<string, { substations: number; lines: number; lineKm: number }>> {
+async function buildDiscom(
+  outDir: string,
+): Promise<Record<string, { substations: number; lines: number; lineKm: number; linesFrom?: string }>> {
   const sources: Array<{ discom: Discom; stem: string }> = [
     { discom: "APSPDCL", stem: "discom-spdcl" },
     { discom: "APEPDCL", stem: "discom-epdcl" },
@@ -625,13 +627,23 @@ async function buildDiscom(outDir: string): Promise<Record<string, { substations
   ];
   const ssFeats: Feature[] = [];
   const lineFeats: Feature[] = [];
-  const stats: Record<string, { substations: number; lines: number; lineKm: number }> = {};
+  const stats: Record<string, { substations: number; lines: number; lineKm: number; linesFrom?: string }> = {};
   for (const { discom, stem } of sources) {
     const ssPath = resolve(LIVE_DIR, `${stem}-ss.geojson`);
     const lnPath = resolve(LIVE_DIR, `${stem}-lines.geojson`);
-    if (!existsSync(ssPath) && !existsSync(lnPath)) continue;
+    // APCPDCL's feeders aren't on the open GIS — they come from a committed one-off export
+    // (scripts/import-apcpdcl.mts) unless a live layer is ever configured.
+    const staticLines = discom === "APCPDCL" ? resolve("data/raw/discom/apcpdcl-33kv-feeders.geojson") : null;
+    const lineSrc = existsSync(lnPath) ? "live" : staticLines && existsSync(staticLines) ? "static" : null;
+    if (!existsSync(ssPath) && !lineSrc) continue;
     const ss = existsSync(ssPath) ? buildDiscomSubstations(discom, await readLayer(`${stem}-ss`)) : [];
-    const ln = existsSync(lnPath) ? buildDiscomLines(discom, await readLayer(`${stem}-lines`)) : [];
+    const ln =
+      lineSrc === "live"
+        ? buildDiscomLines(discom, await readLayer(`${stem}-lines`))
+        : lineSrc === "static"
+          ? buildDiscomLines(discom, (JSON.parse(readFileSync(staticLines!, "utf-8")) as { features: RawFeat[] }).features)
+          : [];
+    if (lineSrc === "static") layerSources[`${stem}-lines`] = "snapshot";
     // Null attributes are dropped from the emitted overlay (the app reads every field as optional).
     const compact = (o: object) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
     for (const s of ss) ssFeats.push({ type: "Feature", id: s.id, geometry: { type: "Point", coordinates: [s.lng, s.lat] }, properties: compact(s) });
@@ -646,6 +658,9 @@ async function buildDiscom(outDir: string): Promise<Record<string, { substations
       substations: ss.length,
       lines: ln.length,
       lineKm: Math.round(ln.reduce((a, l) => a + l.props.lengthKm, 0)),
+      ...(lineSrc === "static"
+        ? { linesFrom: `${discom} GIS export, ${(JSON.parse(readFileSync(staticLines!, "utf-8")) as { vintage?: string }).vintage ?? "undated"}` }
+        : {}),
     };
     console.log(`[etl] DISCOM ${discom}: ${ss.length} 33/11 kV SS, ${ln.length} 33 kV line runs (${stats[discom].lineKm} km)`);
   }

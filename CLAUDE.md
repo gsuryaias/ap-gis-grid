@@ -94,7 +94,8 @@ Data Centre — the same server the Google-Earth KMZ `NetworkLink`s in the user'
 - **Layers** are declared in `scripts/live-sources.ts` (`LIVE_LAYERS`): `AP_Grid_Map/gridmapkml/MapServer`
   layers 0 (Transco SS **points**), 12/13/14 (400/220/132 kV lines), 16 (generation — has MW + unit config the
   KML lacked), 8/9 (PGCIL), 15 (railway), 10 (bulk-load); DISCOM: `SPDCL/SPDCL_Network_33KV` 5 (SS) + 0 (lines),
-  `EPDCL/Substations` 0 + `EPDCL/EPDCL_33KV_LINE` 1. **APCPDCL and the `TRANSCO` folder are token-protected**
+  `EPDCL/Substations` 0 + `EPDCL/EPDCL_33KV_LINE` 1, and **APCPDCL 33/11 kV SS from the open
+  `Hosted/SUBSTATION_BOUNDERY/FeatureServer` 0** (949). **The `APCPDCL` folder and the `TRANSCO` folder are token-protected**
   (`499 Token Required`) — the sync supports `AP_GIS_TOKEN` or `AP_GIS_USERNAME`/`AP_GIS_PASSWORD`, and
   `npm run sync:live -- --discover APCPDCL` lists layers once credentials exist. Never try to bypass auth.
 - **Transco layers' keys are truncated to 10 chars** (`truncateKeys`) so they match the dBASE names of the
@@ -134,7 +135,15 @@ section hierarchy, feeder counts, capacity; SPDCL carries mandal/district/commis
 `discom-lines.geojson` (EPDCL: one feature per 33 kV feeder with source EHT SS; **SPDCL: ~12k pole-to-pole
 spans, half unnamed, grouped by (feeder, division) then split into connected components on an ~11 m endpoint
 grid**, 11 kV/440 V-tagged spans dropped). Douglas–Peucker ~8 m, 5 dp, null props dropped (~680 KB gz total).
-Source coverage is partial (APSPDCL lines ≈ 3,400 km) — the UI says so. IDs `ds-sp-*`/`ds-ep-*`, `dl-*`.
+Source coverage is partial (APSPDCL lines ≈ 3,400 km) — the UI says so. IDs `ds-sp-*`/`ds-ep-*`/`ds-cp-*`, `dl-*`.
+
+**APCPDCL 33 kV feeders (462, ≈ 8,820 km) are NOT on the open GIS** — they come from APCPDCL's own GIS export
+(shapefiles kept in the private `~/Documents/arnab-cyclone-tracker/data/raw/discom/apcpdcl_gis`, where they are
+marked sensitive). The owner decided (2026-11-03) to publish **routes only**: `scripts/import-apcpdcl.mts` →
+committed `data/raw/discom/apcpdcl-33kv-feeders.geojson` (feeder name, source EHT SS, circle/division/sub-div,
+conductor, pole count, km). **Never import its HT-consumer services, AB switches or poles.** `npm run update`
+does not refresh these — re-run the import when APCPDCL supplies a newer export; the UI footnote shows the export
+date (`live-status.json → discom.APCPDCL.linesFrom`).
 
 ## RTGS reference layers (`scripts/build-ref-layers.mts` → `public/data/ref/`, lazy)
 
