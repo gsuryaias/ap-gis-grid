@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-11-03T07:42:29.383Z",
+  "generatedAt": "2026-11-03T08:06:25.229Z",
   "source": "https://gis.aptransco.gov.in/server/rest/services",
-  "lastRun": "2026-11-03T07:42:10.756Z",
-  "lastSuccess": "2026-11-03T07:42:10.756Z",
+  "lastRun": "2026-11-03T07:57:55.259Z",
+  "lastSuccess": "2026-11-03T07:57:55.259Z",
   "layers": {
     "aptransco-ss": {
       "label": "TRANSCO substations",
@@ -211,6 +211,22 @@
         "removed": 0,
         "modified": 0
       }
+    },
+    "discom-cpdcl-ss": {
+      "label": "APCPDCL 33/11 kV substations",
+      "owner": "APCPDCL",
+      "group": "discom",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/Hosted/SUBSTATION_BOUNDERY/FeatureServer/0",
+      "status": "ok",
+      "count": 949,
+      "fetchedAt": "2026-11-03T07:57:55.259Z",
+      "lastChangedAt": "2026-11-03T07:57:55.259Z",
+      "sha256": "15df68cd67ef76905261b682c9295785abb9356df7d0e220568ab8b9b4e88c61",
+      "diff": {
+        "added": 949,
+        "removed": 0,
+        "modified": 0
+      }
     }
   },
   "layerSources": {
@@ -226,7 +242,9 @@
     "discom-spdcl-ss": "live",
     "discom-spdcl-lines": "live",
     "discom-epdcl-ss": "live",
-    "discom-epdcl-lines": "live"
+    "discom-epdcl-lines": "live",
+    "discom-cpdcl-ss": "live",
+    "discom-cpdcl-lines": "snapshot"
   },
   "changes": [],
   "discom": {
@@ -239,6 +257,12 @@
       "substations": 972,
       "lines": 532,
       "lineKm": 8963
+    },
+    "APCPDCL": {
+      "substations": 949,
+      "lines": 462,
+      "lineKm": 8820,
+      "linesFrom": "APCPDCL GIS export, 2026-11-02"
     }
   },
   "footprintSource": {
@@ -246,5 +270,47 @@
     "snapshotByCode": 325,
     "snapshotNearest": 51,
     "synthetic": 13
+  },
+  "connectivity": {
+    "method": "Feeder→TRANSCO: recorded source-SS name matched within 40 km, else a feeder end within 1.5 km of a TRANSCO SS, else inherited from another run of the same feeder. Feeder→33/11 kV SS: same-DISCOM SS within 300 m of the route. Inferred — not a single-line diagram.",
+    "feeders": 5043,
+    "feedersLinked": 2288,
+    "byMethod": {
+      "name": 954,
+      "proximity": 908,
+      "feeder-group": 426
+    },
+    "byDiscom": {
+      "APSPDCL": {
+        "feeders": 4049,
+        "feedersLinked": 1295,
+        "kmLinked": 1478,
+        "kmTotal": 3428,
+        "substations": 1704,
+        "substationsOnFeeder": 581,
+        "substationsTracedToTransco": 273
+      },
+      "APEPDCL": {
+        "feeders": 532,
+        "feedersLinked": 531,
+        "kmLinked": 8960,
+        "kmTotal": 8963,
+        "substations": 972,
+        "substationsOnFeeder": 909,
+        "substationsTracedToTransco": 909
+      },
+      "APCPDCL": {
+        "feeders": 462,
+        "feedersLinked": 462,
+        "kmLinked": 8820,
+        "kmTotal": 8820,
+        "substations": 949,
+        "substationsOnFeeder": 916,
+        "substationsTracedToTransco": 916
+      }
+    },
+    "transcoSsWithFeeders": 212,
+    "discomSsOnFeeder": 2406,
+    "discomSsTracedToTransco": 2098
   }
 }

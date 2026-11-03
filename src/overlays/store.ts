@@ -41,6 +41,10 @@ interface OverlayState {
   data: Record<string, FeatureCollection>;
   /** DISCOM sub-filter (which utilities' features are drawn). */
   discoms: Record<DiscomId, boolean>;
+  /** Downstream 33 kV network of the selected TRANSCO SS, highlighted on the map (transient). */
+  focus: { lines: string[]; ss: string[] } | null;
+  /** One-shot "fit the map to these bounds" request ([[w,s],[e,n]]). */
+  fitSignal: { bounds: [[number, number], [number, number]]; ts: number } | null;
   /** Bumped on every change the map must react to. */
   version: number;
 
@@ -48,6 +52,8 @@ interface OverlayState {
   toggle: (id: string, on?: boolean) => void;
   toggleDiscom: (d: DiscomId) => void;
   restore: () => void;
+  setFocus: (f: { lines: string[]; ss: string[] } | null) => void;
+  fitTo: (bounds: [[number, number], [number, number]]) => void;
 }
 
 export const useOverlayStore = create<OverlayState>((set, get) => {
@@ -94,7 +100,12 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
     errors: {},
     data: {},
     discoms: { APSPDCL: true, APEPDCL: true, APCPDCL: true },
+    focus: null,
+    fitSignal: null,
     version: 0,
+
+    setFocus: (focus) => set((s) => ({ focus, version: s.version + 1 })),
+    fitTo: (bounds) => set((s) => ({ fitSignal: { bounds, ts: Date.now() }, version: s.version + 1 })),
 
     loadCatalog: () => {
       if (get().catalogStatus !== "idle") return;

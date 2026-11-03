@@ -63,7 +63,9 @@ import {
   type Substation,
   type Voltage,
 } from "./etl-lib.ts";
-import { buildDiscomLines, buildDiscomSubstations, type Discom } from "./etl-discom.ts";
+import { buildDiscomLines, buildDiscomSubstations, type Discom, type DiscomLineOut, type DiscomSubstation } from "./etl-discom.ts";
+import { linkFeederSources, linkServedSubstations, NAME_MATCH_RADIUS_KM, PROXIMITY_KM, SERVES_M, type FeederIn } from "./etl-connectivity.ts";
+import { toCsv } from "../src/lib/export.ts";
 
 // Endpoints snap to the substation POLYGON (0 m if inside the compound; 80% of endpoints are).
 // 1000 m also catches lines drawn slightly short of the compound; far-away (>1 km) endpoints are
@@ -617,41 +619,197 @@ async function buildPowerGrid(outDir: string): Promise<void> {
  * data/raw/live/discom-{spdcl,epdcl,cpdcl}-{ss,lines}.geojson. Skipped (with empty outputs) when no
  * DISCOM layer has been synced yet — the app hides the toggle when the files are empty.
  */
-async function buildDiscom(outDir: string): Promise<Record<string, { substations: number; lines: number; lineKm: number }>> {
+type DiscomStats = Record<string, { substations: number; lines: number; lineKm: number; linesFrom?: string }>;
+
+async function buildDiscom(outDir: string, transco: Substation[]): Promise<{ stats: DiscomStats; connectivity: unknown }> {
   const sources: Array<{ discom: Discom; stem: string }> = [
     { discom: "APSPDCL", stem: "discom-spdcl" },
     { discom: "APEPDCL", stem: "discom-epdcl" },
     { discom: "APCPDCL", stem: "discom-cpdcl" },
   ];
-  const ssFeats: Feature[] = [];
-  const lineFeats: Feature[] = [];
-  const stats: Record<string, { substations: number; lines: number; lineKm: number }> = {};
+  const allSs: DiscomSubstation[] = [];
+  const allLines: DiscomLineOut[] = [];
+  const stats: DiscomStats = {};
   for (const { discom, stem } of sources) {
     const ssPath = resolve(LIVE_DIR, `${stem}-ss.geojson`);
     const lnPath = resolve(LIVE_DIR, `${stem}-lines.geojson`);
-    if (!existsSync(ssPath) && !existsSync(lnPath)) continue;
+    // APCPDCL's feeders aren't on the open GIS — they come from a committed one-off export
+    // (scripts/import-apcpdcl.mts) unless a live layer is ever configured.
+    const staticLines = discom === "APCPDCL" ? resolve("data/raw/discom/apcpdcl-33kv-feeders.geojson") : null;
+    const lineSrc = existsSync(lnPath) ? "live" : staticLines && existsSync(staticLines) ? "static" : null;
+    if (!existsSync(ssPath) && !lineSrc) continue;
     const ss = existsSync(ssPath) ? buildDiscomSubstations(discom, await readLayer(`${stem}-ss`)) : [];
-    const ln = existsSync(lnPath) ? buildDiscomLines(discom, await readLayer(`${stem}-lines`)) : [];
-    // Null attributes are dropped from the emitted overlay (the app reads every field as optional).
-    const compact = (o: object) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
-    for (const s of ss) ssFeats.push({ type: "Feature", id: s.id, geometry: { type: "Point", coordinates: [s.lng, s.lat] }, properties: compact(s) });
-    for (const l of ln)
-      lineFeats.push({
-        type: "Feature",
-        id: l.props.id,
-        geometry: l.parts.length === 1 ? { type: "LineString", coordinates: l.parts[0] } : { type: "MultiLineString", coordinates: l.parts },
-        properties: compact(l.props),
-      });
+    const ln =
+      lineSrc === "live"
+        ? buildDiscomLines(discom, await readLayer(`${stem}-lines`))
+        : lineSrc === "static"
+          ? buildDiscomLines(discom, (JSON.parse(readFileSync(staticLines!, "utf-8")) as { features: RawFeat[] }).features)
+          : [];
+    if (lineSrc === "static") layerSources[`${stem}-lines`] = "snapshot";
+    allSs.push(...ss);
+    allLines.push(...ln);
     stats[discom] = {
       substations: ss.length,
       lines: ln.length,
       lineKm: Math.round(ln.reduce((a, l) => a + l.props.lengthKm, 0)),
+      ...(lineSrc === "static"
+        ? { linesFrom: `${discom} GIS export, ${(JSON.parse(readFileSync(staticLines!, "utf-8")) as { vintage?: string }).vintage ?? "undated"}` }
+        : {}),
     };
     console.log(`[etl] DISCOM ${discom}: ${ss.length} 33/11 kV SS, ${ln.length} 33 kV line runs (${stats[discom].lineKm} km)`);
   }
+
+  // ---- TRANSCO → 33 kV feeder → 33/11 kV SS connectivity (inferred; see etl-connectivity.ts) ----
+  const feedersIn: FeederIn[] = allLines.map((l) => ({
+    id: l.props.id,
+    discom: l.props.discom,
+    name: l.props.name,
+    division: l.props.division,
+    sourceSs: l.props.sourceSs,
+    parts: l.parts,
+  }));
+  const tNodes = transco.map((t) => ({ id: t.id, name: t.name, descriptiveName: t.descriptiveName, voltage: t.voltage, lng: t.lng, lat: t.lat }));
+  const src = linkFeederSources(tNodes, feedersIn);
+  const serves = linkServedSubstations(feedersIn, allSs);
+  const tById = new Map(transco.map((t) => [t.id, t]));
+  const ssById = new Map(allSs.map((s) => [s.id, s]));
+  const tLabel = (t: Substation) => `${t.voltage} kV ${t.name}`;
+
+  // Inverse maps: 33/11 kV SS → feeders / TRANSCO sources; TRANSCO SS → feeders.
+  const ssFeeders = new Map<string, string[]>();
+  const ssSources = new Map<string, Set<string>>();
+  const byTransco = new Map<string, string[]>();
+  for (const l of allLines) {
+    const id = l.props.id;
+    const link = src.get(id);
+    if (link) (byTransco.get(link.transcoSsId) ?? byTransco.set(link.transcoSsId, []).get(link.transcoSsId)!).push(id);
+    for (const sid of serves.get(id) ?? []) {
+      (ssFeeders.get(sid) ?? ssFeeders.set(sid, []).get(sid)!).push(id);
+      if (link) (ssSources.get(sid) ?? ssSources.set(sid, new Set()).get(sid)!).add(link.transcoSsId);
+    }
+  }
+  const lineById = new Map(allLines.map((l) => [l.props.id, l]));
+  const feederLabel = (id: string) => lineById.get(id)?.props.name ?? "Unnamed 33 kV line";
+
+  // Null attributes are dropped from the emitted overlay (the app reads every field as optional).
+  const compact = (o: object) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null && !(Array.isArray(v) && !v.length)));
+  // Nearest TRANSCO SS for every 33/11 kV SS — a reference even where no feeder is mapped (APSPDCL).
+  const nearestT = (lng: number, lat: number) => {
+    let best: Substation | null = null;
+    let bd = Infinity;
+    for (const t of transco) {
+      if (Math.abs(t.lng - lng) > 0.6 || Math.abs(t.lat - lat) > 0.6) continue;
+      const d = haversineMeters([lng, lat], [t.lng, t.lat]);
+      if (d < bd) { bd = d; best = t; }
+    }
+    return best ? { label: tLabel(best), km: Math.round(bd / 100) / 10 } : null;
+  };
+  const ssFeats: Feature[] = allSs.map((s) => ({
+    type: "Feature",
+    id: s.id,
+    geometry: { type: "Point", coordinates: [s.lng, s.lat] },
+    properties: compact({
+      ...s,
+      transcoSs: [...(ssSources.get(s.id) ?? [])].map((t) => tLabel(tById.get(t)!)).join("; ") || null,
+      feeders: [...new Set((ssFeeders.get(s.id) ?? []).map(feederLabel))].slice(0, 8).join("; ") || null,
+      nearestTranscoSs: ((n) => (n ? `${n.label} (${n.km} km)` : null))(nearestT(s.lng, s.lat)),
+    }),
+  }));
+  const lineFeats: Feature[] = allLines.map((l) => {
+    const link = src.get(l.props.id);
+    const served = serves.get(l.props.id) ?? [];
+    return {
+      type: "Feature",
+      id: l.props.id,
+      geometry: l.parts.length === 1 ? { type: "LineString", coordinates: l.parts[0] } : { type: "MultiLineString", coordinates: l.parts },
+      properties: compact({
+        ...l.props,
+        transcoSsId: link?.transcoSsId ?? null,
+        transcoSs: link ? tLabel(tById.get(link.transcoSsId)!) : null,
+        linkMethod: link?.method ?? null,
+        servesSsCount: served.length || null,
+        servesSs: served.slice(0, 12).map((id) => ssById.get(id)!.name).join("; ") || null,
+      }),
+    };
+  });
   writeFileSync(resolve(outDir, "discom-ss.geojson"), JSON.stringify({ type: "FeatureCollection", features: ssFeats }));
   writeFileSync(resolve(outDir, "discom-lines.geojson"), JSON.stringify({ type: "FeatureCollection", features: lineFeats }));
-  return stats;
+
+  // Compact per-TRANSCO-SS index for the detail panel (lazy-loaded): feeders as tuples
+  // [id, name, discom, km, method, servedSsIds[]] + a 33/11 kV SS lookup [name, discom, lng, lat].
+  const bySs: Record<string, unknown[]> = {};
+  for (const [tid, fids] of byTransco) {
+    bySs[tid] = fids
+      .map((id) => {
+        const p = lineById.get(id)!.props;
+        return [id, p.name, p.discom, p.lengthKm, src.get(id)!.method, serves.get(id) ?? []];
+      })
+      .sort((a, b) => String(a[1] ?? "~").localeCompare(String(b[1] ?? "~")));
+  }
+  const ssLookup = Object.fromEntries(allSs.map((s) => [s.id, [s.name, s.discom, s.lng, s.lat]]));
+  const methods = { name: 0, proximity: 0, "feeder-group": 0 } as Record<string, number>;
+  for (const l of src.values()) methods[l.method]++;
+  const servedSsCount = ssFeeders.size;
+  const ssWithSource = ssSources.size;
+  const connectivity = {
+    method:
+      `Feeder→TRANSCO: recorded source-SS name matched within ${NAME_MATCH_RADIUS_KM} km, else a feeder end within ` +
+      `${PROXIMITY_KM} km of a TRANSCO SS, else inherited from another run of the same feeder. Feeder→33/11 kV SS: ` +
+      `same-DISCOM SS within ${SERVES_M} m of the route. Inferred — not a single-line diagram.`,
+    feeders: allLines.length,
+    feedersLinked: src.size,
+    byMethod: methods,
+    byDiscom: Object.fromEntries(
+      Object.keys(stats).map((d) => {
+        const ls = allLines.filter((l) => l.props.discom === d);
+        const ssd = allSs.filter((s) => s.discom === d);
+        return [d, {
+          feeders: ls.length,
+          feedersLinked: ls.filter((l) => src.has(l.props.id)).length,
+          kmLinked: Math.round(ls.filter((l) => src.has(l.props.id)).reduce((a, l) => a + l.props.lengthKm, 0)),
+          kmTotal: Math.round(ls.reduce((a, l) => a + l.props.lengthKm, 0)),
+          substations: ssd.length,
+          substationsOnFeeder: ssd.filter((s) => ssFeeders.has(s.id)).length,
+          substationsTracedToTransco: ssd.filter((s) => ssSources.has(s.id)).length,
+        }];
+      }),
+    ),
+    transcoSsWithFeeders: byTransco.size,
+    discomSsOnFeeder: servedSsCount,
+    discomSsTracedToTransco: ssWithSource,
+  };
+  writeFileSync(
+    resolve(outDir, "transco-33kv.json"),
+    JSON.stringify({ generatedAt: new Date().toISOString(), method: connectivity.method, bySs, ss: ssLookup }),
+  );
+
+  // Statewide download: one row per 33 kV feeder run (linked first, by TRANSCO SS), unlinked at the end.
+  const rows = allLines
+    .map((l) => {
+      const link = src.get(l.props.id);
+      const t = link ? tById.get(link.transcoSsId)! : null;
+      const served = (serves.get(l.props.id) ?? []).map((id) => ssById.get(id)!.name);
+      return [
+        t?.name ?? "", t?.ssCode ?? "", t?.voltage ?? "", t?.circle ?? "",
+        l.props.discom, l.props.name ?? "Unnamed 33 kV line", l.props.id, l.props.division ?? "", l.props.lengthKm,
+        link?.method ?? "unlinked", served.length, served.join("; "),
+      ];
+    })
+    .sort((a, b) => (a[0] === "" ? 1 : 0) - (b[0] === "" ? 1 : 0) || String(a[0]).localeCompare(String(b[0])) || String(a[5]).localeCompare(String(b[5])));
+  writeFileSync(
+    resolve(outDir, "transco-33kv-connectivity.csv"),
+    "\uFEFF" +
+      toCsv(
+        ["TRANSCO substation", "TRANSCO SS code", "TRANSCO kV", "TRANSCO circle", "DISCOM", "33 kV feeder", "Feeder id", "DISCOM division", "Feeder km", "Link method", "33/11 kV SS served", "33/11 kV substations"],
+        rows,
+      ),
+  );
+  console.log(
+    `[etl] connectivity: ${src.size}/${allLines.length} feeder runs linked to ${byTransco.size} TRANSCO SS ` +
+      `(name ${methods.name}, proximity ${methods.proximity}, group ${methods["feeder-group"]}); ` +
+      `${servedSsCount}/${allSs.length} 33/11 kV SS on a feeder, ${ssWithSource} traced to TRANSCO`,
+  );
+  return { stats, connectivity };
 }
 
 /**
@@ -1256,12 +1414,12 @@ async function main(): Promise<void> {
   await buildPowerGrid(outDir);
 
   // ---- DISCOM 33 kV sub-transmission overlay (separate, lazy-loaded) -------
-  const discom = await buildDiscom(outDir);
+  const { stats: discom, connectivity } = await buildDiscom(outDir, substations);
 
   // ---- Place-search gazetteer (separate, lazy-loaded by the search box) ----
   buildPlaces(outDir);
 
-  writeLiveStatus(outDir, { discom, footprintSource });
+  writeLiveStatus(outDir, { discom, footprintSource, connectivity });
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

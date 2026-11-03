@@ -36,7 +36,18 @@ export interface LiveStatus {
   layers: Record<string, LiveLayerStatus>;
   layerSources: Record<string, "live" | "snapshot">;
   changes: LiveChange[];
-  discom?: Record<string, { substations: number; lines: number; lineKm: number }>;
+  discom?: Record<string, { substations: number; lines: number; lineKm: number; linesFrom?: string }>;
+  connectivity?: {
+    method: string;
+    feeders: number;
+    feedersLinked: number;
+    transcoSsWithFeeders: number;
+    discomSsTracedToTransco: number;
+    byDiscom: Record<
+      string,
+      { feeders: number; feedersLinked: number; kmLinked: number; kmTotal: number; substations: number; substationsTracedToTransco: number }
+    >;
+  };
 }
 
 /**

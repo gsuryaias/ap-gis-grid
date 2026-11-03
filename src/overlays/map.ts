@@ -170,6 +170,61 @@ function sync(map: MlMap): void {
     }
   }
   appliedDiscomKey.set(map, discomKey);
+  syncFocus(map);
+}
+
+const FOCUS_COLOR = "#f59e0b"; // amber — distinct from every DISCOM/voltage colour
+const FOCUS_LINE = "ov-focus-lines";
+const FOCUS_SS = "ov-focus-ss";
+const appliedFocus = new WeakMap<MlMap, string>();
+
+/** Highlight the selected TRANSCO SS's downstream 33 kV feeders + 33/11 kV SS (conditional writes only). */
+function syncFocus(map: MlMap): void {
+  const { focus } = useOverlayStore.getState();
+  const before = map.getLayer(GRID_FLOOR) ? GRID_FLOOR : undefined;
+  if (map.getSource(srcId("discom-lines")) && !map.getLayer(FOCUS_LINE)) {
+    map.addLayer(
+      {
+        id: FOCUS_LINE,
+        type: "line",
+        source: srcId("discom-lines"),
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": FOCUS_COLOR,
+          "line-width": e(["interpolate", ["linear"], ["zoom"], 6, 2.5, 10, 4, 14, 7]),
+          "line-opacity": 0.9,
+        },
+        filter: e(["in", ["get", "id"], ["literal", []]]),
+      },
+      before,
+    );
+    appliedFocus.delete(map);
+  }
+  if (map.getSource(srcId("discom-ss")) && !map.getLayer(FOCUS_SS)) {
+    map.addLayer(
+      {
+        id: FOCUS_SS,
+        type: "circle",
+        source: srcId("discom-ss"),
+        paint: {
+          "circle-color": "rgba(0,0,0,0)",
+          "circle-radius": e(["interpolate", ["linear"], ["zoom"], 6, 4, 10, 7, 14, 11]),
+          "circle-stroke-color": FOCUS_COLOR,
+          "circle-stroke-width": 2.5,
+        },
+        filter: e(["in", ["get", "id"], ["literal", []]]),
+      },
+      before,
+    );
+    appliedFocus.delete(map);
+  }
+  const key = focus ? `${focus.lines.join(",")}|${focus.ss.join(",")}` : "";
+  if (appliedFocus.get(map) === key) return;
+  if (map.getLayer(FOCUS_LINE)) map.setFilter(FOCUS_LINE, e(["in", ["get", "id"], ["literal", focus?.lines ?? []]]));
+  if (map.getLayer(FOCUS_SS)) map.setFilter(FOCUS_SS, e(["in", ["get", "id"], ["literal", focus?.ss ?? []]]));
+  // Above the DISCOM layers, still beneath the grid.
+  if (before) for (const lid of [FOCUS_LINE, FOCUS_SS]) if (map.getLayer(lid)) map.moveLayer(lid, before);
+  if (map.getLayer(FOCUS_LINE) && map.getLayer(FOCUS_SS)) appliedFocus.set(map, key);
 }
 
 function interactiveLayers(map: MlMap): string[] {
@@ -187,6 +242,12 @@ function interactiveLayers(map: MlMap): string[] {
   return out;
 }
 
+const LINK_LABEL: Record<string, string> = {
+  name: "recorded source SS (name match)",
+  proximity: "feeder end at the SS (≤ 1.5 km)",
+  "feeder-group": "another run of the same feeder",
+};
+
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 function formatValue(k: string, v: unknown): string | null {
@@ -200,13 +261,25 @@ function formatValue(k: string, v: unknown): string | null {
 function popupHtml(def: OverlayDef, f: MapGeoJSONFeature): string {
   const p = (f.properties ?? {}) as Record<string, unknown>;
   const title = (p.name as string) || (def.id.startsWith("discom") ? `Unnamed ${def.label.replace(/s$/, "")}` : def.label);
-  const skip = new Set(["name", "id", "kind", "lng", "lat"]);
+  const skip = new Set(["name", "id", "kind", "lng", "lat", "transcoSsId"]);
+  // Connectivity first — it's what ties the 33 kV network to the TRANSCO grid.
+  const PRIORITY = ["discom", "transcoSs", "linkMethod", "sourceSs", "feeders", "nearestTranscoSs", "servesSsCount", "servesSs"];
+  const rank = (k: string) => (PRIORITY.includes(k) ? PRIORITY.indexOf(k) : PRIORITY.length);
   const rows = Object.entries(p)
     .filter(([k]) => !skip.has(k))
-    .map(([k, v]) => [fieldLabel(k), formatValue(k, v)] as const)
-    .filter(([, v]) => v != null)
-    .slice(0, 14)
-    .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v!)}</td></tr>`)
+    .sort((a, b) => rank(a[0]) - rank(b[0]))
+    .map(([k, v]) => [k, fieldLabel(k), formatValue(k, v)] as const)
+    .filter(([, , v]) => v != null)
+    .slice(0, 18)
+    .map(([k, label, v]) => {
+      const cell =
+        k === "transcoSs" && p.transcoSsId
+          ? `<button type="button" class="ov-link" data-select="${esc(String(p.transcoSsId))}">${esc(v!)}</button>`
+          : k === "linkMethod"
+            ? esc(LINK_LABEL[String(v)] ?? v!)
+            : esc(v!);
+      return `<tr><th>${esc(label)}</th><td>${cell}</td></tr>`;
+    })
     .join("");
   const meta = [def.source, def.vintage ? `vintage ${def.vintage}` : null].filter(Boolean).join(" · ");
   return (
@@ -267,7 +340,25 @@ export function attachOverlays(map: MlMap, opts: { suppressed: () => boolean; co
     const def = defForLayer(hit.layer.id);
     if (!def) return;
     popup.setLngLat(ev.lngLat).setHTML(popupHtml(def, hit)).addTo(map);
+    popup.getElement()?.querySelectorAll<HTMLButtonElement>("[data-select]").forEach((b) =>
+      b.addEventListener("click", () => {
+        popup.remove();
+        useAppStore.getState().select(b.dataset.select!, { fly: true });
+      }),
+    );
   };
+
+  let lastFit = 0;
+  const unsubFit = useOverlayStore.subscribe((st) => {
+    if (!st.fitSignal || st.fitSignal.ts === lastFit) return;
+    lastFit = st.fitSignal.ts;
+    const narrow = map.getContainer().clientWidth < 640;
+    map.fitBounds(st.fitSignal.bounds, {
+      padding: narrow ? { top: 190, bottom: 120, left: 20, right: 20 } : { top: 60, bottom: 60, left: 320, right: 380 },
+      maxZoom: 12,
+      duration: 900,
+    });
+  });
   map.on("click", onClick);
 
   let ownCursor = false;
@@ -298,6 +389,7 @@ export function attachOverlays(map: MlMap, opts: { suppressed: () => boolean; co
 
   return () => {
     unsub();
+    unsubFit();
     if (raf) cancelAnimationFrame(raf);
     if (moveRaf) cancelAnimationFrame(moveRaf);
     map.off("styledata", schedule);

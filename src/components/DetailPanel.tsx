@@ -27,6 +27,7 @@ import { deratedCapacityMva, formatDerating } from "../lib/dlr.ts";
 import { COASTAL_BAND_LABEL, riskTier, substationRisk } from "../lib/risk.ts";
 import { downloadText, subsetFeatures, substationsToGeoJSON } from "../lib/export.ts";
 import { useAppStore } from "../state/store.ts";
+import { DiscomDownstream } from "./DiscomDownstream.tsx";
 import {
   BULKLOAD_COLOR,
   CIRCUIT_LABEL,
@@ -224,6 +225,12 @@ function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData })
           ))}
         </div>
       )}
+
+      <SectionTitle>
+        33 kV network (DISCOM)
+        <span className="ml-1 font-normal normal-case text-ink-2">(inferred)</span>
+      </SectionTitle>
+      <DiscomDownstream ss={ss} />
     </>
   );
 }

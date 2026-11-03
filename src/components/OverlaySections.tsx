@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { DISCOM_COLOR, DISCOMS, formatBytes, GROUP_ORDER, type OverlayDef } from "../overlays/catalog.ts";
 import { useOverlayStore } from "../overlays/store.ts";
 import { useLiveStatus } from "../data/live-status.ts";
+import { CONNECTIVITY_CSV_URL } from "../data/connectivity.ts";
 import { ChevronDown } from "./icons.tsx";
 import { Row, Switch } from "./layer-controls.tsx";
 
@@ -64,6 +65,18 @@ export function DistributionSection() {
       <div className="py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Distribution · 33 kV</div>
       <OverlayRow def={{ ...lines, count: Object.values(stats).reduce((a, x) => a + x.lines, 0) }} color={DISCOM_COLOR.APSPDCL} />
       <OverlayRow def={{ ...ss, count: Object.values(stats).reduce((a, x) => a + x.substations, 0) }} color={DISCOM_COLOR.APEPDCL} />
+      {live?.connectivity && (
+        <div className="mb-1 rounded-lg bg-surface-2/70 px-2 py-1.5 text-[11px] leading-snug text-ink-2">
+          <span className="font-semibold text-ink">TRANSCO → 33 kV links: </span>
+          {Object.entries(live.connectivity.byDiscom)
+            .map(([d, c]) => `${d} ${c.substationsTracedToTransco.toLocaleString("en-IN")}/${c.substations.toLocaleString("en-IN")} SS`)
+            .join(" · ")}
+          . Select a TRANSCO substation to see its feeders.{" "}
+          <a className="font-medium text-accent hover:underline" href={CONNECTIVITY_CSV_URL} download>
+            Download CSV
+          </a>
+        </div>
+      )}
       {anyOn && (
         <div className="ml-1 mt-0.5 border-l border-line pl-3">
           {DISCOMS.map((d) => {
@@ -84,6 +97,10 @@ export function DistributionSection() {
           })}
           <p className="pb-1 text-[10px] leading-snug text-ink-2/85">
             As digitised in each DISCOM’s GIS — coverage is partial (e.g. APSPDCL lines). Tap a feature for details.
+            {Object.entries(stats)
+              .filter(([, x]) => x.linesFrom)
+              .map(([d, x]) => ` ${d} 33 kV lines: ${x.linesFrom} (not refreshed by updates).`)
+              .join("")}
           </p>
         </div>
       )}

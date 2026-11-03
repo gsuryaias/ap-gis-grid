@@ -94,7 +94,8 @@ Data Centre — the same server the Google-Earth KMZ `NetworkLink`s in the user'
 - **Layers** are declared in `scripts/live-sources.ts` (`LIVE_LAYERS`): `AP_Grid_Map/gridmapkml/MapServer`
   layers 0 (Transco SS **points**), 12/13/14 (400/220/132 kV lines), 16 (generation — has MW + unit config the
   KML lacked), 8/9 (PGCIL), 15 (railway), 10 (bulk-load); DISCOM: `SPDCL/SPDCL_Network_33KV` 5 (SS) + 0 (lines),
-  `EPDCL/Substations` 0 + `EPDCL/EPDCL_33KV_LINE` 1. **APCPDCL and the `TRANSCO` folder are token-protected**
+  `EPDCL/Substations` 0 + `EPDCL/EPDCL_33KV_LINE` 1, and **APCPDCL 33/11 kV SS from the open
+  `Hosted/SUBSTATION_BOUNDERY/FeatureServer` 0** (949). **The `APCPDCL` folder and the `TRANSCO` folder are token-protected**
   (`499 Token Required`) — the sync supports `AP_GIS_TOKEN` or `AP_GIS_USERNAME`/`AP_GIS_PASSWORD`, and
   `npm run sync:live -- --discover APCPDCL` lists layers once credentials exist. Never try to bypass auth.
 - **Transco layers' keys are truncated to 10 chars** (`truncateKeys`) so they match the dBASE names of the
@@ -134,7 +135,35 @@ section hierarchy, feeder counts, capacity; SPDCL carries mandal/district/commis
 `discom-lines.geojson` (EPDCL: one feature per 33 kV feeder with source EHT SS; **SPDCL: ~12k pole-to-pole
 spans, half unnamed, grouped by (feeder, division) then split into connected components on an ~11 m endpoint
 grid**, 11 kV/440 V-tagged spans dropped). Douglas–Peucker ~8 m, 5 dp, null props dropped (~680 KB gz total).
-Source coverage is partial (APSPDCL lines ≈ 3,400 km) — the UI says so. IDs `ds-sp-*`/`ds-ep-*`, `dl-*`.
+Source coverage is partial (APSPDCL lines ≈ 3,400 km) — the UI says so. IDs `ds-sp-*`/`ds-ep-*`/`ds-cp-*`, `dl-*`.
+
+**APCPDCL 33 kV feeders (462, ≈ 8,820 km) are NOT on the open GIS** — they come from APCPDCL's own GIS export
+(shapefiles kept in the private `~/Documents/arnab-cyclone-tracker/data/raw/discom/apcpdcl_gis`, where they are
+marked sensitive). The owner decided (2026-11-03) to publish **routes only**: `scripts/import-apcpdcl.mts` →
+committed `data/raw/discom/apcpdcl-33kv-feeders.geojson` (feeder name, source EHT SS, circle/division/sub-div,
+conductor, pole count, km). **Never import its HT-consumer services, AB switches or poles.** `npm run update`
+does not refresh these — re-run the import when APCPDCL supplies a newer export; the UI footnote shows the export
+date (`live-status.json → discom.APCPDCL.linesFrom`).
+
+## TRANSCO → 33 kV connectivity (`scripts/etl-connectivity.ts`, inferred)
+
+`buildDiscom()` links the DISCOM network to the TRANSCO grid (pure helpers, `scripts/connectivity.test.ts`):
+- **Feeder → source TRANSCO SS**: (a) `name` — the DISCOM's recorded source SS (APEPDCL `eht_ss_name`, APCPDCL
+  `SUBSTN`) matched to a TRANSCO SS within 40 km by `normSsName` + `namesMatch` (prefix / 1-edit / consonant
+  `skeleton` for transliteration variants like Narsapuram~Narasapuram) or `abbrevMatch` ("J R GUDEM" ~
+  Jangareddygudem), voltage hint honoured, nearest wins; (b) `proximity` — a feeder end ≤ 1.5 km from a TRANSCO
+  SS (APSPDCL records no source); (c) `feeder-group` — other runs of the same named feeder inherit.
+  Recorded sources absent from TRANSCO's data (Gundlapadu, Abburu, Jindal…) fall to (b); the popup shows both.
+- **Feeder → 33/11 kV SS served**: same-DISCOM SS within 300 m of the route (grid-indexed point-segment).
+- Current coverage: APEPDCL 531/532 feeders, APCPDCL 462/462, 33/11 kV SS traced to TRANSCO 909/972 and 916/949;
+  APSPDCL only 273/1,704 (its 33 kV map is partial — every DISCOM SS also gets `nearestTranscoSs`).
+- Outputs: link props on `discom-lines`/`discom-ss` (`transcoSsId`, `transcoSs`, `linkMethod`, `servesSs*`,
+  `feeders`, `nearestTranscoSs`); `transco-33kv.json` (lazy index for the detail panel: feeder tuples
+  `[id,name,discom,km,method,ssIds]` per TRANSCO SS + `ss` lookup); `transco-33kv-connectivity.csv` (statewide,
+  one row per feeder run); stats in `live-status.json → connectivity`.
+- UI: `components/DiscomDownstream.tsx` in the TRANSCO substation detail (feeder list → served SS, Show on map,
+  per-SS CSV/GeoJSON, statewide CSV link); selection sets the overlay store `focus` → amber highlight layers
+  `ov-focus-lines`/`ov-focus-ss` in `overlays/map.ts`; popups link "TRANSCO source" back to the SS (`data-select`).
 
 ## RTGS reference layers (`scripts/build-ref-layers.mts` → `public/data/ref/`, lazy)
 
