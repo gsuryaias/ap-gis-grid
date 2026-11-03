@@ -28,6 +28,8 @@ renders is pure static assets, so there is no backend at request time.
 ## Commands
 
 ```bash
+npm run sync:live    # pull TRANSCO + DISCOM layers from gis.aptransco.gov.in → data/raw/live/* (India-only network!)
+npm run build:ref    # RTGS shapefile library (OneDrive, RTGS_DIR) → public/data/ref/* — run locally, commit outputs
 npm run dev          # Vite dev server → http://localhost:5173/ap-gis-grid/
 npm run build:data   # ETL: data/raw/{gridmap/*.shp, generation.kml, geonames-ap.tsv, coastline-ap.geojson} → public/data/*
 npm run build        # tsc --noEmit && vite build  (production)
@@ -82,12 +84,94 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 The emitted `public/data/*` files are **committed** so CI/Pages builds don't need the raw sources. The
 `data`-branch parquet is **not** committed to `main` — it is published by the pipelines and fetched at runtime.
 
+## Live network sync (`scripts/sync-live.mts` → `data/raw/live/`)
+
+The core network is **no longer a frozen snapshot**: it is pulled from the **AP-TRANSCO enterprise GIS**
+(ArcGIS Enterprise 11.5 REST at `https://gis.aptransco.gov.in/server/rest/services`, hosted in the AP State
+Data Centre — the same server the Google-Earth KMZ `NetworkLink`s in the user's Drive point at, via
+`…/MapServer/KmlServer`). We read the REST `query` endpoint (`f=geojson`, `outSR=4326`, paged by OID).
+
+- **Layers** are declared in `scripts/live-sources.ts` (`LIVE_LAYERS`): `AP_Grid_Map/gridmapkml/MapServer`
+  layers 0 (Transco SS **points**), 12/13/14 (400/220/132 kV lines), 16 (generation — has MW + unit config the
+  KML lacked), 8/9 (PGCIL), 15 (railway), 10 (bulk-load); DISCOM: `SPDCL/SPDCL_Network_33KV` 5 (SS) + 0 (lines),
+  `EPDCL/Substations` 0 + `EPDCL/EPDCL_33KV_LINE` 1. **APCPDCL and the `TRANSCO` folder are token-protected**
+  (`499 Token Required`) — the sync supports `AP_GIS_TOKEN` or `AP_GIS_USERNAME`/`AP_GIS_PASSWORD`, and
+  `npm run sync:live -- --discover APCPDCL` lists layers once credentials exist. Never try to bypass auth.
+- **Transco layers' keys are truncated to 10 chars** (`truncateKeys`) so they match the dBASE names of the
+  `data/raw/gridmap/*.shp` snapshots — the ETL's `readLayer(name)` reads live GeoJSON when present, else the
+  shapefile (set `ETL_SNAPSHOT_ONLY=1` to force snapshots). Epoch-ms date fields → ISO strings.
+- **Safety gates** (`gatePull`): a pull below the layer's `minCount` floor or dropping >15% vs the last good
+  pull is REJECTED and the previous file kept. A 20 s preflight fails fast (exit 3) when the server is
+  unreachable. Exit 2 only if every layer failed.
+- **Outputs are committed** (git history = network audit trail): one feature per line, sorted by stable key
+  (`keyFields`) → minimal diffs. `manifest.json` (per-layer status/count/sha/lastChangedAt) and
+  `changelog.json` (newest-first runs that changed something; the first pull of a layer is a baseline, not a
+  change). `build:data` folds both into `public/data/live-status.json` → the header **Live badge**, the
+  **Live network sync** sheet (per-layer table + change log) and the "network data was updated — reload" toast.
+- **Substation footprints**: the live SS layer is points, but adjacency wants compound polygons. Each live point
+  borrows its surveyed polygon from the snapshot by SAP id (325), else the nearest same-voltage polygon ≤ 300 m
+  (51), else a synthetic 150 m footprint (13 genuinely new SS). Counts in `data-quality.json → substationFootprints`.
+
+### ⚠ Where the sync can run — India only
+The State Data Centre firewall **drops traffic from outside India** (verified 2026-11-03: GitHub-hosted runners
+time out even on the raw IP; public DNS is also flaky — 8.8.8.8 returns nothing, 1.1.1.1 resolves). So:
+- **Default publisher = the owner's Mac**: `scripts/install-sync-agent.sh` installs LaunchAgent
+  `com.gsuryaias.ap-gis-grid.sync` (05:45/11:45/17:45/23:45; runs on wake if asleep) which runs a copy of
+  `scripts/sync-publish.sh` in a **dedicated clone** `~/.ap-gis-grid-sync` (never the working copy):
+  reset to origin/main → sync → if the network changed **or** the last published sync is ≥ 20 h old (daily
+  heartbeat, keeps the badge honest) → `build:data` → tests → commit → push → `deploy.yml` redeploys Pages.
+  Log: `~/Library/Logs/ap-gis-grid-sync.log`. Re-run the installer after editing `sync-publish.sh`.
+- **`.github/workflows/sync-live.yml`** does the same in CI but is gated on the repo variable `SYNC_RUNNER`
+  (label of a **self-hosted runner in India**, e.g. an AWS ap-south-1 VM); skipped otherwise.
+- Badge: "Live" while `lastSuccess` ≤ 36 h (`STALE_AFTER_HOURS`), amber "Stale" after, grey "Snapshot" if never.
+
+## DISCOM 33 kV overlay (`scripts/etl-discom.ts`, lazy)
+
+`buildDiscom()` → `public/data/discom-ss.geojson` (33/11 kV SS: polygon → centroid; EPDCL carries circle →
+section hierarchy, feeder counts, capacity; SPDCL carries mandal/district/commissioning) +
+`discom-lines.geojson` (EPDCL: one feature per 33 kV feeder with source EHT SS; **SPDCL: ~12k pole-to-pole
+spans, half unnamed, grouped by (feeder, division) then split into connected components on an ~11 m endpoint
+grid**, 11 kV/440 V-tagged spans dropped). Douglas–Peucker ~8 m, 5 dp, null props dropped (~680 KB gz total).
+Source coverage is partial (APSPDCL lines ≈ 3,400 km) — the UI says so. IDs `ds-sp-*`/`ds-ep-*`, `dl-*`.
+
+## RTGS reference layers (`scripts/build-ref-layers.mts` → `public/data/ref/`, lazy)
+
+27 curated layers from the RTGS (AP Real-Time Governance Society) shapefile library on the owner's OneDrive
+(`RTGS_DIR`, ~12 GB, 2023 vintage, some in UTM 44N) — boundaries (districts/mandals/revenue divisions/
+assembly/parliament/municipal/HQs), transport (NH/SH/rail/stations/airports/seaports), environment / ROW
+constraints (reserve forest, forest, wildlife, eco-sensitive, CRZ line, mining), water (rivers, reservoirs,
+major canals), hazards (seismic zones, cyclone shelters, NRSC flood 2024-09-03, Michaung track). Built with the
+project-local `mapshaper` (reproject, Visvalingam simplify, 5 dp; every file ≤ 2.5 MB, 16 MB total).
+`catalog.json` describes them; `scripts/ref-layers.test.ts` gates it. **Mining `name` is the mineral, never the
+lessee** (lessees are often private individuals — deliberately withheld). Static: re-run `npm run build:ref`
+only when RTGS publishes new data (`npx tsx scripts/build-ref-layers.mts <id…>` rebuilds a subset but does NOT
+rewrite `catalog.json`).
+
+## Overlay catalog module (`src/overlays/`)
+
+DISCOM + RTGS overlays live in a **self-contained module** rather than the per-overlay store/selection plumbing:
+`catalog.ts` (defs + cartography `REF_STYLE`), `store.ts` (own zustand store: enabled/status/data, DISCOM
+sub-filter, per-device persistence in localStorage `apgg-overlays-v1` — NOT in the URL hash), `map.ts`
+(`attachOverlays(map)` — called once in `MapPane`'s `load`; re-mounts after style reloads; keeps every overlay
+**beneath `grid-lines-casing`**; tap → MapLibre popup, core grid features always win the tap; outline-only
+boundaries are not tappable). **Every map mutation in `sync()` is conditional** — setLayoutProperty/moveLayer/
+setFilter emit `styledata`, which re-schedules `sync`; it also re-runs on `idle` because `isStyleLoaded()` is
+false while any source loads. UI: `components/OverlaySections.tsx` (`DistributionSection`, `ReferenceSection`).
+
+## PWA / offline
+
+`public/manifest.webmanifest` + `public/sw.js` (registered in `main.tsx`, prod only): hashed assets cache-first,
+navigations network-first, `data/*` stale-while-revalidate (`live-status.json` network-first), CARTO/Esri
+basemap tiles SWR in a 1,500-entry cache. Bump `VERSION` in `sw.js` to invalidate. Because data is SWR, the
+"updated — reload" toast compares the loaded `meta.generatedAt` with the latest `live-status.generatedAt`.
+
 ## Generation overlay (lazy-loaded)
 
 A second, optional layer of **generation plants** classified by energy mix. It is **lazy** by design —
 none of its code path runs until the user enables it.
 
-- **Source / ETL**: `data/raw/generation.kml` → `buildGeneration()` in `build-data.mts` → `public/data/generation.geojson`.
+- **Source / ETL**: live `Generation_SS` layer (`buildGenerationLive`, with `capacityMw` + `units`) when synced,
+  else `data/raw/generation.kml` → `buildGeneration()` in `build-data.mts` → `public/data/generation.geojson`.
   Energy class comes from the KML `SS Type` cell via `classifyEnergy()` (canonical
   `Solar | Wind | Thermal | Gas | Hydro | Other`; source spells hydro "Hydal", `<Null>` → `Other`).
   IDs are synthetic `g-<slug(name)>`. Validation gate: **57 plants**. Counts (current data):
@@ -99,8 +183,9 @@ none of its code path runs until the user enables it.
   style reload, same as the grid layers). Plants are NOT in the initial search index or the data table.
 - **Not in `data.byId`**: plants live in a separate `generation.byId` (store). `DetailPanel` and
   `MapView` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
-  `energy` drives `ENERGY_COLOR` / the legend. There is **no capacity (MW) data** in the KML
-  (`capacityMw` is always null) and **no grid connectivity** is modelled for plants.
+  `energy` drives `ENERGY_COLOR` / the legend. The KML had no capacity; the **live layer carries
+  `capacityMw` (`total_capacity`) + `units`** for the plants the source has filled in (null otherwise). **No grid
+  connectivity** is modelled for plants.
 
 ## Power-grid overlay (lazy-loaded)
 

@@ -383,6 +383,7 @@ function GenerationDetail({ plant }: { plant: GenerationProps }) {
       />
       <Field label="Interconnection" value={`${plant.voltage} kV`} />
       <Field label="Capacity" value={plant.capacityMw != null ? `${plant.capacityMw} MW` : null} />
+      <Field label="Units" value={plant.units ?? null} />
       <Field label="Full name" value={plant.descriptiveName} />
       <Field label="Plant ID" value={plant.ssCode} />
       <Field label="Circle" value={plant.circle} />

@@ -12,6 +12,12 @@ name: Live network sync
 #    The app keeps serving the last good data and its badge turns amber ("Stale") after ~13 h.
 #
 # Every 6 h at :15 UTC (05:45 / 11:45 / 17:45 / 23:45 IST).
+#
+# ⚠ The AP State Data Centre firewall drops traffic from outside India, so GitHub-HOSTED runners
+# cannot reach the GIS (verified 2026-11-03: TCP timeout). This workflow therefore only runs on a
+# SELF-HOSTED runner located in India: register one (repo → Settings → Actions → Runners) and set
+# the repository variable SYNC_RUNNER to its label (e.g. "self-hosted"). Until then the job is
+# skipped and the sync runs from the Mac LaunchAgent instead (scripts/install-sync-agent.sh).
 on:
   schedule:
     - cron: "15 0,6,12,18 * * *"
@@ -29,7 +35,8 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    if: vars.SYNC_RUNNER != ''
+    runs-on: ${{ vars.SYNC_RUNNER }}
     timeout-minutes: 30
     outputs:
       changed: ${{ steps.diff.outputs.changed }}

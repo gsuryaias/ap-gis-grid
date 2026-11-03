@@ -39,15 +39,18 @@ export interface LiveStatus {
   discom?: Record<string, { substations: number; lines: number; lineKm: number }>;
 }
 
-/** Sync cadence the CI job runs at — data older than 2× this is flagged stale. */
-export const SYNC_CADENCE_HOURS = 6;
+/**
+ * The publisher syncs every 6 h but only pushes on a network change or a daily heartbeat, so the
+ * deployed `lastSuccess` can legitimately be up to ~24 h old. Older than this ⇒ flagged stale.
+ */
+export const STALE_AFTER_HOURS = 36;
 
 export type LiveFreshness = "live" | "stale" | "snapshot";
 
 export function liveFreshness(s: LiveStatus | null, now = Date.now()): LiveFreshness {
   if (!s?.lastSuccess) return "snapshot";
   const ageH = (now - Date.parse(s.lastSuccess)) / 3_600_000;
-  return ageH <= SYNC_CADENCE_HOURS * 2 + 1 ? "live" : "stale";
+  return ageH <= STALE_AFTER_HOURS ? "live" : "stale";
 }
 
 export function timeAgo(iso: string | null, now = Date.now()): string {

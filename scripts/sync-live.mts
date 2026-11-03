@@ -262,6 +262,19 @@ async function main(): Promise<void> {
   };
   const change: ChangeEntry = { at: now, layers: [] };
 
+  // Fail fast if the GIS is unreachable. The AP State Data Centre firewall drops traffic from
+  // outside India (e.g. GitHub-hosted runners) — without this, every layer would burn its retries.
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20_000);
+    const res = await fetch(`${GIS_BASE}?f=json`, { headers: { "User-Agent": UA }, signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (e) {
+    console.error(`[sync] ${GIS_BASE} unreachable (${(e as Error).message}) — the server only accepts connections from within India. Nothing changed.`);
+    process.exit(3);
+  }
+
   let tok: string | null = null;
   try {
     tok = await ensureToken();
