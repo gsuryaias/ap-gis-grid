@@ -46,11 +46,9 @@ npm run typecheck    # tsc --noEmit
 
 # MIS data pipelines (run in CI; see "MIS data pipelines" below). Each needs the cert bundle, so
 # invoke via the npm script (it sets NODE_EXTRA_CA_CERTS) rather than calling tsx directly.
-npm run pipelines              # all five in sequence
+npm run pipelines              # all three in sequence
 npm run pipeline:psp           # NLDC daily PSP (.xls)         → data branch parquet
 npm run pipeline:psp-frequency # NLDC frequency / FVI compliance
-npm run pipeline:vidyut        # Vidyut Pravah AP daily (HTML)
-npm run pipeline:vidyut-blocks # Vidyut Pravah AP 15-min block (HTML)
 npm run pipeline:cea           # CEA monthly generation mix (JSON)
 ```
 
@@ -64,7 +62,7 @@ test name). After ANY ETL or component change, run `npm run typecheck` (strict, 
 ```
 data/raw/{generation.kml, gridmap/*.shp+dbf,    ─(build:data ETL)─▶ public/data/*.{geojson,json}  ─┐
           geonames-ap.tsv, coastline-ap.geojson}    [committed]                                     ├▶ React + MapLibre + DSS shell ─▶ GitHub Pages
-NLDC / Vidyut Pravah / CEA (live public sources) ─(pipelines, CI)─▶ `data` branch /timeseries/*.parquet ─┘  (manifests/*.json read over HTTP)
+NLDC / CEA (live public sources)        ─(pipelines, CI)─▶ `data` branch /timeseries/*.parquet ─┘  (manifests/*.json read over HTTP)
 ```
 
 > **No in-app parquet reader since the MIS removal.** The app fetches only the data-branch
@@ -85,7 +83,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Map | `src/map/` | `MapView.tsx` (Atlas full-screen) / `MapPane.tsx` (shared embeddable wrapper), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `mis-layers.ts` (MIS thematic layer), `map-helpers.ts` (shared map utils) |
 | Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, `FreshnessBadge`, SearchBar, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
 | Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
-| Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `dcflow.ts`, `risk.ts`, `risk-engine.ts`, `format.ts`, `export.ts` |
+| Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `dcflow.ts`, `risk.ts`, `risk-engine.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
 
 The emitted `public/data/*` files are **committed** so CI/Pages builds don't need the raw sources. The
@@ -427,6 +425,16 @@ consumer (kept, tested, importable — see the intro notes).
   `feedDegree(ssId)` (distinct neighbours, not edge count), `singleFedSubstations()`, `bridgeLines()` +
   `articulationSubstations()` (one Tarjan low-link DFS), `lineOutageImpact(lineId)` (N-1: who is islanded
   when a bridge is out), `neighborhood(ssId, hops)` (k-hop ego net for the map spotlight).
+- **`src/lib/supply-security.ts`** — **radial-feed / supply-security** screening on a CORRIDOR graph (one
+  edge per node pair, carrying its circuit count — so a DC tower line is one corridor, unlike `graph.ts`'s
+  per-circuit multigraph). Generation switchyards (line `externalEndpoints` of category Generation) are
+  nodes; traction / HT consumers are leaves. Core = largest 2-edge-connected block; every other block hangs
+  off it through corridor bridges (a "pocket"). Per node: `cls` `meshed | radial-dc | radial-sc |
+  unconnected` (radial-sc = some corridor on the feed has ONE circuit → N-1 insecure; radial-dc = circuit
+  N-1 OK, tower-line loss islands it), `depth`, `bottleneck` circuits, `radialKm`, `headId`, `path`.
+  Also `pockets`, `cutImpacts` (bus outage at a cut-point SS → islanded SS), `openEnds` (lines with an
+  unresolved far end — flagged as "data gap"), `interfaces` + `interfaceSecurity` (plants / RTSS / HT on one
+  circuit, one SS, or ≥ 2 SS). Current data: 267 meshed · 75 radial-DC · 44 radial-SC · 3 unconnected.
 - **`src/data/graph-data.ts`** — `graphAnalysis(data)` memoises the above per `GridData` instance
   (WeakMap) → `{graph, bridgeImpacts, articulationIds, singleFedIds, feedDegrees}`; `spotlightFor(...)`
   returns the SS/line ids to highlight for a selection.
@@ -470,7 +478,7 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
   `fit` (`{key, bounds}` — MapPane fits once per new key).
 
 - **Network MIS** (`workspaces/mis/`) — an analyst's view of the network built on the live GIS data
-  (the old parquet-based MIS is dead: the PSP/Vidyut feeds stopped at 2026-06-11).
+  (the old parquet-based MIS is dead: the PSP feed stopped at 2026-06-11).
   - `model.ts` (pure, `model.test.ts`): `buildModel` joins core SS/lines with `graphAnalysis` (feed degree,
     cut points, bridge impacts), line age (`commissionYear`), conductor family, indicative MVA and the
     TRANSCO→33 kV index (`transco-33kv.json`) into `SsRow`/`LineRow`. **Pivot, not a tree** — zone/circle/
@@ -481,11 +489,22 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
     `metrics` (ckm-weighted mean age, share ≥ 35 yrs = CERC useful life, distinct 33/11 kV SS); lines take
     zone/division from their first resolved end SS (lines carry neither). `bridgeImpacts` ranks bridges by
     downstream 33/11 kV SS stranded.
-  - UI: `MisWorkspace.tsx` (sticky drill breadcrumb + map-theme switch, KPI tiles, breakdown, thematic tabs,
+  - **Supply security** (`supply-security.ts` folded into `SsRow.supply/openEnds/cutIslands` and
+    `LineRow.corridorBridge/corridorCircuits`): `supply` pivot dimension, "Radial" breakdown column,
+    `radialRows` (risk flags: single circuit, coastal < 25 km, feed ≥ 35 yrs, radial ≥ 50 km, ≥ 10 × 33/11 SS,
+    data gap), `pocketRows` (ranked by 33/11 kV load at risk), `cutRows`, and `MapFocus` builders
+    (`feedPathFocus` / `pocketFocus` / `cutFocus`). The **Radial feeds** tab (default) + **Radial feeds** map
+    theme (red = single-circuit, orange = single-corridor). A `MapFocus` is transient workspace state that
+    overrides the scope dimming + fit (chip in the scope bar clears it; re-scoping clears it).
+  - **Search** (`MisSearch.tsx`, `/` to focus): circles/zones/divisions (→ drill), TRANSCO SS + lines
+    (→ dossier + fly), DISCOM 33/11 kV SS (→ the TRANSCO SS that feeds it, via `transco-33kv.json`).
+    Picking a core asset scrolls the dossier into view.
+  - UI: `MisWorkspace.tsx` (sticky search + map-theme switch, drill breadcrumb, KPI tiles, breakdown, thematic tabs,
     register, provenance footer), `tables.tsx` (`Breakdown` pivot — click row = drill + auto-regroup via
     `nextDim`; `Register` — paginated SS/line lists, hover = map hover, click = dossier + fly), `themes.tsx`
-    (Asset age · N-1 exposure · 33 kV downstream · Conductors & rating · Generation & interfaces),
-    `Dossier.tsx` (SS / line dossier — the core-feature detail card is suppressed on the map in MIS),
+    (Radial feeds · Asset age · N-1 exposure · 33 kV downstream · Conductors & rating · Generation & interfaces
+    — the last one opens with the interface connection-security matrix),
+    `Dossier.tsx` (SS / line dossier, incl. a supply-security box with "Show feed path" / bus-outage island — the core-feature detail card is suppressed on the map in MIS),
     `charts.tsx` / `ui.tsx` (dependency-free SVG/HTML marks per the dataviz conventions; voltage palette for
     stacks, validated blue ordinal ramp for age). Every view has a CSV export.
   - Map (`map/mis-layers.ts`): `mis-line-theme` + `mis-ss-theme` ride the CORE sources via feature-state
@@ -498,7 +517,7 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
 
 ## MIS data pipelines (`pipelines/`, CI-scheduled → `data` branch)
 
-The only live-ETL part of the system. Five scheduled jobs fetch official, keyless public-sector data,
+The only live-ETL part of the system. Three scheduled jobs fetch official, keyless public-sector data,
 parse it, gate it, upsert into Parquet, write a manifest, and force-publish to a dedicated **`data` git
 branch** (never to `main`, never triggers a Pages deploy). Since the MIS removal the parquet has **no
 in-app reader** — only the `manifests/*.json` are still fetched at runtime (for the freshness badges)
@@ -509,27 +528,28 @@ see `src/data/manifests.ts`).
 |----------|--------|---------------------------|
 | `pipeline:psp` | Grid-India / NLDC daily PSP `.xls` | `timeseries/psp-daily.parquet` (energy met/shortage/demand by entity) |
 | `pipeline:psp-frequency` | same `.xls`, section B | `timeseries/psp-frequency.parquet` (FVI band compliance + net exchange) |
-| `pipeline:vidyut` | vidyutpravah.in AP page (HTML) | `timeseries/vidyut-daily.parquet` (AP demand/shortage/price) |
-| `pipeline:vidyut-blocks` | same page, live 15-min block | `timeseries/vidyut-blocks.parquet` |
 | `pipeline:cea` | cea.nic.in generation + renewable APIs (JSON) | `timeseries/cea-monthly.parquet` (generation mix BU→MU) |
 
 - **Layout**: pure parsers `pipelines/*-parse.ts` (xlsx for `.xls`, `node-html-parser` for HTML, JSON for
   CEA — unit-tested in `pipelines.test.ts` against committed `pipelines/fixtures/*`) + orchestration
   `pipelines/*.mts` (fetch → parse → **hard validation gates** → idempotent upsert keyed on date/entity).
   Shared helpers in `pipelines/lib.ts` (`fetchWithRetry`, IST date math, the manifest writer).
-- **TLS quirk**: Grid-India and Vidyut Pravah serve **incomplete TLS chains** (missing intermediate CA),
-  so the npm scripts set `NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem` (Go Daddy G2 + emSign G1
-  intermediates) **and** `lib.ts` loads the same bundle into an undici Agent. The `.pem` must contain
+- **Vidyut Pravah removed (2026-11)**: the `vidyut-daily` / `vidyut-blocks` pipelines, parser, fixture,
+  emSign cert and manifest gate are gone; `pipelines.yml` purges their leftovers from the `data` branch on
+  its next run. Don't re-add it.
+- **TLS quirk**: Grid-India serves an **incomplete TLS chain** (missing intermediate CA),
+  so the npm scripts set `NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem` (Go Daddy G2
+  intermediate) **and** `lib.ts` loads the same bundle into an undici Agent. The `.pem` must contain
   certs only — no `#` comment lines (OpenSSL rejects them in `NODE_EXTRA_CA_CERTS`). **Always invoke via
   the npm script**, not `tsx` directly, or the fetch fails cert verification.
 - **Manifests + freshness** (`src/data/manifests.ts`): each pipeline writes `manifests/<id>.json`
   (`id, schema, source, licence, attribution, cadence, vintage, lastSuccess, paths, rowCount`). The app
   binds to **manifest ids, never raw URLs**. `staleness(m, now)` → `fresh|stale|missing` (stale past
   2× cadence; `static`/`one-time` never stale) drives `FreshnessBadge`. `MANIFEST_GATES` are CI lower-bound
-  row checks; `LIVE_DATA_MANIFEST_IDS = ["psp-daily","vidyut-daily"]` are what the deploy gate expects to
+  row checks; `LIVE_DATA_MANIFEST_IDS = ["psp-daily"]` are what the deploy gate expects to
   already exist on the `data` branch.
-- **Schedule** (`.github/workflows/pipelines.yml`, single-concurrency): daily 01:30 UTC (PSP + PSP-freq +
-  Vidyut daily), `vidyut-blocks` 6×/day, `cea-monthly` on the 5th. CI restores the `data` branch into a
+- **Schedule** (`.github/workflows/pipelines.yml`, single-concurrency): daily 05:30 UTC (PSP + PSP-freq),
+  `cea-monthly` on the 5th. CI restores the `data` branch into a
   worktree first (to accumulate history), force-publishes only if files changed, and opens a
   `pipeline-failure` issue on daily failure (its URL is surfaced in the manifest → the badge).
 

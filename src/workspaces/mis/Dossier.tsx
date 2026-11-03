@@ -6,8 +6,21 @@ import { CloseIcon } from "../../components/icons.tsx";
 import { VoltageBadge } from "../../components/VoltageBadge.tsx";
 import { useAppStore } from "../../state/store.ts";
 import { formatMva } from "../../lib/capacity.ts";
-import { AGE_BAND_LABEL, LINE_USEFUL_LIFE_YRS, ROLE_HINT, type LineRow, type MisModel, type SsRow } from "./model.ts";
-import { RoleText } from "./tables.tsx";
+import { SUPPLY_HINT } from "../../lib/supply-security.ts";
+import {
+  AGE_BAND_LABEL,
+  cutFocus,
+  feedPathFocus,
+  isRadial,
+  LINE_USEFUL_LIFE_YRS,
+  nodeName,
+  ROLE_HINT,
+  type LineRow,
+  type MapFocus,
+  type MisModel,
+  type SsRow,
+} from "./model.ts";
+import { RoleText, SupplyText } from "./tables.tsx";
 import { nf0, nf1 } from "./ui.tsx";
 
 const pick = (id: string) => useAppStore.getState().select(id, { fly: true });
@@ -45,7 +58,55 @@ function Shell({ kicker, title, onClose, children }: { kicker: React.ReactNode; 
   );
 }
 
-export function SsDossier({ model, row, onClose }: { model: MisModel; row: SsRow; onClose: () => void }) {
+type FocusFn = (f: MapFocus | null) => void;
+
+function SupplyBox({ model, row, onFocus }: { model: MisModel; row: SsRow; onFocus: FocusFn }) {
+  const s = row.supply;
+  const feed = feedPathFocus(model, row);
+  const cut = row.cutIslands.length
+    ? { row, islanded: row.cutIslands.map((id) => model.ssById.get(id)).filter((r): r is SsRow => !!r), discomSs: 0 }
+    : null;
+  const tone =
+    s.cls === "radial-sc" ? "border-[#d03b3b]/40 bg-[#d03b3b]/5" : s.cls === "radial-dc" ? "border-[#ec835a]/50 bg-[#ec835a]/5" : "border-line bg-surface-2/60";
+  return (
+    <div className={`space-y-1.5 rounded-lg border px-3 py-2 text-xs text-ink ${tone}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <b className="font-semibold">Supply security:</b>
+        <SupplyText cls={s.cls} />
+        {feed && (
+          <button type="button" onClick={() => onFocus(feed)} className="ml-auto rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] font-medium hover:bg-surface-2">
+            Show feed path on map
+          </button>
+        )}
+      </div>
+      {isRadial(row) ? (
+        <p className="text-ink-2">
+          Fed radially from <b className="text-ink">{nodeName(model, s.headId)}</b> across {s.depth} single corridor
+          {s.depth === 1 ? "" : "s"} ({Math.round(s.radialKm)} route-km); the weakest carries{" "}
+          <b className="text-ink">
+            {s.bottleneck} circuit{s.bottleneck === 1 ? "" : "s"}
+          </b>
+          . {s.cls === "radial-sc" ? "A single trip on it interrupts supply." : "It survives a circuit trip but not the loss of that tower line."}
+          {row.openEnds > 0 && ` ${row.openEnds} line${row.openEnds === 1 ? "" : "s"} here ${row.openEnds === 1 ? "has" : "have"} an unresolved far end — verify; it may be better fed.`}
+        </p>
+      ) : (
+        <p className="text-ink-2">{SUPPLY_HINT[s.cls]}.</p>
+      )}
+      {cut && cut.islanded.length > 0 && (
+        <p className="text-ink-2">
+          <b className="text-ink">Cut point:</b> a bus outage here islands {cut.islanded.length} substation
+          {cut.islanded.length === 1 ? "" : "s"} — {cut.islanded.slice(0, 6).map((r) => r.ss.name).join(", ")}
+          {cut.islanded.length > 6 ? "…" : ""}.{" "}
+          <button type="button" onClick={() => onFocus(cutFocus(cut, model))} className="font-medium text-accent hover:underline">
+            Show on map
+          </button>
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function SsDossier({ model, row, onClose, onFocus }: { model: MisModel; row: SsRow; onClose: () => void; onFocus: FocusFn }) {
   const s = row.ss;
   const lines = s.connectedLineIds
     .map((id) => model.lineById.get(id))
@@ -85,6 +146,7 @@ export function SsDossier({ model, row, onClose }: { model: MisModel; row: SsRow
         </Fact>
         <Fact label="Coast">{s.coastalKm != null ? `${nf1(s.coastalKm)} km` : "—"}</Fact>
       </div>
+      <SupplyBox model={model} row={row} onFocus={onFocus} />
       {years.length > 0 && (
         <p className="text-xs text-ink-2">
           Connected circuits commissioned between <b className="text-ink">{Math.min(...years)}</b> and{" "}
@@ -144,8 +206,11 @@ export function SsDossier({ model, row, onClose }: { model: MisModel; row: SsRow
   );
 }
 
-export function LineDossier({ model, row, onClose }: { model: MisModel; row: LineRow; onClose: () => void }) {
+export function LineDossier({ model, row, onClose, onFocus }: { model: MisModel; row: LineRow; onClose: () => void; onFocus: FocusFn }) {
   const l = row.line;
+  const corridorKey = model.sec.corridorOfLine.get(row.id);
+  const corridor = corridorKey ? model.sec.corridors.get(corridorKey) : undefined;
+  const beyond = corridor?.bridge ? model.ss.filter((r) => r.supply.path.includes(corridor.key)) : [];
   const ends = l.connectsSS.map((id) => model.ssById.get(id)).filter((r): r is SsRow => !!r);
   const islanded = row.islanded.map((id) => model.ssById.get(id)).filter((r): r is SsRow => !!r);
   const downstream = new Set(islanded.flatMap((r) => r.discomSsIds)).size;
@@ -195,8 +260,29 @@ export function LineDossier({ model, row, onClose }: { model: MisModel; row: Lin
           {islanded.length === 1 ? "" : "s"} — {islanded.map((r) => r.ss.name).join(", ")}
           {downstream > 0 && ` — and the ${nf0(downstream)} 33/11 kV substations they feed`}.
         </div>
+      ) : corridor?.bridge && beyond.length > 0 ? (
+        <div className="rounded-lg border border-[#ec835a]/50 bg-[#ec835a]/5 px-3 py-2 text-xs text-ink">
+          <b>Single corridor (inferred).</b> A circuit trip is covered by the parallel circuit
+          {corridor.circuits > 2 ? "s" : ""}, but losing this corridor ({corridor.circuits} circuits — e.g. a tower failure)
+          islands {beyond.length} substation{beyond.length === 1 ? "" : "s"} — {beyond.slice(0, 6).map((r) => r.ss.name).join(", ")}
+          {beyond.length > 6 ? "…" : ""}.{" "}
+          <button
+            type="button"
+            onClick={() =>
+              onFocus({
+                key: `corridor:${corridor.key}`,
+                label: `Beyond corridor ${l.name}`,
+                ssIds: beyond.map((r) => r.id),
+                lineIds: model.lines.filter((x) => x.line.connectsSS.some((id) => beyond.some((b) => b.id === id))).map((x) => x.id),
+              })
+            }
+            className="font-medium text-accent hover:underline"
+          >
+            Show on map
+          </button>
+        </div>
       ) : (
-        <p className="text-xs text-ink-2">Not a bridge: every substation it touches has another inferred path.</p>
+        <p className="text-xs text-ink-2">Not a bridge: every substation it touches has another inferred path, and its corridor has an alternative.</p>
       )}
     </Shell>
   );

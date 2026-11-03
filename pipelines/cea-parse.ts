@@ -12,7 +12,7 @@ export type CeaMonthlyRow = {
   month: string;
   region_state: string;
   source: CeaSource;
-  /** Generation in million units (MU), consistent with PSP / Vidyut series. */
+  /** Generation in million units (MU), consistent with the PSP series. */
   generation_mu: number;
   /** Share of total generation within the same month + region (0–100). */
   share_pct: number;

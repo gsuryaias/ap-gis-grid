@@ -13,6 +13,9 @@ import {
   groupBy,
   metrics,
   NONE,
+  feedPathFocus,
+  pocketRows,
+  radialRows,
   roleOf,
 } from "./model.ts";
 
@@ -184,5 +187,52 @@ describe("thematic views", () => {
       [81, 17],
     ]);
     expect(bboxOf([])).toBeNull();
+  });
+});
+
+describe("supply security (radial feeds)", () => {
+  // Meshed triangle p-q-r; s hangs off r over ONE old circuit, t off s over a DC pair.
+  const sub = [ss("p", 400), ss("q", 220), ss("r", 220), ss("s", 132, { coastalBand: 0 }), ss("t", 132)];
+  const ln = [
+    line("pq", "p", "q"),
+    line("qr", "q", "r"),
+    line("rp", "r", "p"),
+    line("rs", "r", "s", { commissioned: "Jan 1980", routeKm: 30 }),
+    line("st1", "s", "t", { routeKm: 25 }),
+    line("st2", "s", "t", { routeKm: 25 }),
+  ];
+  const g = { feedDegrees: new Map(), articulationIds: new Set<string>(), bridgeImpacts: new Map() };
+  const c = { bySs: { t: [["f", "F", "APEPDCL", 4, "name", ["y1", "y2"]]] } as never };
+  const m = buildModel({ substations: sub, lines: ln }, g, c, 2026);
+
+  it("classifies substations and corridors", () => {
+    expect(m.ssById.get("p")!.supply.cls).toBe("meshed");
+    expect(m.ssById.get("s")!.supply.cls).toBe("radial-sc");
+    expect(m.ssById.get("t")!.supply.cls).toBe("radial-sc"); // weakest link upstream is one circuit
+    expect(m.ssById.get("t")!.supply.radialKm).toBe(80);
+    expect(m.lineById.get("st1")!.corridorBridge).toBe(true);
+    expect(m.lineById.get("st1")!.corridorCircuits).toBe(2);
+    expect(m.lineById.get("pq")!.corridorBridge).toBe(false);
+    expect(m.ssById.get("r")!.cutIslands).toEqual(["s", "t"]);
+    const tot = metrics(m.ss, m.lines);
+    expect(tot.radialSc).toBe(2);
+    expect(tot.radialDiscomSs).toBe(2);
+    expect(groupBy({ ss: m.ss, lines: m.lines }, "supply").map((x) => x.key)).toEqual(["radial-sc", "meshed"]);
+  });
+
+  it("builds radial rows, pockets and the feed path", () => {
+    const rows = radialRows(m, m.ss);
+    const s = rows.find((x) => x.row.id === "s")!;
+    expect(s.head).toBe("R");
+    expect(s.feedAge).toBe(46);
+    expect([...s.flags].sort()).toEqual(["aged", "coastal", "sc"]);
+    const [pk] = pocketRows(m, m.ss);
+    expect(pk.ss.map((x) => x.id)).toEqual(["s", "t"]);
+    expect(pk.entryCircuits).toBe(1);
+    expect(pk.discomSs).toBe(2);
+    const f = feedPathFocus(m, m.ssById.get("t")!)!;
+    expect(f.lineIds.sort()).toEqual(["rs", "st1", "st2"]);
+    expect(f.ssIds.sort()).toEqual(["r", "s", "t"]);
+    expect(decodeFilters("supply:radial-sc")).toEqual([{ dim: "supply", value: "radial-sc" }]);
   });
 });

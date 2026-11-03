@@ -61,7 +61,7 @@ describe("gateManifest", () => {
     expect(() => gateManifest(manifest({ rowCount: 48 }))).not.toThrow();
     expect(() =>
       gateManifest({
-        ...manifest({ id: "vidyut-daily", schema: MANIFEST_GATES["vidyut-daily"]!.schema, rowCount: 3 }),
+        ...manifest({ id: "cea-monthly", schema: MANIFEST_GATES["cea-monthly"]!.schema, rowCount: 24 }),
       }),
     ).not.toThrow();
   });

@@ -5,13 +5,15 @@
 // layer) follows it. Clicking a breakdown row adds a filter and regroups by the next sensible
 // dimension; clicking an asset opens its dossier. The drill state lives in the URL hash
 // (`by`, `mf`, `tab`, `theme`), so any view is shareable.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { graphAnalysis } from "../../data/graph-data.ts";
 import { loadConnectivity, type ConnectivityIndex } from "../../data/connectivity.ts";
 import { timeAgo, useLiveStatus } from "../../data/live-status.ts";
 import { isMisTheme, MIS_THEME_LABEL, MIS_THEMES, themeLegend, type MisMapState, type MisTheme } from "../../map/mis-layers.ts";
 import { useAppStore } from "../../state/store.ts";
+import { interfaceSecurity } from "../../lib/supply-security.ts";
 import { LineDossier, SsDossier } from "./Dossier.tsx";
+import { MisSearch } from "./MisSearch.tsx";
 import {
   applyScope,
   bboxOf,
@@ -24,10 +26,22 @@ import {
   LINE_USEFUL_LIFE_YRS,
   metrics,
   type DimId,
+  type MapFocus,
   type ScopeFilter,
+  type SsRow,
 } from "./model.ts";
 import { Breakdown, nextDim, Register } from "./tables.tsx";
-import { AgeTab, ConductorTab, DownstreamTab, InterfacesTab, isThemeTab, N1Tab, THEME_TABS, type ThemeTab } from "./themes.tsx";
+import {
+  AgeTab,
+  ConductorTab,
+  DownstreamTab,
+  InterfacesTab,
+  isThemeTab,
+  N1Tab,
+  RadialTab,
+  THEME_TABS,
+  type ThemeTab,
+} from "./themes.tsx";
 import { gva, nf0, pct, Segmented, StatTile, Tabs, VoltageSegBar, VoltageLegend } from "./ui.tsx";
 
 export default function MisWorkspace() {
@@ -61,7 +75,7 @@ export default function MisWorkspace() {
   const usedDims = useMemo(() => new Set(filters.map((f) => f.dim)), [filters]);
   const byRaw: DimId = isDimId(ctx.misBy) ? ctx.misBy : "circle";
   const by = usedDims.has(byRaw) ? nextDim(byRaw, usedDims) : byRaw;
-  const tab: ThemeTab = isThemeTab(ctx.misTab) ? ctx.misTab : "age";
+  const tab: ThemeTab = isThemeTab(ctx.misTab) ? ctx.misTab : "radial";
   const theme: MisTheme = isMisTheme(ctx.misTheme) ? ctx.misTheme : "voltage";
 
   const setFilters = useCallback(
@@ -78,6 +92,10 @@ export default function MisWorkspace() {
   );
 
   const scope = useMemo(() => applyScope(model, filters), [model, filters]);
+
+  // Transient map highlight (a radial pocket, a feed path, a bus-outage island…). Cleared on re-scope.
+  const [focus, setFocus] = useState<MapFocus | null>(null);
+  useEffect(() => setFocus(null), [ctx.misFilters]);
   const total = useMemo(() => metrics(scope.ss, scope.lines), [scope]);
   const groups = useMemo(() => groupBy(scope, by), [scope, by]);
   const scopeLabel = filters.length
@@ -92,8 +110,8 @@ export default function MisWorkspace() {
       lineClass: {},
       ssClass: {},
       ssValue: {},
-      scopeSsIds: scoped ? scope.ss.map((r) => r.id) : null,
-      scopeLineIds: scoped ? scope.lines.map((r) => r.id) : null,
+      scopeSsIds: focus ? focus.ssIds : scoped ? scope.ss.map((r) => r.id) : null,
+      scopeLineIds: focus ? focus.lineIds : scoped ? scope.lines.map((r) => r.id) : null,
     };
     if (theme === "age") {
       for (const r of scope.lines) misMap.lineClass[r.id] = r.ageBand === "unknown" ? 4 : Number(r.ageBand);
@@ -105,22 +123,68 @@ export default function MisWorkspace() {
       }
     } else if (theme === "downstream") {
       for (const r of scope.ss) if (r.discomSsIds.length) misMap.ssValue[r.id] = r.discomSsIds.length;
+    } else if (theme === "supply") {
+      for (const r of scope.lines) if (r.corridorBridge) misMap.lineClass[r.id] = (r.corridorCircuits ?? 1) <= 1 ? 0 : 1;
+      for (const r of scope.ss) {
+        if (r.supply.cls === "radial-sc") misMap.ssClass[r.id] = 0;
+        else if (r.supply.cls === "radial-dc") misMap.ssClass[r.id] = 1;
+        else if (r.supply.cls === "unconnected") misMap.ssClass[r.id] = 2;
+      }
     }
-    setCtx({ misMap, fit: { key: encodeFilters(filters) || "all", bounds: scoped ? bboxOf(scope.ss) : null } });
-  }, [scope, theme, filters, setCtx]);
+    const fit = focus
+      ? { key: `${encodeFilters(filters)}|${focus.key}`, bounds: bboxOf(focus.ssIds.map((id) => model.ssById.get(id)).filter((r): r is SsRow => !!r)) }
+      : { key: encodeFilters(filters) || "all", bounds: scoped ? bboxOf(scope.ss) : null };
+    setCtx({ misMap, fit });
+  }, [scope, theme, filters, focus, model, setCtx]);
 
   useEffect(() => () => useAppStore.getState().setWorkspaceContext({ misMap: null, fit: null }), []);
 
   const ssRow = selectedId ? model.ssById.get(selectedId) : undefined;
   const lineRow = selectedId ? model.lineById.get(selectedId) : undefined;
   const legend = themeLegend(theme, basemap);
+  const tabProps = { model, scope, filters, onDrill: drill, onFocus: setFocus, focusKey: focus?.key ?? null };
 
   const goTab = (t: ThemeTab, th?: MisTheme) => setCtx({ misTab: t, ...(th ? { misTheme: th } : {}) });
+
+  // Interfaces (plants / traction / EHT consumers) hanging on ONE circuit, within the scope.
+  const weakIfaces = useMemo(() => {
+    const inScope = new Set(scope.lines.map((r) => r.id));
+    const out = { Generation: 0, Railway: 0, total: 0 };
+    for (const f of model.sec.interfaces) {
+      if (f.category === "HT consumer" || !f.lineIds.some((id) => inScope.has(id))) continue;
+      if (interfaceSecurity(f) !== "single-circuit") continue;
+      if (f.category === "Generation") out.Generation++;
+      if (f.category === "Railway") out.Railway++;
+      out.total++;
+    }
+    return out;
+  }, [model, scope.lines]);
+
+  // Bring the dossier into view whenever a core asset is picked (search, register, lists).
+  const dossierRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (selectedId && (model.ssById.has(selectedId) || model.lineById.has(selectedId))) {
+      dossierRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }, [selectedId, model]);
+  const openAsset = useCallback((id: string) => select(id, { fly: true }), [select]);
 
   return (
     <div className="min-h-full">
       {/* Scope bar — the drill path + map theme. Sticky so the context never scrolls away. */}
       <div className="sticky top-0 z-20 border-b border-line bg-surface/95 px-4 py-2 backdrop-blur">
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+          <MisSearch model={model} conn={conn} onDrill={drill} onPick={openAsset} />
+          <span className="ml-auto flex items-center gap-2">
+            <span className="hidden text-[11px] text-ink-2 sm:inline">Map theme</span>
+            <Segmented
+              label="Map theme"
+              value={theme}
+              onChange={(t) => setCtx({ misTheme: t })}
+              options={MIS_THEMES.map((t) => ({ id: t, label: MIS_THEME_LABEL[t] }))}
+            />
+          </span>
+        </div>
         <nav aria-label="Drill path" className="flex flex-wrap items-center gap-1 text-xs">
           <button
             type="button"
@@ -154,15 +218,21 @@ export default function MisWorkspace() {
               </span>
             </span>
           ))}
-          <span className="ml-auto flex items-center gap-2">
-            <span className="hidden text-[11px] text-ink-2 sm:inline">Map theme</span>
-            <Segmented
-              label="Map theme"
-              value={theme}
-              onChange={(t) => setCtx({ misTheme: t })}
-              options={MIS_THEMES.map((t) => ({ id: t, label: MIS_THEME_LABEL[t] }))}
-            />
-          </span>
+          {focus && (
+            <span className="ml-auto inline-flex max-w-full items-center rounded-full border border-accent/50 bg-accent/10 pl-2 text-ink">
+              <span className="truncate py-0.5" title="Map highlight — everything else is dimmed">
+                ◎ {focus.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => setFocus(null)}
+                aria-label="Clear map highlight"
+                className="ml-0.5 rounded-full px-1.5 py-0.5 text-ink-2 hover:bg-surface-3 hover:text-ink"
+              >
+                ×
+              </button>
+            </span>
+          )}
         </nav>
         {legend.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-2">
@@ -183,11 +253,13 @@ export default function MisWorkspace() {
       </div>
 
       <div className="mx-auto max-w-[1100px] space-y-3 p-3 sm:p-4">
-        {ssRow && <SsDossier model={model} row={ssRow} onClose={() => select(null)} />}
-        {lineRow && <LineDossier model={model} row={lineRow} onClose={() => select(null)} />}
+        <div ref={dossierRef} className="scroll-mt-28 space-y-3 empty:hidden">
+          {ssRow && <SsDossier model={model} row={ssRow} onClose={() => select(null)} onFocus={setFocus} />}
+          {lineRow && <LineDossier model={model} row={lineRow} onClose={() => select(null)} onFocus={setFocus} />}
+        </div>
 
         {/* KPI strip for the current scope */}
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <StatTile label="Substations" value={nf0(total.ss)} sub={`400 · 220 · 132 kV: ${total.ssByV[400]} · ${total.ssByV[220]} · ${total.ssByV[132]}`}>
             <VoltageSegBar byV={total.ssByV} unit="SS" />
           </StatTile>
@@ -206,6 +278,13 @@ export default function MisWorkspace() {
             sub={`${pct(total.pctPastLife)} of ckm ≥ ${LINE_USEFUL_LIFE_YRS} yrs (CERC life)`}
             onClick={() => goTab("age", "age")}
             title="Show the age analysis and colour the map by line age"
+          />
+          <StatTile
+            label="Radially fed SS"
+            value={nf0(total.radialSc + total.radialDc)}
+            sub={`${total.radialSc} on a single circuit · ${total.radialDc} on one corridor${conn ? ` · ${nf0(total.radialDiscomSs)} 33/11 kV SS behind them` : ""}`}
+            onClick={() => goTab("radial", "supply")}
+            title="Show the radial-feed analysis and mark radial feeds on the map"
           />
           <StatTile
             label="N-1 exposure"
@@ -227,6 +306,13 @@ export default function MisWorkspace() {
             onClick={() => goTab("downstream", "downstream")}
             title="Show 33 kV downstream load and size substations by it on the map"
           />
+          <StatTile
+            label="Single-circuit interfaces"
+            value={nf0(weakIfaces.total)}
+            sub={`${weakIfaces.Generation} generating stations · ${weakIfaces.Railway} traction SS on one circuit`}
+            onClick={() => goTab("interfaces")}
+            title="Show how generation, traction and EHT consumers are connected"
+          />
         </div>
 
         <Breakdown
@@ -240,14 +326,15 @@ export default function MisWorkspace() {
 
         <section className="overflow-hidden rounded-xl border border-line bg-surface-2/60 shadow-sm">
           <Tabs tabs={THEME_TABS} value={tab} onChange={(t) => setCtx({ misTab: t })} label="Thematic analysis" />
-          {tab === "age" && <AgeTab model={model} scope={scope} filters={filters} onDrill={drill} />}
-          {tab === "n1" && <N1Tab model={model} scope={scope} filters={filters} onDrill={drill} />}
-          {tab === "downstream" && <DownstreamTab model={model} scope={scope} filters={filters} onDrill={drill} />}
-          {tab === "conductor" && <ConductorTab model={model} scope={scope} filters={filters} onDrill={drill} />}
-          {tab === "interfaces" && <InterfacesTab model={model} scope={scope} filters={filters} onDrill={drill} />}
+          {tab === "radial" && <RadialTab {...tabProps} />}
+          {tab === "age" && <AgeTab {...tabProps} />}
+          {tab === "n1" && <N1Tab {...tabProps} />}
+          {tab === "downstream" && <DownstreamTab {...tabProps} />}
+          {tab === "conductor" && <ConductorTab {...tabProps} />}
+          {tab === "interfaces" && <InterfacesTab {...tabProps} />}
         </section>
 
-        <Register scope={scope} label={scopeLabel} />
+        <Register model={model} scope={scope} label={scopeLabel} />
 
         <footer className="space-y-1 px-1 pb-4 text-[11px] leading-snug text-ink-2">
           <VoltageLegend />

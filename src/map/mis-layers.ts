@@ -13,8 +13,8 @@ import { LAYER, SRC } from "./layers.ts";
 
 export const MIS_LAYER = { lines: "mis-line-theme", ss: "mis-ss-theme" } as const;
 
-export type MisTheme = "voltage" | "age" | "n1" | "downstream";
-export const MIS_THEMES: MisTheme[] = ["voltage", "age", "n1", "downstream"];
+export type MisTheme = "voltage" | "supply" | "age" | "n1" | "downstream";
+export const MIS_THEMES: MisTheme[] = ["voltage", "supply", "age", "n1", "downstream"];
 
 export function isMisTheme(v: unknown): v is MisTheme {
   return typeof v === "string" && (MIS_THEMES as string[]).includes(v);
@@ -22,6 +22,7 @@ export function isMisTheme(v: unknown): v is MisTheme {
 
 export const MIS_THEME_LABEL: Record<MisTheme, string> = {
   voltage: "Voltage",
+  supply: "Radial feeds",
   age: "Line age",
   n1: "N-1 exposure",
   downstream: "33 kV load",
@@ -33,7 +34,7 @@ const AGE_LIGHT = ["#86b6ef", "#3987e5", "#1c5cab", "#0d366b"];
 const AGE_DARK = ["#184f95", "#3987e5", "#86b6ef", "#cde2fb"];
 const AGE_UNKNOWN = "#9aa0a6";
 // Status palette (fixed, never themed) — always shown with a text label in the legend.
-export const STATUS = { critical: "#d03b3b", serious: "#ec835a" } as const;
+export const STATUS = { critical: "#d03b3b", serious: "#ec835a", muted: "#9aa0a6" } as const;
 export const DOWNSTREAM_COLOR = "#2a78d6";
 
 export interface LegendItem {
@@ -53,6 +54,15 @@ export function themeLegend(theme: MisTheme, basemap: Basemap): LegendItem[] {
       { label: "Year not recorded", color: AGE_UNKNOWN, shape: "line" },
     ];
   }
+  if (theme === "supply") {
+    return [
+      { label: "Single-circuit radial feed", color: STATUS.critical, shape: "line" },
+      { label: "Single-corridor (multi-circuit) radial feed", color: STATUS.serious, shape: "line" },
+      { label: "Radial SS · single circuit", color: STATUS.critical, shape: "ring" },
+      { label: "Radial SS · single corridor", color: STATUS.serious, shape: "ring" },
+      { label: "No path to grid", color: STATUS.muted, shape: "ring" },
+    ];
+  }
   if (theme === "n1") {
     return [
       { label: "Bridge line — outage islands SS", color: STATUS.critical, shape: "line" },
@@ -69,9 +79,9 @@ export function themeLegend(theme: MisTheme, basemap: Basemap): LegendItem[] {
 /** Per-feature classes/values pushed onto the core sources as feature-state. */
 export interface MisMapState {
   theme: MisTheme;
-  /** Line id → class index (age band 0–4, or 0 = bridge for N-1). */
+  /** Line id → class index (age band 0–4; N-1: 0 = bridge; supply: 0 = single-circuit, 1 = multi-circuit radial corridor). */
   lineClass: Record<string, number>;
-  /** SS id → class index (N-1: 0 = cut point, 1 = single-fed). */
+  /** SS id → class index (N-1: 0 = cut point, 1 = single-fed; supply: 0 = radial SC, 1 = radial DC, 2 = unconnected). */
   ssClass: Record<string, number>;
   /** SS id → magnitude (33/11 kV SS served) for proportional symbols. */
   ssValue: Record<string, number>;
@@ -87,6 +97,7 @@ function lineColor(theme: MisTheme, basemap: Basemap): ExpressionSpecification {
     const ramp = basemap === "light" ? AGE_LIGHT : AGE_DARK;
     return e(["match", ["feature-state", "misC"], 0, ramp[0], 1, ramp[1], 2, ramp[2], 3, ramp[3], AGE_UNKNOWN]);
   }
+  if (theme === "supply") return e(["match", ["feature-state", "misC"], 0, STATUS.critical, STATUS.serious]);
   return e(["literal", STATUS.critical]);
 }
 
@@ -187,7 +198,7 @@ export function applyMisTheme(map: MlMap, state: MisMapState | null, basemap: Ba
     map.setPaintProperty(MIS_LAYER.ss, "circle-color", "#000");
     map.setPaintProperty(MIS_LAYER.ss, "circle-opacity", 0);
     map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-color", e([
-      "match", ["feature-state", "misC"], 0, STATUS.critical, STATUS.serious,
+      "match", ["feature-state", "misC"], 0, STATUS.critical, 1, STATUS.serious, STATUS.muted,
     ]));
     map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-width", 2.5);
     map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-opacity", e(["case", has, 0.95, 0]));
