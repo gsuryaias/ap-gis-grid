@@ -1,11 +1,37 @@
 # AP-TRANSCO Grid Atlas
 
-An interactive GIS + MIS lookup for the **AP-TRANSCO transmission network** — 400 / 220 / 132 kV
-lines and substations. Search, filter, and click any feature on a map to see its details and
-spatially-inferred connections, with a synced data table for browsing the whole network.
+A live, mobile-friendly GIS of the **Andhra Pradesh power network** — the AP-TRANSCO 400 / 220 / 132 kV
+grid, the **APSPDCL / APEPDCL 33 kV** sub-transmission networks, generation, PGCIL, railway-traction and
+HT-consumer substations — over **27 RTGS reference layers** (districts, mandals, constituencies, highways,
+rail, reserve forests, wildlife, CRZ, rivers, reservoirs, flood, seismic and cyclone layers).
 
-100% static and client-side: no backend, no database, no API keys. Runs locally and deploys to
-GitHub Pages.
+**Live data:** one command pulls the current network from the AP-TRANSCO enterprise GIS
+(`gis.aptransco.gov.in`, ArcGIS REST), commits any changes (git history is the network's audit trail) and
+redeploys the site. The header badge shows when the data was last synced and opens a per-layer status + change log.
+
+Static and client-side at request time: no backend, no database, no API keys. Installable (PWA) and works
+offline for areas already viewed. Deploys to GitHub Pages: https://gsuryaias.github.io/ap-gis-grid/
+
+## Live data — how the auto-update works
+
+```
+gis.aptransco.gov.in (ArcGIS REST) ──npm run sync:live──▶ data/raw/live/*.geojson + manifest + changelog
+        (India-only network)                                   │  (gates reject empty/short pulls)
+                                                               ▼
+                                         npm run build:data ──▶ public/data/* ──▶ git push ──▶ Pages
+```
+
+To update, from the project folder (on a connection in India — the State Data Centre firewall blocks
+foreign traffic, which is also why this can't run on GitHub's cloud runners):
+
+```bash
+git checkout main
+npm run update               # sync → rebuild → test → commit → push; the site redeploys in ~2 min
+npm run update -- --no-push  # same, but don't push
+```
+
+APCPDCL's network is behind a GIS login: add `AP_GIS_USERNAME` / `AP_GIS_PASSWORD` (or `AP_GIS_TOKEN`) to
+your environment and its layers can be added in `scripts/live-sources.ts` (`npm run sync:live -- --discover APCPDCL` lists them).
 
 ![screenshot](atlas-preview.png)
 
@@ -72,7 +98,9 @@ to surface those fields wherever present.
 
 ```bash
 npm install          # all deps are local; nothing is installed globally
-npm run build:data   # regenerate public/data/* from data/raw/Transco.kml
+npm run sync:live    # pull the latest network from the AP-TRANSCO GIS (needs an Indian connection)
+npm run build:data   # regenerate public/data/* from data/raw (live pulls, snapshot fallback)
+npm run build:ref    # rebuild RTGS reference layers (needs the RTGS shapefile library; RTGS_DIR=…)
 npm run dev          # http://localhost:5173/ap-gis-grid/
 npm test             # ETL unit tests + emitted-data integrity checks
 npm run typecheck

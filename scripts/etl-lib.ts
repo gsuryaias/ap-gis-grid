@@ -22,6 +22,8 @@ export interface GenerationPlant {
   circle: string | null;
   doc: string | null;
   capacityMw: number | null;
+  /** Unit configuration, e.g. "1X500MW + 1X800MW" (live Gridmap layer only). */
+  units?: string | null;
   lng: number;
   lat: number;
 }

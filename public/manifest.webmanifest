@@ -1,0 +1,15 @@
+{
+  "name": "AP-TRANSCO Grid Atlas",
+  "short_name": "Grid Atlas",
+  "description": "Live GIS of the Andhra Pradesh power network — AP-TRANSCO 400/220/132 kV grid, DISCOM 33 kV networks and RTGS reference layers.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f6f9",
+  "theme_color": "#0b3d5c",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

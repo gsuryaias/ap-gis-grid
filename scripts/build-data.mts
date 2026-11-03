@@ -8,7 +8,7 @@
  * synthetic/stable (never bare name); coordinates are sourced from geometry and rounded to
  * 5 dp. Heterogeneous <description> HTML tables are normalised via a fixed alias map.
  */
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DOMParser } from "@xmldom/xmldom";
@@ -63,6 +63,7 @@ import {
   type Substation,
   type Voltage,
 } from "./etl-lib.ts";
+import { buildDiscomLines, buildDiscomSubstations, type Discom } from "./etl-discom.ts";
 
 // Endpoints snap to the substation POLYGON (0 m if inside the compound; 80% of endpoints are).
 // 1000 m also catches lines drawn slightly short of the compound; far-away (>1 km) endpoints are
@@ -188,6 +189,44 @@ async function readShapefile(
   return out;
 }
 
+type RawFeat = { geometry: GeoJSON.Geometry | null; properties: Record<string, unknown> };
+
+/** Where each layer was read from this run (reported in live-status.json + data-quality.json). */
+const layerSources: Record<string, "live" | "snapshot"> = {};
+const LIVE_DIR = resolve("data/raw/live");
+const SNAPSHOT_DIR = resolve("data/raw/gridmap");
+
+/**
+ * Read a network layer: the live pull (data/raw/live/<name>.geojson, written by `npm run sync:live`
+ * from the AP-TRANSCO enterprise GIS) when present, else the committed shapefile snapshot
+ * (data/raw/gridmap/<name>.shp). Live attribute keys are pre-truncated to the shapefile's 10-char
+ * dBASE names by the sync, so both paths feed the ETL identical property keys.
+ */
+async function readLayer(name: string): Promise<RawFeat[]> {
+  const live = resolve(LIVE_DIR, `${name}.geojson`);
+  if (existsSync(live) && process.env.ETL_SNAPSHOT_ONLY !== "1") {
+    const fc = JSON.parse(readFileSync(live, "utf-8")) as { features: RawFeat[] };
+    layerSources[name] = "live";
+    console.log(`[etl] reading ${name} (live: ${fc.features.length} features)`);
+    return fc.features.map((f) => ({ geometry: f.geometry, properties: f.properties ?? {} }));
+  }
+  layerSources[name] = "snapshot";
+  console.log(`[etl] reading ${name} (snapshot shapefile)`);
+  return readShapefile(`${SNAPSHOT_DIR}/${name}.shp`, `${SNAPSHOT_DIR}/${name}.dbf`);
+}
+
+/** A small circular footprint (n-gon) around a point, for substations that have no surveyed polygon. */
+function syntheticFootprint(lng: number, lat: number, radiusM: number, n = 12): Position[][] {
+  const dLat = radiusM / 111_320;
+  const dLng = radiusM / (111_320 * Math.cos((lat * Math.PI) / 180));
+  const ring: Position[] = [];
+  for (let i = 0; i <= n; i++) {
+    const a = (2 * Math.PI * (i % n)) / n;
+    ring.push([round5(lng + dLng * Math.cos(a)), round5(lat + dLat * Math.sin(a))]);
+  }
+  return [ring];
+}
+
 /** First/last vertex of a (Multi)LineString as [lng,lat] pairs (uses the longest part). */
 function endpointsOf(geom: LineString | MultiLineString): { first: [number, number]; last: [number, number]; rings: Position[][] } {
   const rings: Position[][] = geom.type === "MultiLineString" ? geom.coordinates : [geom.coordinates];
@@ -214,7 +253,11 @@ function collectPoints(node: TreeNode, out: TreeNode[]): void {
  * never part of the initial transmission payload; it's fetched only when the user enables it.
  * Plants carry an energy-mix class (Solar / Wind / Thermal / Gas / Hydro / Other).
  */
-function buildGeneration(outDir: string): void {
+async function buildGeneration(outDir: string): Promise<void> {
+  if (existsSync(resolve(LIVE_DIR, "generation-ss.geojson")) && process.env.ETL_SNAPSHOT_ONLY !== "1") {
+    return buildGenerationLive(outDir, await readLayer("generation-ss"));
+  }
+  layerSources["generation-ss"] = "snapshot";
   const genPath = resolve("data/raw/generation.kml");
   console.log(`[etl] reading ${genPath}`);
   const xml = readFileSync(genPath, "utf-8");
@@ -263,8 +306,48 @@ function buildGeneration(outDir: string): void {
     });
   }
 
+  writeGeneration(outDir, plants, byType);
+}
+
+/**
+ * Generation plants from the live Gridmap `Generation_SS` layer — same plants as the KML, plus the
+ * installed capacity (MW) and unit configuration the KML never carried.
+ */
+function buildGenerationLive(outDir: string, feats: RawFeat[]): void {
+  const usedIds = new Set<string>();
+  const plants: GenerationPlant[] = [];
+  const byType: Record<string, number> = {};
+  for (const f of feats) {
+    if (!f.geometry || f.geometry.type !== "Point") continue;
+    const p = f.properties;
+    const name = (cleanPgName(p.name as string) ?? cleanPgName(p.name_of_th as string) ?? "Unnamed plant").replace(/\s+/g, " ");
+    const energy = classifyEnergy(cleanPgName(p.ss_type as string));
+    const voltage = parseVoltage(cleanPgName(p.voltage as string)) ?? 132;
+    const cap = Number(p.total_capa);
+    const coords = (f.geometry as Point).coordinates;
+    byType[energy] = (byType[energy] ?? 0) + 1;
+    plants.push({
+      id: uniqueId(`g-${slug(name)}`, usedIds),
+      kind: "generation",
+      name,
+      descriptiveName: cleanPgName(p.name_of_th as string),
+      ssCode: cleanPgName(p.sap_ss_id as string),
+      energy,
+      voltage,
+      circle: cleanPgName(p.circle as string),
+      doc: cleanPgName(p.doc as string),
+      capacityMw: p.total_capa != null && Number.isFinite(cap) && cap > 0 ? cap : null,
+      units: cleanPgName(p.unit_wise_ as string)?.replace(/\s+/g, " ") ?? null,
+      lng: round5(coords[0]),
+      lat: round5(coords[1]),
+    });
+  }
+  writeGeneration(outDir, plants, byType);
+}
+
+function writeGeneration(outDir: string, plants: GenerationPlant[], byType: Record<string, number>): void {
   if (plants.length === 0) {
-    console.error("[etl] VALIDATION FAILED: generation.kml produced 0 plants");
+    console.error("[etl] VALIDATION FAILED: generation source produced 0 plants");
     process.exit(1);
   }
 
@@ -350,22 +433,14 @@ function lineRouteKm(geom: LineString | MultiLineString): { rings: Position[][];
  * Source is WGS84 (EPSG:4326); no reprojection. Connectivity to AP-TRANSCO is NOT modelled.
  */
 async function buildPowerGrid(outDir: string): Promise<void> {
-  const baseDir = resolve("data/raw/gridmap");
-  const linesShp = `${baseDir}/powergrid-lines.shp`;
-  const linesDbf = `${baseDir}/powergrid-lines.dbf`;
-  const ssShp = `${baseDir}/powergrid-ss.shp`;
-  const ssDbf = `${baseDir}/powergrid-ss.dbf`;
-  console.log(`[etl] reading ${linesShp} + ${ssShp}`);
 
   // ---- Lines ---------------------------------------------------------------
   const usedLineIds = new Set<string>();
   const lines: PowerGridLine[] = [];
   const lineGeoms: Position[][][] = []; // parallel to `lines`: ring lists (handles MultiLineString)
   {
-    const src = await openShapefile(linesShp, linesDbf);
     let seq = 0;
-    for (let r = await src.read(); !r.done; r = await src.read()) {
-      const feat = r.value;
+    for (const feat of await readLayer("powergrid-lines")) {
       const geom = feat.geometry;
       if (!geom || (geom.type !== "LineString" && geom.type !== "MultiLineString")) continue;
       const props = (feat.properties ?? {}) as Record<string, unknown>;
@@ -381,16 +456,13 @@ async function buildPowerGrid(outDir: string): Promise<void> {
       lines.push({ id, kind: "pg-line", name, voltage, service, lengthKm });
       lineGeoms.push(roundedRings);
     }
-    await src.cancel();
   }
 
   // ---- Substations ---------------------------------------------------------
   const usedSsIds = new Set<string>();
   const substations: PowerGridSubstation[] = [];
   {
-    const src = await openShapefile(ssShp, ssDbf);
-    for (let r = await src.read(); !r.done; r = await src.read()) {
-      const feat = r.value;
+    for (const feat of await readLayer("powergrid-ss")) {
       const geom = feat.geometry;
       if (!geom || geom.type !== "Point") continue;
       const props = (feat.properties ?? {}) as Record<string, unknown>;
@@ -404,19 +476,13 @@ async function buildPowerGrid(outDir: string): Promise<void> {
       const id = uniqueId(`ps-${slug(name)}`, usedSsIds);
       substations.push({ id, kind: "pg-substation", name, fullName, voltage, lng, lat });
     }
-    await src.cancel();
   }
 
   // ---- Railway-traction substations (RTSS) ---------------------------------
   const usedRailIds = new Set<string>();
   const railway: RailwaySubstation[] = [];
   {
-    const railShp = `${baseDir}/railway-ss.shp`;
-    const railDbf = `${baseDir}/railway-ss.dbf`;
-    console.log(`[etl] reading ${railShp}`);
-    const src = await openShapefile(railShp, railDbf);
-    for (let r = await src.read(); !r.done; r = await src.read()) {
-      const feat = r.value;
+    for (const feat of await readLayer("railway-ss")) {
       const geom = feat.geometry;
       if (!geom || geom.type !== "Point") continue;
       const props = (feat.properties ?? {}) as Record<string, unknown>;
@@ -440,19 +506,13 @@ async function buildPowerGrid(outDir: string): Promise<void> {
         lat,
       });
     }
-    await src.cancel();
   }
 
   // ---- Bulk-load / HT-consumer substations ---------------------------------
   const usedBulkIds = new Set<string>();
   const bulkload: BulkLoadSubstation[] = [];
   {
-    const bulkShp = `${baseDir}/bulkload-ss.shp`;
-    const bulkDbf = `${baseDir}/bulkload-ss.dbf`;
-    console.log(`[etl] reading ${bulkShp}`);
-    const src = await openShapefile(bulkShp, bulkDbf);
-    for (let r = await src.read(); !r.done; r = await src.read()) {
-      const feat = r.value;
+    for (const feat of await readLayer("bulkload-ss")) {
       const geom = feat.geometry;
       if (!geom || geom.type !== "Point") continue;
       const props = (feat.properties ?? {}) as Record<string, unknown>;
@@ -475,7 +535,6 @@ async function buildPowerGrid(outDir: string): Promise<void> {
         lat,
       });
     }
-    await src.cancel();
   }
 
   if (
@@ -553,19 +612,98 @@ async function buildPowerGrid(outDir: string): Promise<void> {
   );
 }
 
+/**
+ * DISCOM 33 kV sub-transmission overlay (lazy-loaded) from the live pulls
+ * data/raw/live/discom-{spdcl,epdcl,cpdcl}-{ss,lines}.geojson. Skipped (with empty outputs) when no
+ * DISCOM layer has been synced yet — the app hides the toggle when the files are empty.
+ */
+async function buildDiscom(outDir: string): Promise<Record<string, { substations: number; lines: number; lineKm: number }>> {
+  const sources: Array<{ discom: Discom; stem: string }> = [
+    { discom: "APSPDCL", stem: "discom-spdcl" },
+    { discom: "APEPDCL", stem: "discom-epdcl" },
+    { discom: "APCPDCL", stem: "discom-cpdcl" },
+  ];
+  const ssFeats: Feature[] = [];
+  const lineFeats: Feature[] = [];
+  const stats: Record<string, { substations: number; lines: number; lineKm: number }> = {};
+  for (const { discom, stem } of sources) {
+    const ssPath = resolve(LIVE_DIR, `${stem}-ss.geojson`);
+    const lnPath = resolve(LIVE_DIR, `${stem}-lines.geojson`);
+    if (!existsSync(ssPath) && !existsSync(lnPath)) continue;
+    const ss = existsSync(ssPath) ? buildDiscomSubstations(discom, await readLayer(`${stem}-ss`)) : [];
+    const ln = existsSync(lnPath) ? buildDiscomLines(discom, await readLayer(`${stem}-lines`)) : [];
+    // Null attributes are dropped from the emitted overlay (the app reads every field as optional).
+    const compact = (o: object) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
+    for (const s of ss) ssFeats.push({ type: "Feature", id: s.id, geometry: { type: "Point", coordinates: [s.lng, s.lat] }, properties: compact(s) });
+    for (const l of ln)
+      lineFeats.push({
+        type: "Feature",
+        id: l.props.id,
+        geometry: l.parts.length === 1 ? { type: "LineString", coordinates: l.parts[0] } : { type: "MultiLineString", coordinates: l.parts },
+        properties: compact(l.props),
+      });
+    stats[discom] = {
+      substations: ss.length,
+      lines: ln.length,
+      lineKm: Math.round(ln.reduce((a, l) => a + l.props.lengthKm, 0)),
+    };
+    console.log(`[etl] DISCOM ${discom}: ${ss.length} 33/11 kV SS, ${ln.length} 33 kV line runs (${stats[discom].lineKm} km)`);
+  }
+  writeFileSync(resolve(outDir, "discom-ss.geojson"), JSON.stringify({ type: "FeatureCollection", features: ssFeats }));
+  writeFileSync(resolve(outDir, "discom-lines.geojson"), JSON.stringify({ type: "FeatureCollection", features: lineFeats }));
+  return stats;
+}
+
+/**
+ * public/data/live-status.json — what the app shows in the "Live network" badge / change log:
+ * the sync manifest (per-layer status, counts, last fetch/change) + the most recent change entries.
+ */
+function writeLiveStatus(outDir: string, extra: Record<string, unknown>): void {
+  const manifestPath = resolve(LIVE_DIR, "manifest.json");
+  const changelogPath = resolve(LIVE_DIR, "changelog.json");
+  const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf-8")) : null;
+  const changelog = existsSync(changelogPath) ? (JSON.parse(readFileSync(changelogPath, "utf-8")) as unknown[]) : [];
+  const status = {
+    generatedAt: new Date().toISOString(),
+    source: manifest?.source ?? null,
+    lastRun: manifest?.lastRun ?? null,
+    lastSuccess: manifest?.lastSuccess ?? null,
+    layers: manifest?.layers ?? {},
+    layerSources,
+    changes: changelog.slice(0, 40),
+    ...extra,
+  };
+  writeFileSync(resolve(outDir, "live-status.json"), JSON.stringify(status, null, 2));
+}
+
 async function main(): Promise<void> {
   const outDir = resolve("public/data");
-  const baseDir = resolve("data/raw/gridmap");
   mkdirSync(outDir, { recursive: true });
 
   // ==========================================================================
   // Substations — authoritative ESRI shapefile (APTransco SS, TRANSCO-only).
   // Polygon/MultiPolygon footprints → a marker POINT at the ring-vertex centroid.
   // ==========================================================================
-  const ssShp = `${baseDir}/aptransco-ss.shp`;
-  const ssDbf = `${baseDir}/aptransco-ss.dbf`;
-  console.log(`[etl] reading ${ssShp}`);
-  const rawSs = await readShapefile(ssShp, ssDbf);
+  const rawSs = await readLayer("aptransco-ss");
+
+  // The live TRANSCO SS layer is POINTS; the committed snapshot has surveyed compound POLYGONS, which
+  // make line-endpoint adjacency far more accurate (80% of endpoints fall inside a compound). So each
+  // live point borrows its polygon from the snapshot by SAP id (else the nearest same-voltage
+  // polygon within 300 m); a genuinely new SS with no surveyed outline gets a 150 m-radius footprint.
+  const snapshotPolys: Array<{ code: string | null; voltage: Voltage | null; rings: Position[][]; c: [number, number] }> = [];
+  for (const f of await readShapefile(`${SNAPSHOT_DIR}/aptransco-ss.shp`, `${SNAPSHOT_DIR}/aptransco-ss.dbf`)) {
+    const g = f.geometry;
+    if (!g || (g.type !== "Polygon" && g.type !== "MultiPolygon")) continue;
+    snapshotPolys.push({
+      code: cleanPgName(f.properties.sap_ss_id as string),
+      voltage: normalizeSsVoltage(f.properties.voltage),
+      rings: exteriorRings(g as Polygon | MultiPolygon),
+      c: polygonCentroid(g as Polygon | MultiPolygon),
+    });
+  }
+  const polyByCode = new Map<string, Position[][]>();
+  for (const sp of snapshotPolys) if (sp.code && !polyByCode.has(sp.code)) polyByCode.set(sp.code, sp.rings);
+  const footprintSource = { surveyedPolygon: 0, snapshotByCode: 0, snapshotNearest: 0, synthetic: 0 };
 
   const usedIds = new Set<string>();
   const substations: Substation[] = [];
@@ -576,9 +714,12 @@ async function main(): Promise<void> {
 
   for (const feat of rawSs) {
     const geom = feat.geometry;
-    if (!geom || (geom.type !== "Polygon" && geom.type !== "MultiPolygon")) continue;
+    if (!geom || (geom.type !== "Polygon" && geom.type !== "MultiPolygon" && geom.type !== "Point")) continue;
     const props = feat.properties;
-    const [lng, lat] = polygonCentroid(geom as Polygon | MultiPolygon);
+    const [lng, lat] =
+      geom.type === "Point"
+        ? [round5((geom as Point).coordinates[0]), round5((geom as Point).coordinates[1])]
+        : polygonCentroid(geom as Polygon | MultiPolygon);
     const descriptiveName = cleanPgName(props.ss_name as string);
     const cleanName = cleanSsName(props.ss_name as string) ?? descriptiveName ?? "Unnamed SS";
 
@@ -617,7 +758,25 @@ async function main(): Promise<void> {
       zone: cleanPgName(props.zone as string),
       division: cleanPgName(props.division as string),
     });
-    const rings = exteriorRings(geom as Polygon | MultiPolygon);
+    let rings: Position[][];
+    if (geom.type !== "Point") {
+      rings = exteriorRings(geom as Polygon | MultiPolygon);
+      footprintSource.surveyedPolygon++;
+    } else if (ssCode && polyByCode.has(ssCode)) {
+      rings = polyByCode.get(ssCode)!;
+      footprintSource.snapshotByCode++;
+    } else {
+      let best: Position[][] | null = null;
+      let bestD = 300;
+      for (const sp of snapshotPolys) {
+        if (sp.voltage !== voltage) continue;
+        const d = haversineMeters([lng, lat], sp.c);
+        if (d < bestD) { bestD = d; best = sp.rings; }
+      }
+      if (best) footprintSource.snapshotNearest++;
+      else footprintSource.synthetic++;
+      rings = best ?? syntheticFootprint(lng, lat, 150);
+    }
     ssPolys.push({ id, rings, bbox: ringsBbox(rings) });
   }
   // Circle is authoritative now (no spatial inference under the Gridmap source).
@@ -629,9 +788,9 @@ async function main(): Promise<void> {
   // drop only null / <2-vertex geometry. "(P)" is a naming token, NOT a flag.
   // ==========================================================================
   const lineLayers: Array<{ path: string; voltage: Voltage }> = [
-    { path: `${baseDir}/lines-400kv`, voltage: 400 },
-    { path: `${baseDir}/lines-220kv`, voltage: 220 },
-    { path: `${baseDir}/lines-132kv`, voltage: 132 },
+    { path: "lines-400kv", voltage: 400 },
+    { path: "lines-220kv", voltage: 220 },
+    { path: "lines-132kv", voltage: 132 },
   ];
 
   // ---- Build the non-TRANSCO facility point set (display-only external endpoints) ----
@@ -641,7 +800,7 @@ async function main(): Promise<void> {
     category: string,
     nameKeys: string[],
   ): Promise<void> => {
-    const feats = await readShapefile(`${baseDir}/${file}.shp`, `${baseDir}/${file}.dbf`);
+    const feats = await readLayer(file);
     for (const f of feats) {
       if (!f.geometry || f.geometry.type !== "Point") continue;
       const p = f.properties;
@@ -671,8 +830,7 @@ async function main(): Promise<void> {
   const extCategory: Record<string, number> = {}; // external endpoints by facility category
 
   for (const { path, voltage } of lineLayers) {
-    console.log(`[etl] reading ${path}.shp`);
-    const feats = await readShapefile(`${path}.shp`, `${path}.dbf`);
+    const feats = await readLayer(path);
     for (const feat of feats) {
       rawLineCount++;
       const geom = feat.geometry;
@@ -1009,7 +1167,10 @@ async function main(): Promise<void> {
 
   const meta = {
     generatedAt: new Date().toISOString(),
-    source: "AP-TRANSCO Gridmap ESRI shapefiles (APTransco SS + Lines 400/220/132 kV)",
+    source:
+      layerSources["aptransco-ss"] === "live"
+        ? "AP-TRANSCO enterprise GIS (gis.aptransco.gov.in, live REST pull) — Transco SS + Lines 400/220/132 kV"
+        : "AP-TRANSCO Gridmap ESRI shapefiles (APTransco SS + Lines 400/220/132 kV)",
     counts: { substations: substations.length, lines: lines.length },
     byVoltage,
     byCircle,
@@ -1033,7 +1194,9 @@ async function main(): Promise<void> {
       'The "(P)" token in line names is a naming token, NOT a "proposed" flag (most such lines carry real past commissioning dates).',
       'Substation `circle` is the source numeric circle CODE (0 = unassigned → null); use `zone`/`division` for human-readable groupings. Line `circle` is a circle NAME.',
     ],
-    substationSchemas: { aptranscoShapefile: substations.length },
+    substationSchemas: { [layerSources["aptransco-ss"] === "live" ? "aptranscoLive" : "aptranscoShapefile"]: substations.length },
+    layerSources,
+    substationFootprints: footprintSource,
     unknownSchemaSamples: ssVoltageDroppedSamples,
     idsSynthesizedFromName: ssIdSynthFromName,
     inferredCircles,
@@ -1087,13 +1250,18 @@ async function main(): Promise<void> {
   );
 
   // ---- Generation overlay (separate, lazy-loaded layer) --------------------
-  buildGeneration(outDir);
+  await buildGeneration(outDir);
 
   // ---- POWERGRID (PGCIL) national grid overlay (separate, lazy-loaded) -----
   await buildPowerGrid(outDir);
 
+  // ---- DISCOM 33 kV sub-transmission overlay (separate, lazy-loaded) -------
+  const discom = await buildDiscom(outDir);
+
   // ---- Place-search gazetteer (separate, lazy-loaded by the search box) ----
   buildPlaces(outDir);
+
+  writeLiveStatus(outDir, { discom, footprintSource });
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

@@ -28,7 +28,7 @@ jobs:
 
       - run: npm ci
 
-      # Regenerate data from the committed KML (keeps deploy reproducible).
+      # Regenerate the static data from data/raw (live pulls + snapshots) — keeps deploy reproducible.
       - run: npm run build:data
 
       - run: npm test
