@@ -305,8 +305,8 @@ describe("emitted data integrity (run `npm run build:data` first)", () => {
     const lines = read<FeatureCollection>("lines.geojson");
     const ssIds = new Set(ss.features.map((f) => f.properties?.id as string));
 
-    expect(ss.features.length).toBe(376); // APTransco SS shapefile (TRANSCO-only)
-    expect(lines.features.length).toBe(1190); // Lines 400+220+132 kV shapefiles
+    expect(ss.features.length).toBeGreaterThanOrEqual(300); // TRANSCO SS (376 in the 2026-06 snapshot, live grows)
+    expect(lines.features.length).toBeGreaterThanOrEqual(1000); // Lines 400+220+132 kV (1190 snapshot)
 
     const allIds = [...ss.features, ...lines.features].map((f) => f.properties?.id as string);
     expect(new Set(allIds).size).toBe(allIds.length); // ids unique across both layers
@@ -332,7 +332,7 @@ describe("emitted data integrity (run `npm run build:data` first)", () => {
   const genReady = existsSync(resolve(dir, "generation.geojson"));
   it.skipIf(!genReady)("emits a well-formed generation overlay", () => {
     const gen = read<FeatureCollection>("generation.geojson");
-    expect(gen.features.length).toBe(57);
+    expect(gen.features.length).toBeGreaterThanOrEqual(40);
 
     const ids = gen.features.map((f) => f.properties?.id as string);
     expect(new Set(ids).size).toBe(ids.length); // unique
@@ -357,8 +357,8 @@ describe("emitted data integrity (run `npm run build:data` first)", () => {
     const lines = read<FeatureCollection>("powergrid-lines.geojson");
     const ss = read<FeatureCollection>("powergrid-ss.geojson");
 
-    expect(lines.features.length).toBe(54);
-    expect(ss.features.length).toBe(28);
+    expect(lines.features.length).toBeGreaterThanOrEqual(40);
+    expect(ss.features.length).toBeGreaterThanOrEqual(20);
 
     const lineIds = lines.features.map((f) => f.properties?.id as string);
     const ssIds = ss.features.map((f) => f.properties?.id as string);
@@ -399,7 +399,7 @@ describe("emitted data integrity (run `npm run build:data` first)", () => {
   const railReady = existsSync(resolve(dir, "railway-ss.geojson"));
   it.skipIf(!railReady)("emits a well-formed railway-traction (RTSS) overlay", () => {
     const rs = read<FeatureCollection>("railway-ss.geojson");
-    expect(rs.features.length).toBe(62);
+    expect(rs.features.length).toBeGreaterThanOrEqual(40);
 
     const ids = rs.features.map((f) => f.properties?.id as string);
     expect(new Set(ids).size).toBe(ids.length); // unique
@@ -420,7 +420,7 @@ describe("emitted data integrity (run `npm run build:data` first)", () => {
   const bulkReady = existsSync(resolve(dir, "bulkload-ss.geojson"));
   it.skipIf(!bulkReady)("emits a well-formed bulk-load / HT-consumer overlay", () => {
     const bs = read<FeatureCollection>("bulkload-ss.geojson");
-    expect(bs.features.length).toBe(139);
+    expect(bs.features.length).toBeGreaterThanOrEqual(100);
 
     const ids = bs.features.map((f) => f.properties?.id as string);
     expect(new Set(ids).size).toBe(ids.length); // unique

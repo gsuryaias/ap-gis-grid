@@ -1,0 +1,14 @@
+name: Probe live GIS reachability (temporary)
+on:
+  push:
+    branches: [feat/live-sync]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: curl -sS -m 30 -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" "https://gis.aptransco.gov.in/server/rest/services?f=json"
+      - run: npm ci
+      - run: npm run sync:live -- --dry-run

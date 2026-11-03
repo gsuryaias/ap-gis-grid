@@ -1,0 +1,495 @@
+[
+  {
+    "id": "districts",
+    "group": "Boundaries",
+    "label": "Districts",
+    "geometry": "polygon",
+    "file": "ref/districts.geojson",
+    "count": 26,
+    "bytes": 764256,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "code"
+    ],
+    "source": "RTGS GIS library \u2014 Administrative Boundaries",
+    "vintage": "2022",
+    "note": "simplified 20%; reprojected from UTM 44N"
+  },
+  {
+    "id": "mandals",
+    "group": "Boundaries",
+    "label": "Mandals",
+    "geometry": "polygon",
+    "file": "ref/mandals.geojson",
+    "count": 680,
+    "bytes": 1934319,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "district",
+      "revenueDivision",
+      "assembly",
+      "parliament"
+    ],
+    "source": "RTGS GIS library \u2014 Administrative Boundaries",
+    "vintage": "2022",
+    "note": "simplified 15%; reprojected from UTM 44N"
+  },
+  {
+    "id": "revenue-divisions",
+    "group": "Boundaries",
+    "label": "Revenue divisions",
+    "geometry": "polygon",
+    "file": "ref/revenue-divisions.geojson",
+    "count": 72,
+    "bytes": 749327,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "district",
+      "areaSqKm"
+    ],
+    "source": "RTGS GIS library \u2014 Administrative Boundaries",
+    "vintage": "2023",
+    "note": "simplified 15%"
+  },
+  {
+    "id": "assembly",
+    "group": "Boundaries",
+    "label": "Assembly constituencies",
+    "geometry": "polygon",
+    "file": "ref/assembly.geojson",
+    "count": 175,
+    "bytes": 1133290,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "code",
+      "reservation",
+      "parliament",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Electoral Boundaries",
+    "vintage": "2023",
+    "note": "simplified 12%"
+  },
+  {
+    "id": "parliament",
+    "group": "Boundaries",
+    "label": "Parliamentary constituencies",
+    "geometry": "polygon",
+    "file": "ref/parliament.geojson",
+    "count": 25,
+    "bytes": 626401,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "code",
+      "reservation",
+      "districts"
+    ],
+    "source": "RTGS GIS library \u2014 Electoral Boundaries",
+    "vintage": "2023",
+    "note": "simplified 15%"
+  },
+  {
+    "id": "municipal",
+    "group": "Boundaries",
+    "label": "Urban local bodies",
+    "geometry": "polygon",
+    "file": "ref/municipal.geojson",
+    "count": 111,
+    "bytes": 370407,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "district",
+      "areaSqKm"
+    ],
+    "source": "RTGS GIS library \u2014 MA&UD",
+    "vintage": "2023",
+    "note": "simplified 12%"
+  },
+  {
+    "id": "district-hq",
+    "group": "Boundaries",
+    "label": "District headquarters",
+    "geometry": "point",
+    "file": "ref/district-hq.geojson",
+    "count": 26,
+    "bytes": 3678,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Administrative Labels",
+    "vintage": "2023",
+    "note": null
+  },
+  {
+    "id": "mandal-hq",
+    "group": "Boundaries",
+    "label": "Mandal headquarters",
+    "geometry": "point",
+    "file": "ref/mandal-hq.geojson",
+    "count": 679,
+    "bytes": 115683,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "district",
+      "revenueDivision"
+    ],
+    "source": "RTGS GIS library \u2014 Administrative Labels",
+    "vintage": "2023",
+    "note": null
+  },
+  {
+    "id": "national-highways",
+    "group": "Transport",
+    "label": "National highways",
+    "geometry": "line",
+    "file": "ref/national-highways.geojson",
+    "count": 44,
+    "bytes": 633083,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "route",
+      "agency",
+      "lengthKm"
+    ],
+    "source": "RTGS GIS library \u2014 Roads & Buildings",
+    "vintage": "2023",
+    "note": "simplified 8%"
+  },
+  {
+    "id": "state-highways",
+    "group": "Transport",
+    "label": "State highways",
+    "geometry": "line",
+    "file": "ref/state-highways.geojson",
+    "count": 452,
+    "bytes": 1161697,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "route",
+      "circle",
+      "lengthKm"
+    ],
+    "source": "RTGS GIS library \u2014 Roads & Buildings",
+    "vintage": "2023",
+    "note": "simplified 2%; source is very densely digitised"
+  },
+  {
+    "id": "railways",
+    "group": "Transport",
+    "label": "Railway lines",
+    "geometry": "line",
+    "file": "ref/railways.geojson",
+    "count": 198,
+    "bytes": 256946,
+    "labelField": null,
+    "fields": [
+      "name",
+      "gauge",
+      "zone",
+      "ownership"
+    ],
+    "source": "RTGS GIS library \u2014 Physical Infrastructure",
+    "vintage": "2023",
+    "note": "simplified 40%; source has no line names"
+  },
+  {
+    "id": "railway-stations",
+    "group": "Transport",
+    "label": "Railway stations",
+    "geometry": "point",
+    "file": "ref/railway-stations.geojson",
+    "count": 460,
+    "bytes": 95657,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "code",
+      "category",
+      "mandal",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Physical Infrastructure",
+    "vintage": "2023",
+    "note": null
+  },
+  {
+    "id": "airports",
+    "group": "Transport",
+    "label": "Airports & airstrips",
+    "geometry": "point",
+    "file": "ref/airports.geojson",
+    "count": 14,
+    "bytes": 3017,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "category",
+      "status",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Physical Infrastructure",
+    "vintage": "2023",
+    "note": null
+  },
+  {
+    "id": "seaports",
+    "group": "Transport",
+    "label": "Seaports & harbours",
+    "geometry": "point",
+    "file": "ref/seaports.geojson",
+    "count": 19,
+    "bytes": 3938,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "category",
+      "status",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Physical Infrastructure",
+    "vintage": "2023",
+    "note": null
+  },
+  {
+    "id": "reserve-forest",
+    "group": "Environment",
+    "label": "Reserve forests",
+    "geometry": "polygon",
+    "file": "ref/reserve-forest.geojson",
+    "count": 1210,
+    "bytes": 1655024,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "section",
+      "range",
+      "division",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Forest",
+    "vintage": "2023",
+    "note": "simplified 8%; compartments dissolved to forest beats"
+  },
+  {
+    "id": "forest",
+    "group": "Environment",
+    "label": "Forest blocks",
+    "geometry": "polygon",
+    "file": "ref/forest.geojson",
+    "count": 885,
+    "bytes": 967866,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "areaSqKm"
+    ],
+    "source": "RTGS GIS library \u2014 Forest",
+    "vintage": "2023",
+    "note": "simplified 12%"
+  },
+  {
+    "id": "wildlife",
+    "group": "Environment",
+    "label": "Wildlife sanctuaries & national parks",
+    "geometry": "polygon",
+    "file": "ref/wildlife.geojson",
+    "count": 19,
+    "bytes": 311843,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "type",
+      "areaSqKm"
+    ],
+    "source": "RTGS GIS library \u2014 Forest",
+    "vintage": "2023",
+    "note": "simplified 30%"
+  },
+  {
+    "id": "eco-sensitive",
+    "group": "Environment",
+    "label": "Eco-sensitive zones",
+    "geometry": "polygon",
+    "file": "ref/eco-sensitive.geojson",
+    "count": 8,
+    "bytes": 141561,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "areaSqKm"
+    ],
+    "source": "RTGS GIS library \u2014 Forest",
+    "vintage": "2023",
+    "note": "simplified 40%; name is the protected area the ESZ surrounds"
+  },
+  {
+    "id": "crz-boundary",
+    "group": "Environment",
+    "label": "CRZ boundary",
+    "geometry": "line",
+    "file": "ref/crz-boundary.geojson",
+    "count": 441,
+    "bytes": 1107673,
+    "labelField": null,
+    "fields": [
+      "name"
+    ],
+    "source": "RTGS GIS library \u2014 Environment / APPCB",
+    "vintage": "2023",
+    "note": "simplified 10%; Coastal Regulation Zone limit line"
+  },
+  {
+    "id": "mining",
+    "group": "Environment",
+    "label": "Mining leases",
+    "geometry": "point",
+    "file": "ref/mining.geojson",
+    "count": 2124,
+    "bytes": 603797,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "mineral",
+      "status",
+      "extentHa",
+      "expiry",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Mines & Geology",
+    "vintage": "2023",
+    "note": "lease polygons (mostly 1\u20135 ha) reduced to interior points; lessee names withheld"
+  },
+  {
+    "id": "rivers",
+    "group": "Water",
+    "label": "Rivers",
+    "geometry": "polygon",
+    "file": "ref/rivers.geojson",
+    "count": 1211,
+    "bytes": 2312567,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "basin"
+    ],
+    "source": "RTGS GIS library \u2014 Water Resources",
+    "vintage": "2023",
+    "note": "simplified 6%; river-bed (spread area) polygons"
+  },
+  {
+    "id": "reservoirs",
+    "group": "Water",
+    "label": "Reservoirs & barrages",
+    "geometry": "polygon",
+    "file": "ref/reservoirs.geojson",
+    "count": 172,
+    "bytes": 389379,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "category",
+      "type",
+      "basin",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Water Resources",
+    "vintage": "2023",
+    "note": "simplified 12%"
+  },
+  {
+    "id": "canals",
+    "group": "Water",
+    "label": "Major canals",
+    "geometry": "line",
+    "file": "ref/canals.geojson",
+    "count": 1600,
+    "bytes": 862190,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "type"
+    ],
+    "source": "RTGS GIS library \u2014 Water Resources",
+    "vintage": "2023",
+    "note": "simplified 15%; main, major, branch & lift canals + major drains only (minor/sub channels, distributaries and minor drains dropped)"
+  },
+  {
+    "id": "seismic-zones",
+    "group": "Hazards",
+    "label": "Seismic zones",
+    "geometry": "polygon",
+    "file": "ref/seismic-zones.geojson",
+    "count": 4,
+    "bytes": 122443,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "intensity"
+    ],
+    "source": "RTGS GIS library \u2014 Disaster Management",
+    "vintage": "2023",
+    "note": "simplified 15%"
+  },
+  {
+    "id": "cyclone-shelters",
+    "group": "Hazards",
+    "label": "Cyclone shelters",
+    "geometry": "point",
+    "file": "ref/cyclone-shelters.geojson",
+    "count": 219,
+    "bytes": 36597,
+    "labelField": "name",
+    "fields": [
+      "name",
+      "mandal",
+      "district"
+    ],
+    "source": "RTGS GIS library \u2014 Disaster Management",
+    "vintage": "2023",
+    "note": null
+  },
+  {
+    "id": "flood-2024-09-03",
+    "group": "Hazards",
+    "label": "Flood inundation, 3 Sep 2024",
+    "geometry": "polygon",
+    "file": "ref/flood-2024-09-03.geojson",
+    "count": 746,
+    "bytes": 584698,
+    "labelField": null,
+    "fields": [
+      "name",
+      "areaSqKm"
+    ],
+    "source": "RTGS GIS library \u2014 Disaster Management",
+    "vintage": "2024-09-03",
+    "note": "simplified 8%; NRSC satellite-derived extent (Vijayawada/Budameru); raster cells dissolved into patches, < 1 ha dropped"
+  },
+  {
+    "id": "michaung-track",
+    "group": "Hazards",
+    "label": "Cyclone Michaung track",
+    "geometry": "line",
+    "file": "ref/michaung-track.geojson",
+    "count": 1,
+    "bytes": 354,
+    "labelField": null,
+    "fields": [
+      "name"
+    ],
+    "source": "RTGS GIS library \u2014 Disaster Management",
+    "vintage": "2023-12",
+    "note": "track clipped to the AP window (full track starts at 9.1\u00b0N, 86.4\u00b0E in the Bay of Bengal)"
+  }
+]

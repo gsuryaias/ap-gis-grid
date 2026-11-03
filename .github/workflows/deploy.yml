@@ -28,7 +28,11 @@ jobs:
 
       - run: npm ci
 
-      # Regenerate data from the committed KML (keeps deploy reproducible).
+      # Best-effort fresh pull from the AP-TRANSCO GIS so a code deploy never ships an older network
+      # (or an old "synced" timestamp) than the last scheduled sync. Falls back to committed data.
+      - run: npm run sync:live || echo "::warning::live sync unavailable — deploying committed network data"
+
+      # Regenerate the static data from data/raw (live pulls + snapshots) — keeps deploy reproducible.
       - run: npm run build:data
 
       - run: npm test

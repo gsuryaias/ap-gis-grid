@@ -1,0 +1,216 @@
+{
+  "schema": 1,
+  "source": "https://gis.aptransco.gov.in/server/rest/services",
+  "lastRun": "2026-11-03T07:20:37.896Z",
+  "lastSuccess": "2026-11-03T07:20:37.896Z",
+  "layers": {
+    "aptransco-ss": {
+      "label": "TRANSCO substations",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/0",
+      "status": "unchanged",
+      "count": 389,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "fb447a60913c85a4258ec43f2da6f7ee18e79dd8daa2346e7c1bf8c38cfa36f5",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "lines-400kv": {
+      "label": "400 kV lines",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/12",
+      "status": "unchanged",
+      "count": 68,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "78138da175138a838a72cdb36fd76eef05cf0f2e6289f99c3ac04700e786a91d",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "lines-220kv": {
+      "label": "220 kV lines",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/13",
+      "status": "unchanged",
+      "count": 385,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "3e3ccaf3496037516f7151ce1bb8b52e6d6874f923d7e6a48817b14a07fc0156",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "lines-132kv": {
+      "label": "132 kV lines",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/14",
+      "status": "unchanged",
+      "count": 769,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "f9eeb154ddadc38b68edcb7c48428fa22dc2f3d2ae2abcdd42ac0583f07a9001",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "generation-ss": {
+      "label": "Generating stations",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/16",
+      "status": "unchanged",
+      "count": 57,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "c44f8a0e8eb34d3cc2f24cae46314b5ae2ff075834542ea33516d2d196b1d675",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "powergrid-ss": {
+      "label": "POWERGRID substations",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/8",
+      "status": "unchanged",
+      "count": 28,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "aa5aff286b3bcf0ffd2197e5461310df0de6485b4e343ad838e6a23d8438ed40",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "powergrid-lines": {
+      "label": "POWERGRID lines",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/9",
+      "status": "unchanged",
+      "count": 53,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "83df2ffe4c4f6889b69c6b130afe7c504ccd2a9cb430bcb0880447563d6283ec",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "railway-ss": {
+      "label": "Railway traction SS",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/15",
+      "status": "unchanged",
+      "count": 62,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "6623144a324598aaec0c73314f8f5d958cdee073ed1fdd2da919de4b0aa6e148",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "bulkload-ss": {
+      "label": "Bulk-load / HT SS",
+      "owner": "APTRANSCO",
+      "group": "transco",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/10",
+      "status": "unchanged",
+      "count": 143,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "cee994bc2e305dd08c5ec0cb44daa3b0e0cf74adde02582ced0d228e1a1340be",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "discom-spdcl-ss": {
+      "label": "APSPDCL 33/11 kV substations",
+      "owner": "APSPDCL",
+      "group": "discom",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/SPDCL/SPDCL_Network_33KV/MapServer/5",
+      "status": "unchanged",
+      "count": 1704,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "7ff8d4c929caac0d301c5a82e22c482e90878afcd381e840276469532411f1c3",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "discom-spdcl-lines": {
+      "label": "APSPDCL 33 kV lines",
+      "owner": "APSPDCL",
+      "group": "discom",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/SPDCL/SPDCL_Network_33KV/MapServer/0",
+      "status": "unchanged",
+      "count": 11893,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "fdee537b345ea043e037e2eb76cf2152d01bceb8bb7b106d7a737c296cfe5f26",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "discom-epdcl-ss": {
+      "label": "APEPDCL 33/11 kV substations",
+      "owner": "APEPDCL",
+      "group": "discom",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/EPDCL/Substations/MapServer/0",
+      "status": "unchanged",
+      "count": 972,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "d2552d2c9462464d79dd00a918f404001e39db0b165a37b8a299b1f0fb769de8",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    },
+    "discom-epdcl-lines": {
+      "label": "APEPDCL 33 kV feeders",
+      "owner": "APEPDCL",
+      "group": "discom",
+      "url": "https://gis.aptransco.gov.in/server/rest/services/EPDCL/EPDCL_33KV_LINE/MapServer/1",
+      "status": "unchanged",
+      "count": 533,
+      "fetchedAt": "2026-11-03T07:20:37.896Z",
+      "lastChangedAt": "2026-11-03T07:20:06.875Z",
+      "sha256": "dfe3d5d8c8ca1780b1fe0b99bc34acc899503da161f04af87895a4c2f211eee9",
+      "diff": {
+        "added": 0,
+        "removed": 0,
+        "modified": 0
+      }
+    }
+  }
+}

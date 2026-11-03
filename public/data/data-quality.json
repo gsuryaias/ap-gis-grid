@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-11T03:17:31.185Z",
+  "generatedAt": "2026-11-03T07:36:04.758Z",
   "notes": [
     "Source migrated from the Google-Earth KML to the authoritative AP-TRANSCO Gridmap ESRI shapefiles.",
     "Circle / voltage are now authoritative from the source layers, so inferredCircles = 0 and there are no circuit/voltage-mismatch flags.",
@@ -7,48 +7,48 @@
     "Substation `circle` is the source numeric circle CODE (0 = unassigned → null); use `zone`/`division` for human-readable groupings. Line `circle` is a circle NAME."
   ],
   "substationSchemas": {
-    "aptranscoShapefile": 376
+    "aptranscoLive": 389
+  },
+  "layerSources": {
+    "aptransco-ss": "live",
+    "generation-ss": "live",
+    "railway-ss": "live",
+    "powergrid-ss": "live",
+    "bulkload-ss": "live",
+    "lines-400kv": "live",
+    "lines-220kv": "live",
+    "lines-132kv": "live"
+  },
+  "substationFootprints": {
+    "surveyedPolygon": 0,
+    "snapshotByCode": 325,
+    "snapshotNearest": 51,
+    "synthetic": 13
   },
   "unknownSchemaSamples": [],
-  "idsSynthesizedFromName": 51,
+  "idsSynthesizedFromName": 60,
   "inferredCircles": 0,
   "adjacency": {
     "method": "geometric endpoint-snapping to TRANSCO SS polygons (0 m if inside the compound; ≤ 1000 m to the edge otherwise)",
-    "linesBothEndpoints": 845,
-    "linesOneEndpoint": 334,
+    "linesBothEndpoints": 874,
+    "linesOneEndpoint": 337,
     "linesNoEndpoint": 11,
-    "pctBoth": 71,
+    "pctBoth": 71.5,
     "pctAtLeastOne": 99.1,
-    "linesWithExternalEndpoint": 292,
-    "linesBothEndsResolved": 1131,
-    "pctBothEndsResolved": 95,
-    "linesTranscoPlusExternal": 282,
+    "linesWithExternalEndpoint": 295,
+    "linesBothEndsResolved": 1163,
+    "pctBothEndsResolved": 95.2,
+    "linesTranscoPlusExternal": 285,
     "linesBothExternal": 4,
     "linesUnresolvedEnd": 59,
     "externalEndpointsByCategory": {
-      "Generation": 102,
-      "HT consumer": 134,
+      "Generation": 104,
+      "HT consumer": 135,
       "Railway": 60
     },
     "unmatchedSamples": [
       {
-        "id": "l-0000",
-        "name": "400KV Kadapa- Chittor SC line TM, LILO(PGCL)-1",
-        "endpoints": [
-          "Kadapa",
-          "1"
-        ]
-      },
-      {
-        "id": "l-0001",
-        "name": "400KV Sri Perambadur- Chittor SC line TM, LILO(PGCL)-2",
-        "endpoints": [
-          "Sri Perambadur",
-          "2"
-        ]
-      },
-      {
-        "id": "l-0006",
+        "id": "l-0003",
         "name": "400KV Kalapaka- Asupaka DC/SC Line (TM)",
         "endpoints": [
           "Kalapaka",
@@ -56,31 +56,7 @@
         ]
       },
       {
-        "id": "l-0009",
-        "name": "400KV Kalapaka- Khammam DC/SC Line (TM)",
-        "endpoints": [
-          "Kalapaka",
-          "Khammam"
-        ]
-      },
-      {
-        "id": "l-0021",
-        "name": "400KV KV Kota- Suryapeta QMDC Line, Ckt-1",
-        "endpoints": [
-          "Kv Kota",
-          "Suryapeta Qmdc"
-        ]
-      },
-      {
-        "id": "l-0022",
-        "name": "400KV KV Kota- Suryapeta QMDC Line, Ckt-2",
-        "endpoints": [
-          "Kv Kota",
-          "Suryapeta Qmdc"
-        ]
-      },
-      {
-        "id": "l-0039",
+        "id": "l-0031",
         "name": "400KV Uravakonda- Veltoor QMDC Line, Ckt-1",
         "endpoints": [
           "Uravakonda",
@@ -88,23 +64,23 @@
         ]
       },
       {
-        "id": "l-0040",
-        "name": "400KV Uravakonda- Veltoor QMDC Line, Ckt-2",
+        "id": "l-0032",
+        "name": "400KV KV Kota- Suryapeta QMDC Line, Ckt-2",
         "endpoints": [
-          "Uravakonda",
-          "Veltoor Qmdc"
+          "Kv Kota",
+          "Suryapeta Qmdc"
         ]
       },
       {
-        "id": "l-0053",
-        "name": "400KV VTPS- Suryapeta TMDC Line, Ckt-1",
+        "id": "l-0041",
+        "name": "400KV Kadapa- Chittor SC line TM, LILO(PGCL)-1",
         "endpoints": [
-          "Vtps",
-          "Suryapeta Tmdc"
+          "Kadapa",
+          "1"
         ]
       },
       {
-        "id": "l-0054",
+        "id": "l-0047",
         "name": "400KV VTPS- Suryapeta TMDC Line, Ckt-2",
         "endpoints": [
           "Vtps",
@@ -112,15 +88,15 @@
         ]
       },
       {
-        "id": "l-0062",
-        "name": "400KV Guddigudem - Polavaram QMDC Line, Ckt-1 (charged from Guddigudem to AP13/1)",
+        "id": "l-0048",
+        "name": "400KV KV Kota- Suryapeta QMDC Line, Ckt-1",
         "endpoints": [
-          "Guddigudem",
-          "Polavaram Qmdc"
+          "Kv Kota",
+          "Suryapeta Qmdc"
         ]
       },
       {
-        "id": "l-0065",
+        "id": "l-0049",
         "name": "400KV Guddigudem - Polavaram QMDC Line, Ckt-2 (charged from Guddigudem to AP13/1)",
         "endpoints": [
           "Guddigudem",
@@ -128,7 +104,47 @@
         ]
       },
       {
-        "id": "l-0109",
+        "id": "l-0054",
+        "name": "400KV Kalapaka- Khammam DC/SC Line (TM)",
+        "endpoints": [
+          "Kalapaka",
+          "Khammam"
+        ]
+      },
+      {
+        "id": "l-0057",
+        "name": "400KV VTPS- Suryapeta TMDC Line, Ckt-1",
+        "endpoints": [
+          "Vtps",
+          "Suryapeta Tmdc"
+        ]
+      },
+      {
+        "id": "l-0059",
+        "name": "400KV Sri Perambadur- Chittor SC line TM, LILO(PGCL)-2",
+        "endpoints": [
+          "Sri Perambadur",
+          "2"
+        ]
+      },
+      {
+        "id": "l-0060",
+        "name": "400KV Uravakonda- Veltoor QMDC Line, Ckt-2",
+        "endpoints": [
+          "Uravakonda",
+          "Veltoor Qmdc"
+        ]
+      },
+      {
+        "id": "l-0063",
+        "name": "400KV Guddigudem - Polavaram QMDC Line, Ckt-1 (charged from Guddigudem to AP13/1)",
+        "endpoints": [
+          "Guddigudem",
+          "Polavaram Qmdc"
+        ]
+      },
+      {
+        "id": "l-0077",
         "name": "220KV Brahmanakotkur- Wanaparthy[TS] SC Line (M)",
         "endpoints": [
           "Brahmanakotkur",
@@ -136,7 +152,15 @@
         ]
       },
       {
-        "id": "l-0115",
+        "id": "l-0089",
+        "name": "220KV SullurPet- Gummadipudi SC Line (Z)",
+        "endpoints": [
+          "Sullurpet",
+          "Gummadipudi"
+        ]
+      },
+      {
+        "id": "l-0096",
         "name": "220KV Chillakallu- Pulichinthala DC/SC Line (M)",
         "endpoints": [
           "Chillakallu",
@@ -144,31 +168,7 @@
         ]
       },
       {
-        "id": "l-0116",
-        "name": "220KV Chillakallu- Suryapeta DC/SC Line (M)",
-        "endpoints": [
-          "Chillakallu",
-          "Suryapeta"
-        ]
-      },
-      {
-        "id": "l-0119",
-        "name": "220KV Chittoor[220]- Tiruvalem[TN] SC Line (Z& D)",
-        "endpoints": [
-          "Chittoor",
-          "Tiruvalem"
-        ]
-      },
-      {
-        "id": "l-0186",
-        "name": "220KV Lower Sileru- Asupaka SC Line (Dr)",
-        "endpoints": [
-          "Lower Sileru",
-          "Asupaka"
-        ]
-      },
-      {
-        "id": "l-0187",
+        "id": "l-0150",
         "name": "220KV Lower Sileru- Barsoor DC Line (Z), Ckt-1",
         "endpoints": [
           "Lower Sileru",
@@ -176,59 +176,75 @@
         ]
       },
       {
-        "id": "l-0188",
-        "name": "220KV Lower Sileru- Barsoor DC Line (Z), Ckt-2",
+        "id": "l-0187",
+        "name": "220KV Tallapalli- Nagarjunasagar PH DC Line (TM), Ckt-2",
         "endpoints": [
-          "Lower Sileru",
-          "Barsoor"
+          "Tallapalli",
+          "Nagarjunasagar Ph"
         ]
       },
       {
-        "id": "l-0208",
-        "name": "220KV Nagarjuna Sagar- Srisailam SC Line (Dr)",
+        "id": "l-0191",
+        "name": "220KV Tiruvuru- KTPS SC Line (Dr,M)",
         "endpoints": [
-          "Nagarjuna Sagar",
-          "Srisailam"
-        ]
-      },
-      {
-        "id": "l-0226",
-        "name": "220KV Nunna- KTPS SC Line (Dr,M)",
-        "endpoints": [
-          "Nunna",
+          "Tiruvuru",
           "Ktps"
         ]
       },
       {
-        "id": "l-0254",
-        "name": "220KV Ragulapadu- Allipura[KN] SC Line (Z& M)",
+        "id": "l-0209",
+        "name": "220KV Tallapalli- Nagarjuna Sagar Ckt-3 DC/SC Line (Z)",
+        "endpoints": [
+          "Tallapalli",
+          "Nagarjuna Sagar"
+        ]
+      },
+      {
+        "id": "l-0220",
+        "name": "220KV Ragulapadu- Somasamudra SC Line (Z& M)",
         "endpoints": [
           "Ragulapadu",
-          "Allipura"
+          "Somasamudra"
         ]
       },
       {
-        "id": "l-0296",
-        "name": "220KV SSS- GMR DC Line (AL59), Ckt-1 (Ideal charged upto loc 60)",
+        "id": "l-0221",
+        "name": "220KV Brandix-Atchuthapuram DC Line, Ckt-1 (M)",
         "endpoints": [
-          "Sss",
-          "Gmr"
+          "Brandix",
+          "Atchuthapuram"
         ]
       },
       {
-        "id": "l-0297",
-        "name": "220KV SSS- GMR DC Line (AL59), Ckt-2 (Ideal charged upto loc 60)",
+        "id": "l-0247",
+        "name": "220KV Tallapalli- Nagarjunasagar PH DC Line (TM), Ckt-1",
         "endpoints": [
-          "Sss",
-          "Gmr"
+          "Tallapalli",
+          "Nagarjunasagar Ph"
         ]
       },
       {
-        "id": "l-0302",
-        "name": "220KV SullurPet- Gummadipudi SC Line (Z)",
+        "id": "l-0261",
+        "name": "220KV Chillakallu- Suryapeta DC/SC Line (M)",
         "endpoints": [
-          "Sullurpet",
-          "Gummadipudi"
+          "Chillakallu",
+          "Suryapeta"
+        ]
+      },
+      {
+        "id": "l-0265",
+        "name": "220KV Tallapalli- Chalakurthy DC/SC Line (Z)",
+        "endpoints": [
+          "Tallapalli",
+          "Chalakurthy"
+        ]
+      },
+      {
+        "id": "l-0281",
+        "name": "220KV Brandix-Atchuthapuram DC Line, Ckt-2 (M)",
+        "endpoints": [
+          "Brandix",
+          "Atchuthapuram"
         ]
       }
     ]
@@ -246,10 +262,10 @@
   "coastalExposure": {
     "source": "Natural Earth 10m coastline, AP Bay-of-Bengal extract (indicative straight-line distance)",
     "substationBands": {
-      "<10km": 39,
-      "10-25km": 46,
-      "25-50km": 49,
-      ">=50km": 242
+      "<10km": 42,
+      "10-25km": 48,
+      "25-50km": 52,
+      ">=50km": 247
     }
   }
 }

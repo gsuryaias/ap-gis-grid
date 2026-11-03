@@ -27,6 +27,7 @@ import {
 } from "./layer-presets.ts";
 import { fitToCircle, flyToFeature, setFeatState } from "./map-helpers.ts";
 import { MeasureController } from "./measure.ts";
+import { attachOverlays } from "../overlays/map.ts";
 
 /** Module-level handle for the live map instance (embedded or full). */
 let liveMap: MlMap | null = null;
@@ -333,14 +334,22 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
     map.addControl(new maplibregl.AttributionControl({ compact: false }), "bottom-right");
     map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
+    let detachOverlays: (() => void) | null = null;
     map.on("load", () => {
       if (disposed) return;
+      // DISCOM 33 kV + RTGS reference overlays — self-managed (own store, re-mounts on style reload).
+      detachOverlays = attachOverlays(map, { suppressed: clickSuppressed, coreLayers: ALL_INTERACTIVE });
       if (layers.grid) {
         addGridLayers(map, data, useAppStore.getState().basemap);
         applyFilters(map, useAppStore.getState().filters);
         bindCoreInteractive(map);
       }
-      map.fitBounds(data.meta.bounds as LngLatBoundsLike, { padding: 60, duration: 0 });
+      // Phones: the search/tools stack covers the top ~190 px — fit AP into what's left visible.
+      const narrow = (containerRef.current?.clientWidth ?? 1024) < 640;
+      map.fitBounds(data.meta.bounds as LngLatBoundsLike, {
+        padding: narrow ? { top: 190, bottom: 70, left: 12, right: 12 } : 60,
+        duration: 0,
+      });
       readyRef.current = true;
       setMapReady(true);
 
@@ -364,6 +373,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       measureRef.current = null;
       nearbyMarkerRef.current?.remove();
       nearbyMarkerRef.current = null;
+      detachOverlays?.();
       map.remove();
       mapRef.current = null;
       if (liveMap === map) liveMap = null;

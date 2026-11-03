@@ -3,6 +3,7 @@ import { formatInt } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
 import { WORKSPACES, type WorkspaceId } from "../workspaces/registry.ts";
 import { CloudIcon, InfoIcon, LayersIcon } from "./icons.tsx";
+import { LiveStatusBadge } from "./LiveStatus.tsx";
 
 const TAB_LABEL: Record<WorkspaceId, string> = { atlas: "Atlas", risk: "Risk" };
 
@@ -88,6 +89,7 @@ export function BrandHeader({
             </p>
           </div>
         </div>
+        <LiveStatusBadge />
         {workspaceNav}
         {atlasActions}
       </section>
@@ -106,6 +108,9 @@ export function BrandHeader({
           <h1 className="text-[15px] font-bold leading-none text-ink">AP-TRANSCO Grid Atlas</h1>
           <p className="mt-0.5 text-[11px] text-ink-2">Transmission network · 400 / 220 / 132 kV</p>
         </div>
+        <span className="ml-auto">
+          <LiveStatusBadge />
+        </span>
       </div>
       <p className="mt-2.5 text-xs text-ink-2">
         <span className="font-semibold text-ink">{formatInt(data.meta.counts.substations)}</span> SS ·{" "}

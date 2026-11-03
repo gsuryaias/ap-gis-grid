@@ -16,7 +16,9 @@
     "pipeline:cea": "NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem tsx pipelines/cea-monthly.mts",
     "pipelines": "npm run pipeline:psp && npm run pipeline:psp-frequency && npm run pipeline:vidyut && npm run pipeline:vidyut-blocks && npm run pipeline:cea",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sync:live": "tsx scripts/sync-live.mts",
+    "build:ref": "tsx scripts/build-ref-layers.mts"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev45.0",
@@ -38,6 +40,7 @@
     "@types/shapefile": "^0.6.4",
     "@vitejs/plugin-react": "^4.4.1",
     "@xmldom/xmldom": "^0.9.8",
+    "mapshaper": "^0.6.121",
     "node-html-parser": "^7.0.1",
     "shapefile": "^0.6.6",
     "tailwindcss": "^4.1.7",

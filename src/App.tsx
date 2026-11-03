@@ -19,6 +19,8 @@ import { DataQualityView } from "./components/DataQualityView.tsx";
 import { SummaryView } from "./components/SummaryView.tsx";
 import { WeatherView } from "./components/WeatherView.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
+import { NewDataToast } from "./components/LiveStatus.tsx";
+import { useOverlayStore } from "./overlays/store.ts";
 import { TableIcon } from "./components/icons.tsx";
 
 const LAZY_WORKSPACES = Object.fromEntries(
@@ -207,6 +209,8 @@ export function App() {
 
   useEffect(() => {
     void init();
+    // Re-enable the overlays this viewer had on last time (per-device convenience).
+    useOverlayStore.getState().restore();
   }, [init]);
 
   useEffect(() => {
@@ -288,7 +292,7 @@ export function App() {
                       <div className="pointer-events-auto">
                         <SearchBar data={data} />
                       </div>
-                      <div className="pointer-events-auto flex flex-col gap-2">
+                      <div className="mobile-tools pointer-events-auto grid grid-cols-2 items-start gap-2">
                         <MeasureControl />
                         <NearbyControl />
                       </div>
@@ -372,6 +376,7 @@ export function App() {
             <WeatherView data={data} />
           </>
         )}
+        <NewDataToast />
       </div>
     </ErrorBoundary>
   );
