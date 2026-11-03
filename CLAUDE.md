@@ -176,6 +176,23 @@ conductor, pole count, km). **Never import its HT-consumer services, AB switches
 does not refresh these — re-run the import when APCPDCL supplies a newer export; the UI footnote shows the export
 date (`live-status.json → discom.APCPDCL.linesFrom`).
 
+**APSPDCL 11 kV routes (≈ 4,900 feeders, ≈ 112,000 km) come from APSPDCL's HT pole survey**, exported from
+its internal GeoServer as one KML per circle (`circle_<name>_HT_points.kml`, ~3 M points, 9.6 GB; kept in
+the owner's Google Drive `Transco/maps/SPDCL_HT_KML_Files`, with compressed KMZ copies in
+`SPDCL_HT_KMZ_Compressed`). Every point records `back_link_point` (the pole it hangs off), so
+`npm run import:spdcl` (`scripts/import-spdcl-11kv.mts`, pure helpers in `spdcl-lib.ts`, tests in
+`spdcl.test.ts`) chains child → parent spans per (circle, division, 33/11 kV SS, feeder) into routes:
+points within 5 m of their parent are contracted (duplicate captures), spans > 1 km dropped, and the tree is
+walked into ≈ one polyline per leaf (`chainTree`), Douglas–Peucker 5 m, 5 dp →
+committed `data/raw/discom/spdcl-11kv/<circle>.geojson` + `index.json` (vintage, per-circle stats,
+**skipped** circles). Owner decision (2026-11-03, same as APCPDCL): **routes only** — feeder, SS, section/
+sub-div/division/circle, pole / DTR-pole / VCB counts, km. **Never publish individual pole, DTR or VCB points,
+their ids, survey ids or back-links.** A truncated export (GeoServer died mid-download — no `</kml>` or a
+`ServiceException` tail; **Kadapa as of 2026-11-02**) is skipped. In `buildNetwork` the import replaces the
+open-GIS APSPDCL 11 kV spans wherever it has coverage (`coverageMask`, ~330 m cells); open-GIS spans survive
+only in uncovered areas (Kadapa). The overlay is ≈ 6.8 MB gz as a result. Not refreshed by `npm run update` —
+re-run the import when APSPDCL supplies a new export (and re-export Kadapa).
+
 ## TRANSCO → 33 kV connectivity (`scripts/etl-connectivity.ts`, inferred)
 
 `buildDiscom()` links the DISCOM network to the TRANSCO grid (pure helpers, `scripts/connectivity.test.ts`):

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-03T09:04:39.410Z",
+  "generatedAt": "2026-11-03T10:14:02.465Z",
   "source": "https://gis.aptransco.gov.in/server/rest/services",
   "lastRun": "2026-11-03T07:57:55.259Z",
   "lastSuccess": "2026-11-03T07:57:55.259Z",
@@ -355,13 +355,18 @@
       "abSwitches": 17519
     },
     "APSPDCL": {
-      "feeders": 13907,
-      "km": 4732,
-      "feedersLinkedToSs": 7447,
+      "feeders": 5233,
+      "km": 111865,
+      "feedersLinkedToSs": 4582,
       "dtrs": 114571,
       "dtrsSearchable": 66107,
-      "abSwitches": 0
+      "abSwitches": 0,
+      "routesFrom": "2026-11-02",
+      "routeCircles": 8,
+      "routeCirclesSkipped": [
+        "kadapa"
+      ]
     },
-    "searchItems": 20084
+    "searchItems": 15895
   }
 }

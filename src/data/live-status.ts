@@ -37,7 +37,9 @@ export interface LiveStatus {
   layerSources: Record<string, "live" | "snapshot">;
   changes: LiveChange[];
   discom?: Record<string, { substations: number; lines: number; lineKm: number; linesFrom?: string }>;
-  network?: Record<"APEPDCL" | "APSPDCL", { feeders: number; km: number; feedersLinkedToSs: number; dtrs: number; dtrsSearchable: number; abSwitches: number }> & {
+  network?: Record<"APEPDCL" | "APSPDCL", { feeders: number; km: number; feedersLinkedToSs: number; dtrs: number; dtrsSearchable: number; abSwitches: number;
+    /** APSPDCL only: pole-survey route import (scripts/import-spdcl-11kv.mts) — export date, circles, skipped circles. */
+    routesFrom?: string; routeCircles?: number; routeCirclesSkipped?: string[] }> & {
     searchItems: number;
   };
   towers?: {

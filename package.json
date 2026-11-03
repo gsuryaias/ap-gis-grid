@@ -21,7 +21,8 @@
     "build:ref": "tsx scripts/build-ref-layers.mts",
     "update": "bash scripts/update.sh",
     "sync:towers": "tsx scripts/sync-towers.mts",
-    "sync:network": "tsx scripts/sync-network.mts"
+    "sync:network": "tsx scripts/sync-network.mts",
+    "import:spdcl": "tsx scripts/import-spdcl-11kv.mts"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev45.0",

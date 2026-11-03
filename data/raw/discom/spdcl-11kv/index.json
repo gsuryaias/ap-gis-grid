@@ -1,0 +1,97 @@
+{
+ "source": "APSPDCL HT pole survey (internal GeoServer KML export)",
+ "vintage": "2026-11-02",
+ "circles": {
+  "sss": {
+   "vintage": "2026-11-02",
+   "points": 400937,
+   "feeders": 472,
+   "km": 16179,
+   "spans": 334493,
+   "orphanLinks": 2082,
+   "crossFeederLinks": 0,
+   "overlongLinks": 0,
+   "unreadablePoints": 0
+  },
+  "anantapur": {
+   "vintage": "2026-11-02",
+   "points": 505252,
+   "feeders": 632,
+   "km": 19995,
+   "spans": 415908,
+   "orphanLinks": 2682,
+   "crossFeederLinks": 0,
+   "overlongLinks": 0,
+   "unreadablePoints": 0
+  },
+  "annamayya": {
+   "vintage": "2026-11-02",
+   "points": 308243,
+   "feeders": 502,
+   "km": 12145,
+   "spans": 251930,
+   "orphanLinks": 2645,
+   "crossFeederLinks": 0,
+   "overlongLinks": 0,
+   "unreadablePoints": 0
+  },
+  "chittoor": {
+   "vintage": "2026-11-02",
+   "points": 311785,
+   "feeders": 545,
+   "km": 11564,
+   "spans": 256116,
+   "orphanLinks": 3320,
+   "crossFeederLinks": 0,
+   "overlongLinks": 0,
+   "unreadablePoints": 0
+  },
+  "kurnool": {
+   "vintage": "2026-11-02",
+   "points": 299246,
+   "feeders": 534,
+   "km": 12114,
+   "spans": 248800,
+   "orphanLinks": 2020,
+   "crossFeederLinks": 0,
+   "overlongLinks": 1,
+   "unreadablePoints": 0
+  },
+  "nandyal": {
+   "vintage": "2026-11-02",
+   "points": 297500,
+   "feeders": 554,
+   "km": 11314,
+   "spans": 247378,
+   "orphanLinks": 3350,
+   "crossFeederLinks": 0,
+   "overlongLinks": 0,
+   "unreadablePoints": 0
+  },
+  "nellore": {
+   "vintage": "2026-11-02",
+   "points": 407462,
+   "feeders": 841,
+   "km": 14861,
+   "spans": 343362,
+   "orphanLinks": 7213,
+   "crossFeederLinks": 0,
+   "overlongLinks": 0,
+   "unreadablePoints": 0
+  },
+  "tirupati": {
+   "vintage": "2026-11-02",
+   "points": 381149,
+   "feeders": 841,
+   "km": 13533,
+   "spans": 314938,
+   "orphanLinks": 6162,
+   "crossFeederLinks": 0,
+   "overlongLinks": 0,
+   "unreadablePoints": 0
+  }
+ },
+ "skipped": {
+  "kadapa": "export truncated (GeoServer error mid-download) — re-export; open-GIS spans used meanwhile"
+ }
+}

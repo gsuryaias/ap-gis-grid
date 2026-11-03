@@ -118,7 +118,7 @@ export const DISCOM_DEFS: OverlayDef[] = [
   },
 ];
 
-/** DISCOM 11 kV feeders (live; APEPDCL full, APSPDCL partial, APCPDCL not on the open GIS). */
+/** DISCOM 11 kV feeders (APEPDCL live; APSPDCL pole-survey routes + open-GIS gaps; APCPDCL not published). */
 export const DISCOM11_DEF: OverlayDef = {
   id: "discom-11kv-lines",
   group: "Distribution",
@@ -126,10 +126,10 @@ export const DISCOM11_DEF: OverlayDef = {
   geometry: "line",
   file: "discom-11kv-lines.geojson",
   count: 0,
-  bytes: 3_100_000,
+  bytes: 6_800_000,
   labelField: "name",
   fields: [],
-  source: "AP-TRANSCO enterprise GIS — DISCOM 11 kV layers (live)",
+  source: "AP-TRANSCO enterprise GIS — DISCOM 11 kV layers (live); APSPDCL HT pole survey (routes only)",
   vintage: null,
   note: null,
   style: { color: "discom", width: 0.7, dash: [3, 1.5], minzoom: 10, labelMinzoom: 13 },

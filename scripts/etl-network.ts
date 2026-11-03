@@ -255,3 +255,70 @@ export function anchorOf(parts: Position[][]): [number, number] {
   const c = longest[Math.floor(longest.length / 2)];
   return [c[0], c[1]];
 }
+
+/**
+ * APSPDCL 11 kV routes from the pole-survey import (scripts/import-spdcl-11kv.mts): one feature per
+ * (circle, division, 33/11 kV SS, feeder), already chained from pole back-links. Linked to a 33/11 kV
+ * SS exactly like the open-GIS runs (recorded SS name within 5 km, else a route end ≤ 500 m away).
+ */
+export function buildSpdclRoutes(
+  feats: Array<{ geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> }>,
+  spSs: SsRef[],
+  tol: number,
+): F11[] {
+  const out: F11[] = [];
+  for (const f of feats) {
+    const p = f.properties;
+    const raw = partsOf(f.geometry).filter((x) => x.length >= 2);
+    const parts = simplifyParts(raw, tol);
+    if (!parts.length) continue;
+    const ssName = cleanSsName(txt(p.substation));
+    const link = linkSpdcl(ssName, raw, spSs);
+    out.push({
+      id: "",
+      discom: "APSPDCL",
+      name: feederLabel(txt(p.feeder)) ?? "Unnamed 11 kV feeder",
+      code: null,
+      ssName,
+      ssId: link?.id ?? null,
+      linkMethod: link?.method ?? null,
+      section: titleCase(txt(p.section)),
+      subdivision: titleCase(txt(p.subdivision)),
+      division: titleCase(txt(p.division)),
+      circle: titleCase(txt(p.circle)),
+      lengthKm: Math.round((Number(p.km) || pathKm(raw)) * 100) / 100,
+      poles: Number(p.poles) || null,
+      parts,
+    });
+  }
+  return out;
+}
+
+/** "33/11KV Tekuripeta SubStation" → "Tekuripeta". */
+export function cleanSsName(raw: string | null): string | null {
+  if (!raw) return null;
+  const s = raw.replace(/^\s*[\d.]+\s*(\/\s*[\d.]+\s*)*k\.?\s*v\.?\s*/i, "").replace(/\b(sub[\s-]*station|s\.?s)\s*$/i, "").replace(/\s+/g, " ").trim();
+  return titleCase(s || raw.trim());
+}
+
+/**
+ * Coverage mask over imported routes: ~330 m cells touched by any route segment (densified so long
+ * simplified segments still mark every cell they cross). Used to drop open-GIS 11 kV spans that the
+ * full import already draws, keeping them only where the import has no coverage (e.g. a skipped circle).
+ */
+export function coverageMask(routes: Position[][][], cellDeg = 0.003): (c: Position) => boolean {
+  const cells = new Set<string>();
+  const k = (x: number, y: number) => `${Math.floor(x / cellDeg)},${Math.floor(y / cellDeg)}`;
+  for (const parts of routes)
+    for (const p of parts)
+      for (let i = 1; i < p.length; i++) {
+        const [a, b] = [p[i - 1], p[i]];
+        const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / (cellDeg / 2)));
+        for (let j = 0; j <= n; j++) cells.add(k(a[0] + ((b[0] - a[0]) * j) / n, a[1] + ((b[1] - a[1]) * j) / n));
+      }
+  return (c) => {
+    const [cx, cy] = [Math.floor(c[0] / cellDeg), Math.floor(c[1] / cellDeg)];
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (cells.has(`${cx + dx},${cy + dy}`)) return true;
+    return false;
+  };
+}

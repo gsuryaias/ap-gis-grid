@@ -96,8 +96,15 @@ export function DistributionSection() {
       {live?.network && (
         <p className="pb-1 text-[10px] leading-snug text-ink-2/85">
           11 kV (from zoom 10): APEPDCL {live.network.APEPDCL?.feeders.toLocaleString("en-IN")} feeders ·{" "}
-          {live.network.APEPDCL?.dtrs.toLocaleString("en-IN")} transformers; APSPDCL partial; APCPDCL not published. Search a
-          feeder name or DTR code to trace it to its TRANSCO source.
+          {live.network.APEPDCL?.dtrs.toLocaleString("en-IN")} transformers; APSPDCL{" "}
+          {live.network.APSPDCL?.routesFrom
+            ? `${live.network.APSPDCL.feeders.toLocaleString("en-IN")} feeders · ${live.network.APSPDCL.km.toLocaleString("en-IN")} km (pole survey ${live.network.APSPDCL.routesFrom}, routes only${
+                live.network.APSPDCL.routeCirclesSkipped?.length
+                  ? `; ${live.network.APSPDCL.routeCirclesSkipped.map((c) => c[0].toUpperCase() + c.slice(1)).join(", ")} partial — open GIS`
+                  : ""
+              })`
+            : "partial"}
+          ; APCPDCL not published. Search a feeder name or DTR code to trace it to its TRANSCO source.
         </p>
       )}
       {live?.connectivity && (
