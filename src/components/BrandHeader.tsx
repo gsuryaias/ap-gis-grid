@@ -5,7 +5,7 @@ import { WORKSPACES, type WorkspaceId } from "../workspaces/registry.ts";
 import { CloudIcon, InfoIcon, LayersIcon } from "./icons.tsx";
 import { LiveStatusBadge } from "./LiveStatus.tsx";
 
-const TAB_LABEL: Record<WorkspaceId, string> = { atlas: "Atlas", risk: "Risk" };
+const TAB_LABEL: Record<WorkspaceId, string> = { atlas: "Atlas", mis: "MIS" };
 
 export function BrandHeader({
   data,

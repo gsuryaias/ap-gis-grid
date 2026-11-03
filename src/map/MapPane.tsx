@@ -1,30 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, type LngLatBoundsLike } from "maplibre-gl";
-import type { FeatureCollection } from "geojson";
 import type { GridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { graphAnalysis, spotlightFor, type SpotlightSets } from "../data/graph-data.ts";
 import { assetsInCone } from "../lib/weather.ts";
-import { loadWindZones } from "../workspaces/risk/model.ts";
 import { BASEMAPS } from "./basemaps.ts";
 import type { LayerPreset } from "./layer-presets.ts";
 import {
   addGenerationLayers,
   addGridLayers,
   addPowerGridLayers,
-  addRiskLayers,
   addWeatherLayers,
   ALL_INTERACTIVE,
   applyFilters,
-  applyRiskScores,
-  applyRiskVisibility,
   applySpotlight,
   applyWeatherVisibility,
   INTERACTIVE_LAYERS,
   LAYER,
   POWERGRID_INTERACTIVE,
-  WX_LAYER,
 } from "./layer-presets.ts";
+import { addMisLayers, applyMisTheme } from "./mis-layers.ts";
 import { fitToCircle, flyToFeature, setFeatState } from "./map-helpers.ts";
 import { MeasureController } from "./measure.ts";
 import { attachOverlays } from "../overlays/map.ts";
@@ -58,7 +53,6 @@ export interface MapPaneProps {
   mode: MapPaneMode;
   layers: LayerPreset;
   interactive: boolean;
-  highlightIds?: string[];
   choroplethSource?: ChoroplethSource;
 }
 
@@ -75,26 +69,7 @@ function choroplethColor(src: ChoroplethSource): unknown {
   return pairs;
 }
 
-const CYCLONE_LAYERS = [
-  WX_LAYER.cycloneAlert,
-  WX_LAYER.cycloneCone,
-  WX_LAYER.cycloneConeOutline,
-  WX_LAYER.cycloneTrack,
-  WX_LAYER.cyclonePosition,
-  WX_LAYER.riskSubstations,
-] as const;
-
-/** In Risk Room, GDACS cone geometry is shown only under the Active event scenario. */
-function applyWeatherLayersVisibility(map: MlMap, showCycloneInRisk: boolean): void {
-  const st = useAppStore.getState();
-  applyWeatherVisibility(map, st.filters);
-  if (st.workspace !== "risk" || showCycloneInRisk) return;
-  for (const id of CYCLONE_LAYERS) {
-    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "none");
-  }
-}
-
-export function MapPane({ data, mode, layers, interactive, highlightIds, choroplethSource }: MapPaneProps) {
+export function MapPane({ data, mode, layers, interactive, choroplethSource }: MapPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const measureRef = useRef<MeasureController | null>(null);
@@ -102,13 +77,11 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
   const readyRef = useRef(false);
   const prevHover = useRef<string | null>(null);
   const prevSelected = useRef<string | null>(null);
-  const prevHighlights = useRef<string[]>([]);
-  const prevRiskScoreIds = useRef<string[]>([]);
   const prevCircle = useRef<string | null>(null);
+  const prevFitKey = useRef<string | null>(null);
   const genBound = useRef(false);
   const pgBound = useRef(false);
   const interactiveBound = useRef(false);
-  const [windZones, setWindZones] = useState<FeatureCollection | null>(null);
   // Flips true once the map's `load` fires. `readyRef` (a ref) can't wake the measure-controller
   // creation effect, so this state does — without it the controller is never built on a fresh
   // Atlas load (isFull is true from render 1 and never changes, so a [isFull]-only effect that
@@ -132,48 +105,28 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
   const nearbyMode = useAppStore((s) => s.nearbyMode);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
   const spotlight = useAppStore((s) => s.spotlight);
-  const workspaceContext = useAppStore((s) => s.workspaceContext);
   const workspace = useAppStore((s) => s.workspace);
+  const misMap = useAppStore((s) => s.workspaceContext.misMap);
+  const fitRequest = useAppStore((s) => s.workspaceContext.fit);
 
+  // Dim everything outside the focus: a selection's 1-hop neighbourhood when the spotlight is armed,
+  // else (Network MIS) the drill-down scope.
   const currentSpotlight = useCallback((): SpotlightSets | null => {
     const st = useAppStore.getState();
-    if (!st.spotlight || !st.selectedId) return null;
-    const f = data.byId.get(st.selectedId);
-    if (!f || f.kind === "generation") return null;
-    return spotlightFor(graphAnalysis(data), f);
+    if (st.spotlight && st.selectedId) {
+      const f = data.byId.get(st.selectedId);
+      if (f && f.kind !== "generation") return spotlightFor(graphAnalysis(data), f);
+    }
+    const mm = st.workspace === "mis" ? st.workspaceContext.misMap : null;
+    if (mm?.scopeSsIds && mm.scopeLineIds) return { ssIds: new Set(mm.scopeSsIds), lineIds: new Set(mm.scopeLineIds) };
+    return null;
   }, [data]);
 
-  const riskScenario = workspaceContext.scenario ?? workspaceContext.hazard;
-  const showCycloneInRisk =
-    riskScenario === "active" && (weather?.cyclones.some((c) => c.conePolygons.length > 0) ?? false);
-
-  useEffect(() => {
-    if (workspace !== "risk") {
-      setWindZones(null);
-      return;
-    }
-    let on = true;
-    loadWindZones()
-      .then((z) => on && setWindZones(z))
-      .catch(() => on && setWindZones(null));
-    return () => {
-      on = false;
-    };
-  }, [workspace]);
-
-  const mountRisk = useCallback(
-    (map: MlMap) => {
-      if (workspace !== "risk" || !windZones) {
-        applyRiskVisibility(map, false);
-        return;
-      }
-      addRiskLayers(map, windZones);
-      applyRiskVisibility(map, true);
-      applyRiskScores(map, workspaceContext.riskScores, prevRiskScoreIds.current);
-      prevRiskScoreIds.current = workspaceContext.riskScores ? Object.keys(workspaceContext.riskScores) : [];
-    },
-    [workspace, windZones, workspaceContext.riskScores],
-  );
+  const mountMis = useCallback((map: MlMap) => {
+    const st = useAppStore.getState();
+    addMisLayers(map);
+    applyMisTheme(map, st.workspace === "mis" ? (st.workspaceContext.misMap ?? null) : null, st.basemap);
+  }, []);
 
   const mountGeneration = useCallback(
     (map: MlMap) => {
@@ -256,11 +209,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       const cones = st.weather.cyclones.flatMap((ev) => ev.conePolygons);
       const riskIds = cones.length ? assetsInCone(data.substations, cones).map((s) => s.id) : [];
       addWeatherLayers(map, st.weather, riskIds);
-      const scenario = st.workspaceContext.scenario ?? st.workspaceContext.hazard;
-      const showCy =
-        st.workspace !== "risk" ||
-        (scenario === "active" && st.weather.cyclones.some((c) => c.conePolygons.length > 0));
-      applyWeatherLayersVisibility(map, showCy);
+      applyWeatherVisibility(map, st.filters);
     },
     [data, layers.weather],
   );
@@ -360,7 +309,8 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       mountGeneration(map);
       mountPowerGrid(map);
       mountWeather(map);
-      mountRisk(map);
+      mountMis(map);
+      applySpotlight(map, currentSpotlight());
       if (st.flySignal) flyToFeature(map, data, st.generation, st.powergrid, st.flySignal.id);
       else if (st.filters.circle) fitToCircle(map, data, st.filters.circle);
     });
@@ -378,22 +328,27 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       mapRef.current = null;
       if (liveMap === map) liveMap = null;
     };
-  }, [data, bindCoreInteractive, layers.grid, mountGeneration, mountPowerGrid, mountWeather, mountRisk]);
+  }, [data, bindCoreInteractive, layers.grid, mountGeneration, mountPowerGrid, mountWeather, mountMis, currentSpotlight]);
 
-  // --- Risk Room overlays (wind zones + composite halos) --------------------
+  // --- Network MIS: thematic layer + scope dimming --------------------------
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    mountRisk(map);
-  }, [mountRisk]);
+    mountMis(map);
+    if (layers.grid) applySpotlight(map, currentSpotlight());
+  }, [misMap, workspace, mountMis, currentSpotlight, layers.grid]);
 
+  // --- Network MIS: fit the map to the drill-down scope when it changes ------
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !readyRef.current || workspace === "risk") return;
-    applyRiskVisibility(map, false);
-    applyRiskScores(map, undefined, prevRiskScoreIds.current);
-    prevRiskScoreIds.current = [];
-  }, [workspace]);
+    if (!map || !readyRef.current || isHidden || !fitRequest || fitRequest.key === prevFitKey.current) return;
+    prevFitKey.current = fitRequest.key;
+    map.fitBounds((fitRequest.bounds ?? data.meta.bounds) as LngLatBoundsLike, {
+      padding: 50,
+      maxZoom: 11,
+      duration: 700,
+    });
+  }, [fitRequest, data, isHidden, mapReady]);
 
   // --- Measure overlay (Atlas / full mode only; attach without remounting map) -
   useEffect(() => {
@@ -473,7 +428,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       mountGeneration(map);
       mountPowerGrid(map);
       mountWeather(map);
-      mountRisk(map);
+      mountMis(map);
       measureRef.current?.ensureLayers(basemap);
       applyFilters(map, useAppStore.getState().filters);
       applySpotlight(map, currentSpotlight());
@@ -485,7 +440,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
       }
     };
     map.once("styledata", onStyle);
-  }, [basemap, bindCoreInteractive, choroplethSource, currentSpotlight, data, layers.grid, mountGeneration, mountPowerGrid, mountWeather, mountRisk]);
+  }, [basemap, bindCoreInteractive, choroplethSource, currentSpotlight, data, layers.grid, mountGeneration, mountPowerGrid, mountWeather, mountMis]);
 
   // --- Choropleth paint (optional workspace overlay) ------------------------
   useEffect(() => {
@@ -547,18 +502,8 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     applyFilters(map, filters);
-    if (layers.weather) applyWeatherLayersVisibility(map, showCycloneInRisk);
-  }, [filters, layers.weather, showCycloneInRisk]);
-
-  // --- Workspace context: fly to circle when analysis focus changes ----------
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !workspaceContext.circle) return;
-    if (workspaceContext.circle !== prevCircle.current) {
-      prevCircle.current = workspaceContext.circle;
-      fitToCircle(map, data, workspaceContext.circle);
-    }
-  }, [workspaceContext.circle, data]);
+    if (layers.weather) applyWeatherVisibility(map, filters);
+  }, [filters, layers.weather]);
 
   // --- Region slice: zoom to the selected circle (or back out) on change ----
   useEffect(() => {
@@ -582,7 +527,7 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
   useEffect(() => {
     const map = mapRef.current;
     if (map && readyRef.current && weather && layers.weather) mountWeather(map);
-  }, [weather, layers.weather, mountWeather, showCycloneInRisk, riskScenario]);
+  }, [weather, layers.weather, mountWeather]);
 
   // --- Connection spotlight -------------------------------------------------
   useEffect(() => {
@@ -609,19 +554,6 @@ export function MapPane({ data, mode, layers, interactive, highlightIds, choropl
     setFeatState(map, data, generation, powergrid, hoverId, "hover", true);
     prevHover.current = hoverId;
   }, [hoverId, data, generation, powergrid]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current) return;
-    const ids = highlightIds ?? workspaceContext.highlightIds ?? [];
-    const gen = generation;
-    const pg = powergrid;
-    for (const id of prevHighlights.current) {
-      if (!ids.includes(id)) setFeatState(map, data, gen, pg, id, "highlight", false);
-    }
-    for (const id of ids) setFeatState(map, data, gen, pg, id, "highlight", true);
-    prevHighlights.current = ids;
-  }, [highlightIds, workspaceContext.highlightIds, data, generation, powergrid]);
 
   // --- Fly-to ---------------------------------------------------------------
   useEffect(() => {

@@ -2,7 +2,7 @@
 // one folder under src/workspaces/<id>/ + one entry here; the shell handles switcher + routing).
 import type { ComponentType } from "react";
 
-export type WorkspaceId = "atlas" | "risk";
+export type WorkspaceId = "atlas" | "mis";
 
 export interface WorkspaceDef {
   id: WorkspaceId;
@@ -22,14 +22,14 @@ export const WORKSPACES: WorkspaceDef[] = [
     requiredManifests: [],
   },
   {
-    id: "risk",
-    label: "Risk Room",
-    description: "Hazard layers, scenario-ranked at-risk asset registers and briefing-pack exports.",
-    load: () => import("./risk/RiskRoom.tsx"),
+    id: "mis",
+    label: "Network MIS",
+    description: "Asset inventory, line age, N-1 exposure and 33 kV downstream load — drill down by circle, zone, division, voltage and more.",
+    load: () => import("./mis/MisWorkspace.tsx"),
     requiredManifests: [],
   },
 ];
 
 export function isWorkspaceId(v: unknown): v is WorkspaceId {
-  return v === "atlas" || v === "risk";
+  return v === "atlas" || v === "mis";
 }

@@ -273,7 +273,11 @@ function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
       <Field label="Route length" value={formatKm(line.lengthKm)} />
       <Field
         label="Circuit-km"
-        value={line.ckm != null ? `${formatKm(line.ckm)}${line.circuit === "DC" ? " (2× route)" : ""}` : undefined}
+        value={
+          line.ckm != null
+            ? `${formatKm(line.ckm)}${(line.circuits ?? (line.circuit === "DC" ? 2 : 1)) > 1 ? " (2 circuits)" : line.circuit === "DC" ? " (one circuit of a DC tower line)" : ""}`
+            : undefined
+        }
       />
       <Field label="Conductor" value={line.conductor} />
       {capacity && (

@@ -59,7 +59,7 @@ export function SummaryView({ data }: { data: GridData }) {
     for (const l of data.lines) {
       if (l.coastalBand !== band) continue;
       lines++;
-      lineKm += l.lengthKm ?? 0;
+      lineKm += l.routeKm ?? l.lengthKm ?? 0;
     }
     return { band, substations, lines, lineKm };
   });

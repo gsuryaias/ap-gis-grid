@@ -32,17 +32,18 @@ export interface HashState {
   coastalBand?: 0 | 1 | 2 | 3 | null;
   /** Split-layout map pane (`map=` key; `atlas-only` when the Atlas workspace is active). */
   mapLayout: MapLayout;
-  /** Risk workspace: scenario preset id. */
-  scenario?: string | null;
-  /** Risk workspace: register sort column. */
-  sort?: string | null;
+  /** MIS workspace: group-by dimension (`by=`). */
+  misBy?: string | null;
+  /** MIS workspace: drill path, "dim:value~dim:value" (`mf=`). */
+  misFilters?: string | null;
+  /** MIS workspace: thematic tab (`tab=`). */
+  misTab?: string | null;
+  /** MIS workspace: map theme (`theme=`). */
+  misTheme?: string | null;
 }
 
-const RISK_SCENARIOS = new Set(["normal", "watch", "severe", "active"]);
-const RISK_SORT_KEYS = new Set([
-  "name", "voltage", "circle", "coastal", "wind",
-  "hazard", "vulnerability", "criticality", "composite",
-]);
+// Loose shape checks only — the MIS workspace validates values against its own vocabularies.
+const TOKEN = /^[a-z0-9-]{1,24}$/;
 
 export const defaultHashState: HashState = {
   workspace: "atlas",
@@ -80,9 +81,11 @@ export function serializeHash(s: HashState): string {
   if (s.circle) p.set("circle", s.circle);
   if (s.coastalBand != null) p.set("coast", String(s.coastalBand)); // band 0 is a real value
   if (s.workspace !== "atlas" && s.mapLayout !== defaultMapLayout()) p.set("map", s.mapLayout);
-  if (s.workspace === "risk") {
-    if (s.scenario && s.scenario !== "normal") p.set("scenario", s.scenario);
-    if (s.sort && s.sort !== "composite") p.set("sort", s.sort);
+  if (s.workspace === "mis") {
+    if (s.misBy && s.misBy !== "circle") p.set("by", s.misBy);
+    if (s.misFilters) p.set("mf", s.misFilters);
+    if (s.misTab && s.misTab !== "age") p.set("tab", s.misTab);
+    if (s.misTheme && s.misTheme !== "voltage") p.set("theme", s.misTheme);
   }
   return `#${p.toString()}`;
 }
@@ -142,11 +145,16 @@ export function parseHash(hash: string): Partial<HashState> {
   const map = p.get("map");
   if (map === "open" || map === "collapsed" || map === "atlas-only") out.mapLayout = map;
 
-  const scenario = p.get("scenario");
-  if (scenario && RISK_SCENARIOS.has(scenario)) out.scenario = scenario;
-
-  const sort = p.get("sort");
-  if (sort && RISK_SORT_KEYS.has(sort)) out.sort = sort;
+  if (out.workspace === "mis") {
+    const by = p.get("by");
+    out.misBy = by && TOKEN.test(by) ? by : null;
+    const mf = p.get("mf");
+    out.misFilters = mf && mf.length <= 400 ? mf : null;
+    const tab = p.get("tab");
+    out.misTab = tab && TOKEN.test(tab) ? tab : null;
+    const theme = p.get("theme");
+    out.misTheme = theme && TOKEN.test(theme) ? theme : null;
+  }
 
   return out;
 }

@@ -65,6 +65,14 @@ export interface LineProps {
   commissioned?: string | null;
   /** Display-only non-TRANSCO endpoints (Generation/Railway/PowerGrid/HT consumer); not clickable. */
   externalEndpoints?: { name: string; category: string }[];
+  /**
+   * Circuits this ROW represents: 1 for a per-circuit "Ckt-n" row (the source digitises each circuit
+   * of a DC tower line separately) or a DC/SC line (DC towers, one circuit strung); 2 for a whole
+   * DC line. `ckm = lengthKm × circuits`. Optional for older data — fall back to `circuitCount`.
+   */
+  circuits?: number;
+  /** This row's share of physical route km (sibling Ckt rows split their corridor). Sum it for route-km. */
+  routeKm?: number | null;
   // ---- Optional fields added in the coastal-exposure milestone ----
   /** Indicative straight-line distance to the Bay-of-Bengal coast (Natural Earth coastline), km, 1 dp — the MINIMUM over the line's vertices. */
   coastalKm?: number;

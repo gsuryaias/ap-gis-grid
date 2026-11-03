@@ -119,9 +119,17 @@ export function lineCapacity(
   };
 }
 
-/** Convenience overload for a LineProps record. */
-export function lineCapacityFor(line: Pick<LineProps, "conductor" | "voltage" | "circuit">): LineCapacity | null {
-  return lineCapacity(line.conductor, line.voltage, line.circuit);
+/**
+ * Convenience overload for a LineProps record. Uses the row's own `circuits` count when present —
+ * a per-circuit "Ckt-n" row on DC towers carries ONE circuit, so rating it ×2 would double-count
+ * the corridor once its sibling row is added.
+ */
+export function lineCapacityFor(
+  line: Pick<LineProps, "conductor" | "voltage" | "circuit"> & { circuits?: number },
+): LineCapacity | null {
+  const cap = lineCapacity(line.conductor, line.voltage, line.circuit);
+  if (!cap || line.circuits == null) return cap;
+  return { ...cap, totalMva: Math.round(cap.perCircuitMva * line.circuits) };
 }
 
 /** Format an MVA figure as an indicative value, e.g. 280 → "≈ 280 MVA"; >= 1000 → "≈ 1.6 GVA". */
@@ -137,7 +145,7 @@ export function formatMva(mva: number | null | undefined): string {
  * counted as unrated.
  */
 export function totalIndicativeCapacity(
-  lines: Array<Pick<LineProps, "conductor" | "voltage" | "circuit">>,
+  lines: Array<Pick<LineProps, "conductor" | "voltage" | "circuit"> & { circuits?: number }>,
 ): { totalMva: number; rated: number; total: number } {
   let totalMva = 0;
   let rated = 0;
