@@ -14,6 +14,7 @@ import { MeasureControl } from "./components/MeasureControl.tsx";
 import { NearbyControl } from "./components/NearbyControl.tsx";
 import { DetailPanel } from "./components/DetailPanel.tsx";
 import { NearbyPanel } from "./components/NearbyPanel.tsx";
+import { NetworkTracePanel } from "./components/NetworkTracePanel.tsx";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
 import { DataQualityView } from "./components/DataQualityView.tsx";
 import { SummaryView } from "./components/SummaryView.tsx";
@@ -150,6 +151,7 @@ export function App() {
   const toggleTable = useAppStore((s) => s.toggleTable);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
   const selectedId = useAppStore((s) => s.selectedId);
+  const netFocus = useOverlayStore((s) => s.netFocus);
   const isMobile = useIsMobile();
   const workspace = useAppStore((s) => s.workspace);
   const mapLayout = useAppStore((s) => s.mapLayout);
@@ -291,7 +293,13 @@ export function App() {
 
                     {/* Bottom sheet — DetailPanel renders null when nothing is selected, so this is empty/idle otherwise. */}
                     <div className="pointer-events-none absolute inset-x-2 bottom-2 z-30 flex max-h-[55dvh] flex-col">
-                      {nearbyOrigin ? <NearbyPanel data={data} /> : <DetailPanel data={data} />}
+                      {nearbyOrigin ? (
+                        <NearbyPanel data={data} />
+                      ) : netFocus && !selectedId ? (
+                        <NetworkTracePanel />
+                      ) : (
+                        <DetailPanel data={data} />
+                      )}
                     </div>
                   </>
                 ) : (
@@ -311,7 +319,13 @@ export function App() {
                     </div>
 
                     <div className="pointer-events-none absolute right-3 top-3 z-20 flex max-h-[calc(100dvh-5.5rem)] max-w-[calc(100vw-1.5rem)] flex-col">
-                      {nearbyOrigin ? <NearbyPanel data={data} /> : <DetailPanel data={data} />}
+                      {nearbyOrigin ? (
+                        <NearbyPanel data={data} />
+                      ) : netFocus && !selectedId ? (
+                        <NetworkTracePanel />
+                      ) : (
+                        <DetailPanel data={data} />
+                      )}
                     </div>
                   </>
                 )}

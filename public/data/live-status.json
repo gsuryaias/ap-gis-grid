@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-03T08:55:27.507Z",
+  "generatedAt": "2026-11-03T09:04:39.410Z",
   "source": "https://gis.aptransco.gov.in/server/rest/services",
   "lastRun": "2026-11-03T07:57:55.259Z",
   "lastSuccess": "2026-11-03T07:57:55.259Z",
@@ -344,5 +344,24 @@
         "lastChangedAt": "2026-11-03T08:50:24.321Z"
       }
     }
+  },
+  "network": {
+    "APEPDCL": {
+      "feeders": 3536,
+      "km": 59693,
+      "feedersLinkedToSs": 3520,
+      "dtrs": 238755,
+      "dtrsSearchable": 238755,
+      "abSwitches": 17519
+    },
+    "APSPDCL": {
+      "feeders": 13907,
+      "km": 4732,
+      "feedersLinkedToSs": 7447,
+      "dtrs": 114571,
+      "dtrsSearchable": 66107,
+      "abSwitches": 0
+    },
+    "searchItems": 20084
   }
 }

@@ -118,6 +118,23 @@ export const DISCOM_DEFS: OverlayDef[] = [
   },
 ];
 
+/** DISCOM 11 kV feeders (live; APEPDCL full, APSPDCL partial, APCPDCL not on the open GIS). */
+export const DISCOM11_DEF: OverlayDef = {
+  id: "discom-11kv-lines",
+  group: "Distribution",
+  label: "11 kV feeders",
+  geometry: "line",
+  file: "discom-11kv-lines.geojson",
+  count: 0,
+  bytes: 3_100_000,
+  labelField: "name",
+  fields: [],
+  source: "AP-TRANSCO enterprise GIS — DISCOM 11 kV layers (live)",
+  vintage: null,
+  note: null,
+  style: { color: "discom", width: 0.7, dash: [3, 1.5], minzoom: 10, labelMinzoom: 13 },
+};
+
 /** Per-layer cartography for the RTGS reference layers (unknown ids fall back to a group default). */
 const REF_STYLE: Record<string, OverlayStyle> = {
   districts: { color: "#334155", width: 1.8, labelMinzoom: 6.5 },
@@ -191,6 +208,12 @@ export function fieldLabel(k: string): string {
     feeders: "On 33 kV feeder(s)",
     nearestTranscoSs: "Nearest TRANSCO SS",
     spans: "Spans / poles",
+    ss: "33/11 kV SS",
+    dtrs: "Distribution transformers",
+    dtrKva: "Transformer capacity (kVA)",
+    abSwitches: "AB switches",
+    poles: "Poles",
+    subdivision: "Sub-division",
   };
   if (special[k]) return special[k];
   const s = k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase();

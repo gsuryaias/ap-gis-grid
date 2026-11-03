@@ -196,6 +196,9 @@ function sync(map: MlMap): void {
 const FOCUS_COLOR = "#f59e0b"; // amber — distinct from every DISCOM/voltage colour
 const FOCUS_LINE = "ov-focus-lines";
 const FOCUS_SS = "ov-focus-ss";
+const FOCUS_LINE11 = "ov-focus-lines11";
+const FOCUS_PT = "ov-focus-point";
+const FOCUS_PT_SRC = "ov-focus-point-src";
 const appliedFocus = new WeakMap<MlMap, string>();
 
 /** Highlight the selected TRANSCO SS's downstream 33 kV feeders + 33/11 kV SS (conditional writes only). */
@@ -238,13 +241,52 @@ function syncFocus(map: MlMap): void {
     );
     appliedFocus.delete(map);
   }
-  const key = focus ? `${focus.lines.join(",")}|${focus.ss.join(",")}` : "";
+  if (map.getSource(srcId("discom-11kv-lines")) && !map.getLayer(FOCUS_LINE11)) {
+    map.addLayer(
+      {
+        id: FOCUS_LINE11,
+        type: "line",
+        source: srcId("discom-11kv-lines"),
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": FOCUS_COLOR, "line-width": e(["interpolate", ["linear"], ["zoom"], 8, 2, 12, 3.5, 16, 6]), "line-opacity": 0.95 },
+        filter: e(["in", ["get", "id"], ["literal", []]]),
+      },
+      before,
+    );
+    appliedFocus.delete(map);
+  }
+  if (!map.getSource(FOCUS_PT_SRC)) {
+    map.addSource(FOCUS_PT_SRC, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({
+      id: FOCUS_PT,
+      type: "circle",
+      source: FOCUS_PT_SRC,
+      paint: {
+        "circle-color": "rgba(245,158,11,0.18)",
+        "circle-radius": e(["interpolate", ["linear"], ["zoom"], 8, 7, 14, 12, 18, 16]),
+        "circle-stroke-color": FOCUS_COLOR,
+        "circle-stroke-width": 3,
+      },
+    });
+    appliedFocus.delete(map);
+  }
+  const key = focus
+    ? `${focus.lines.join(",")}|${focus.ss.join(",")}|${(focus.lines11 ?? []).join(",")}|${focus.point?.join(",") ?? ""}`
+    : "";
   if (appliedFocus.get(map) === key) return;
   if (map.getLayer(FOCUS_LINE)) map.setFilter(FOCUS_LINE, e(["in", ["get", "id"], ["literal", focus?.lines ?? []]]));
   if (map.getLayer(FOCUS_SS)) map.setFilter(FOCUS_SS, e(["in", ["get", "id"], ["literal", focus?.ss ?? []]]));
-  // Above the DISCOM layers, still beneath the grid.
-  if (before) for (const lid of [FOCUS_LINE, FOCUS_SS]) if (map.getLayer(lid)) map.moveLayer(lid, before);
-  if (map.getLayer(FOCUS_LINE) && map.getLayer(FOCUS_SS)) appliedFocus.set(map, key);
+  if (map.getLayer(FOCUS_LINE11)) map.setFilter(FOCUS_LINE11, e(["in", ["get", "id"], ["literal", focus?.lines11 ?? []]]));
+  (map.getSource(FOCUS_PT_SRC) as maplibregl.GeoJSONSource | undefined)?.setData({
+    type: "FeatureCollection",
+    features: focus?.point ? [{ type: "Feature", geometry: { type: "Point", coordinates: focus.point }, properties: {} }] : [],
+  });
+  // Above the DISCOM layers, still beneath the grid; the point marker stays on top of everything.
+  if (before) for (const lid of [FOCUS_LINE, FOCUS_SS, FOCUS_LINE11]) if (map.getLayer(lid)) map.moveLayer(lid, before);
+  if (map.getLayer(FOCUS_PT)) map.moveLayer(FOCUS_PT);
+  // Every focus layer clears this key when it is (re)created, so recording it now is safe — and it
+  // must be recorded, or each `idle` would re-run setData → render → idle in a loop.
+  appliedFocus.set(map, key);
 }
 
 function interactiveLayers(map: MlMap): string[] {
@@ -263,6 +305,7 @@ function interactiveLayers(map: MlMap): string[] {
 }
 
 const LINK_LABEL: Record<string, string> = {
+  recorded: "recorded 33/11 kV SS id",
   name: "recorded source SS (name match)",
   proximity: "feeder end at the SS (≤ 1.5 km)",
   "feeder-group": "another run of the same feeder",
@@ -390,7 +433,7 @@ export function attachOverlays(map: MlMap, opts: { suppressed: () => boolean; co
     const narrow = map.getContainer().clientWidth < 640;
     map.fitBounds(st.fitSignal.bounds, {
       padding: narrow ? { top: 190, bottom: 120, left: 20, right: 20 } : { top: 60, bottom: 60, left: 320, right: 380 },
-      maxZoom: 12,
+      maxZoom: st.fitSignal.maxZoom ?? 12,
       duration: 900,
     });
   });

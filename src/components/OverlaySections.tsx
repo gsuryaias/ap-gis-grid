@@ -84,9 +84,22 @@ export function DistributionSection() {
 
   return (
     <div className="mt-2 border-t border-line pt-1.5">
-      <div className="py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Distribution · 33 kV</div>
+      <div className="py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Distribution · 33 / 11 kV</div>
       <OverlayRow def={{ ...lines, count: Object.values(stats).reduce((a, x) => a + x.lines, 0) }} color={DISCOM_COLOR.APSPDCL} />
       <OverlayRow def={{ ...ss, count: Object.values(stats).reduce((a, x) => a + x.substations, 0) }} color={DISCOM_COLOR.APEPDCL} />
+      {defs["discom-11kv-lines"] && (
+        <OverlayRow
+          def={{ ...defs["discom-11kv-lines"], count: live?.network ? (live.network.APEPDCL?.feeders ?? 0) + (live.network.APSPDCL?.feeders ?? 0) : 0 }}
+          color={DISCOM_COLOR.APEPDCL}
+        />
+      )}
+      {live?.network && (
+        <p className="pb-1 text-[10px] leading-snug text-ink-2/85">
+          11 kV (from zoom 10): APEPDCL {live.network.APEPDCL?.feeders.toLocaleString("en-IN")} feeders ·{" "}
+          {live.network.APEPDCL?.dtrs.toLocaleString("en-IN")} transformers; APSPDCL partial; APCPDCL not published. Search a
+          feeder name or DTR code to trace it to its TRANSCO source.
+        </p>
+      )}
       {live?.connectivity && (
         <div className="mb-1 rounded-lg bg-surface-2/70 px-2 py-1.5 text-[11px] leading-snug text-ink-2">
           <span className="font-semibold text-ink">TRANSCO → 33 kV links: </span>

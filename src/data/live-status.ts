@@ -37,6 +37,9 @@ export interface LiveStatus {
   layerSources: Record<string, "live" | "snapshot">;
   changes: LiveChange[];
   discom?: Record<string, { substations: number; lines: number; lineKm: number; linesFrom?: string }>;
+  network?: Record<"APEPDCL" | "APSPDCL", { feeders: number; km: number; feedersLinkedToSs: number; dtrs: number; dtrsSearchable: number; abSwitches: number }> & {
+    searchItems: number;
+  };
   towers?: {
     lastSuccess: string | null;
     layers: Record<string, { voltage: number; towers: number; lines: number; matchedLines: number; matchedTowers: number; fetchedAt: string; lastChangedAt: string | null }>;

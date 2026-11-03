@@ -20,7 +20,8 @@
     "sync:live": "tsx scripts/sync-live.mts",
     "build:ref": "tsx scripts/build-ref-layers.mts",
     "update": "bash scripts/update.sh",
-    "sync:towers": "tsx scripts/sync-towers.mts"
+    "sync:towers": "tsx scripts/sync-towers.mts",
+    "sync:network": "tsx scripts/sync-network.mts"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev45.0",
