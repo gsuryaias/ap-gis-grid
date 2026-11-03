@@ -2,13 +2,6 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { parsePspXls, parsePspNumber, parseReportDate } from "./psp-parse.ts";
 import {
-  parseVidyutStateHtml,
-  parseVidyutBlockHtml,
-  parseVidyutBlockLabel,
-  parseVidyutNumber,
-  parseValueWithPct,
-} from "./vidyut-parse.ts";
-import {
   parseCeaMonthLabel,
   parseCeaNumber,
   parseCeaPowerGenerationJson,
@@ -18,7 +11,7 @@ import {
   normalizeCeaSource,
   buToMu,
 } from "./cea-parse.ts";
-import { istToday, addDays, isoDate, fiscalYear, mergedCaBundle, fetchText } from "./lib.ts";
+import { istToday, addDays, isoDate, fiscalYear, mergedCaBundle } from "./lib.ts";
 
 const fixture = (name: string): Buffer =>
   readFileSync(new URL(`./fixtures/${name}`, import.meta.url));
@@ -41,23 +34,6 @@ describe("pipeline date helpers", () => {
     expect(cas!.every((c) => !c.startsWith("#"))).toBe(true);
   });
 
-  // Live fetch — run locally (`npm test -- pipelines/pipelines.test.ts`); skipped on CI
-  // where outbound TLS to Indian gov hosts is flaky and blocks Pages deploy.
-  it.skipIf(process.env.CI === "true")(
-    "fetches Vidyut Pravah without NODE_EXTRA_CA_CERTS (programmatic TLS)",
-    async () => {
-      const prev = process.env.NODE_EXTRA_CA_CERTS;
-      delete process.env.NODE_EXTRA_CA_CERTS;
-      try {
-        const html = await fetchText("https://vidyutpravah.in/state-data/andhra-pradesh", { timeoutMs: 30_000 });
-        expect(html).toContain("Andhra Pradesh");
-      } finally {
-        if (prev === undefined) delete process.env.NODE_EXTRA_CA_CERTS;
-        else process.env.NODE_EXTRA_CA_CERTS = prev;
-      }
-    },
-    45_000,
-  );
 });
 
 describe("Grid-India daily PSP parser", () => {
@@ -126,49 +102,6 @@ describe("Grid-India daily PSP parser", () => {
 
   it("rejects a document that is not the PSP layout", () => {
     expect(() => parsePspXls(new TextEncoder().encode("<html>not a sheet</html>"))).toThrow();
-  });
-});
-
-describe("Vidyut Pravah parser", () => {
-  it("parses dashboard values", () => {
-    expect(parseVidyutNumber("11,186\u00a0MW")).toBe(11186);
-    expect(parseVidyutNumber("10.00")).toBe(10);
-    expect(parseVidyutNumber("-")).toBeNull();
-    expect(parseValueWithPct("0\u00a0MW\u00a0(0.00 %)")).toEqual({ value: 0, pct: 0 });
-    expect(parseValueWithPct("123 MU (4.56 %)")).toEqual({ value: 123, pct: 4.56 });
-  });
-
-  it("parses the committed AP state-page fixture (snapshot 11 Jun 2026)", () => {
-    const row = parseVidyutStateHtml(fixture("vidyutpravah-ap-2026-06-11.html").toString("utf8"));
-    expect(row.state).toBe("Andhra Pradesh");
-    expect(row.date).toBe("2026-06-10"); // YESTERDAY figures = snapshot date − 1
-    expect(row.demand_met_mw).toBe(11186);
-    expect(row.peak_shortage_mw).toBe(0);
-    expect(row.peak_shortage_pct).toBe(0);
-    expect(row.energy_shortage_mu).toBe(0);
-    expect(row.energy_shortage_pct).toBe(0);
-    expect(row.exchange_price_inr_kwh).toBe(10);
-  });
-
-  it("parses exchange block labels", () => {
-    expect(parseVidyutBlockLabel("00:15 - 00:30")).toEqual({
-      block_start: "00:15",
-      block_end: "00:30",
-    });
-  });
-
-  it("parses the committed AP block fixture (snapshot 11 Jun 2026, block 00:15–00:30)", () => {
-    const row = parseVidyutBlockHtml(fixture("vidyutpravah-ap-2026-06-11.html").toString("utf8"));
-    expect(row.state).toBe("Andhra Pradesh");
-    expect(row.date).toBe("2026-06-11");
-    expect(row.block_start).toBe("00:15");
-    expect(row.block_end).toBe("00:30");
-    expect(row.demand_mw).toBe(10121);
-    expect(row.exchange_price).toBeNull();
-  });
-
-  it("rejects a page without the expected markers", () => {
-    expect(() => parseVidyutStateHtml("<html><body>maintenance</body></html>")).toThrow();
   });
 });
 

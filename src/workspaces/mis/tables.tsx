@@ -3,13 +3,16 @@ import { useMemo, useState, type ReactNode } from "react";
 import { PagerBar, usePager } from "../../components/Pager.tsx";
 import { VoltageBadge } from "../../components/VoltageBadge.tsx";
 import { downloadText, toCsv } from "../../lib/export.ts";
+import { SUPPLY_HINT, SUPPLY_LABEL, type SupplyClass } from "../../lib/supply-security.ts";
 import { useAppStore } from "../../state/store.ts";
 import {
   AGE_BAND_LABEL,
   DIM_ORDER,
   DIMENSIONS,
+  nodeName,
   ROLE_LABEL,
   type DimId,
+  type MisModel,
   type GroupRow,
   type Metrics,
   type Scope,
@@ -17,13 +20,13 @@ import {
 } from "./model.ts";
 import { Card, gva, nf0, nf1, pct, Segmented, SmallButton, VoltageSegBar } from "./ui.tsx";
 
-const csvFile = (name: string, headers: string[], rows: unknown[][]) =>
+export const csvFile = (name: string, headers: string[], rows: unknown[][]) =>
   downloadText(name, "text/csv", "﻿" + toCsv(headers, rows));
 
 // ---------------------------------------------------------------------------------------------
 // Breakdown (pivot)
 
-type ColId = "label" | "ss" | "ckm" | "route" | "mva" | "age" | "past" | "single" | "cut" | "discom";
+type ColId = "label" | "ss" | "ckm" | "route" | "mva" | "age" | "past" | "radial" | "single" | "cut" | "discom";
 
 interface Col {
   id: ColId;
@@ -41,6 +44,7 @@ const COLS: Col[] = [
   { id: "mva", label: "Σ rating", title: "Sum of indicative thermal ratings (conductor nominal ampacity)", value: (m) => m.mva, needs: "l" },
   { id: "age", label: "Avg age", title: "Circuit-km-weighted mean line age", value: (m) => m.meanAge, needs: "l" },
   { id: "past", label: "≥ 35 y", title: "Share of circuit-km at or past the 35-year useful life", value: (m) => m.pctPastLife, needs: "l" },
+  { id: "radial", label: "Radial", title: "Radially fed substations (single circuit + single corridor) — corridor-level screening", value: (m) => m.radialSc + m.radialDc, needs: "s" },
   { id: "single", label: "Single-fed", title: "Substations fed from one neighbour (inferred)", value: (m) => m.singleFed, needs: "s" },
   { id: "cut", label: "Cut-pt", title: "Substations whose loss splits the inferred grid", value: (m) => m.articulation, needs: "s" },
   { id: "discom", label: "33/11 SS", title: "Distinct 33/11 kV substations on inferred 33 kV feeders", value: (m) => m.discomSs, needs: "s" },
@@ -55,6 +59,7 @@ const NEXT: Record<DimId, DimId[]> = {
   age: ["circle", "voltage", "conductor"],
   conductor: ["voltage", "circle", "age"],
   role: ["circle", "voltage", "division"],
+  supply: ["circle", "voltage", "division"],
   coastal: ["circle", "voltage", "role"],
 };
 
@@ -104,11 +109,12 @@ export function Breakdown({
   const exportCsv = () =>
     csvFile(
       `ap-transco-mis-by-${by}.csv`,
-      [dim.label, "Substations", "400 kV SS", "220 kV SS", "132 kV SS", "Line rows", "Circuit-km", "Route-km", "Sum indicative rating (MVA)", "Rated lines", "Mean line age (yrs, ckm-weighted)", "Share of ckm >= 35 yrs", "Single-fed SS", "Cut-point SS", "Bridge lines", "33 kV feeders", "33/11 kV SS"],
+      [dim.label, "Substations", "400 kV SS", "220 kV SS", "132 kV SS", "Line rows", "Circuit-km", "Route-km", "Sum indicative rating (MVA)", "Rated lines", "Mean line age (yrs, ckm-weighted)", "Share of ckm >= 35 yrs", "Radial SS (single circuit)", "Radial SS (single corridor)", "33/11 kV SS behind radial SS", "Single-fed SS", "Cut-point SS", "Bridge lines", "33 kV feeders", "33/11 kV SS"],
       rows.map((r) => [
         r.label, hasS ? r.m.ss : "", hasS ? r.m.ssByV[400] : "", hasS ? r.m.ssByV[220] : "", hasS ? r.m.ssByV[132] : "",
         hasL ? r.m.lines : "", hasL ? r.m.ckm.toFixed(1) : "", hasL ? r.m.routeKm.toFixed(1) : "", hasL ? Math.round(r.m.mva) : "",
         hasL ? r.m.ratedLines : "", r.m.meanAge?.toFixed(1) ?? "", r.m.pctPastLife?.toFixed(3) ?? "",
+        hasS ? r.m.radialSc : "", hasS ? r.m.radialDc : "", hasS ? r.m.radialDiscomSs : "",
         hasS ? r.m.singleFed : "", hasS ? r.m.articulation : "", hasL ? r.m.bridges : "", hasS ? r.m.feeders : "", hasS ? r.m.discomSs : "",
       ]),
     );
@@ -137,6 +143,15 @@ export function Breakdown({
         return m.meanAge == null ? "—" : nf1(m.meanAge);
       case "past":
         return pct(m.pctPastLife);
+      case "radial":
+        return m.radialSc + m.radialDc ? (
+          <span title={`${m.radialSc} on a single circuit · ${m.radialDc} on one multi-circuit corridor`}>
+            {m.radialSc + m.radialDc}
+            {m.radialSc > 0 && <span className="ml-1 text-[10px] text-[#d03b3b]">({m.radialSc} SC)</span>}
+          </span>
+        ) : (
+          "·"
+        );
       case "single":
         return m.singleFed || "·";
       case "cut":
@@ -286,7 +301,7 @@ function Th({
 
 type RegKind = "ss" | "lines";
 
-export function Register({ scope, label }: { scope: Scope; label: string }) {
+export function Register({ model, scope, label }: { model: MisModel; scope: Scope; label: string }) {
   const [kind, setKind] = useState<RegKind>("ss");
   const [q, setQ] = useState("");
   const select = useAppStore((s) => s.select);
@@ -315,9 +330,11 @@ export function Register({ scope, label }: { scope: Scope; label: string }) {
     if (kind === "ss") {
       csvFile(
         `ap-transco-mis-substations.csv`,
-        ["Name", "SS code", "kV", "Zone", "Circle", "Division", "N-1 role (inferred)", "Feed degree", "Lines connected", "33 kV feeders", "33 kV feeder km", "33/11 kV SS served", "DISCOMs", "Coastal km", "Longitude", "Latitude"],
+        ["Name", "SS code", "kV", "Zone", "Circle", "Division", "Supply security (inferred)", "Radial feed from", "Radial depth", "Weakest corridor (circuits)", "Radial route km", "N-1 role (inferred)", "Feed degree", "Lines connected", "33 kV feeders", "33 kV feeder km", "33/11 kV SS served", "DISCOMs", "Coastal km", "Longitude", "Latitude"],
         ssRows.map((r) => [
-          r.ss.name, r.ss.ssCode ?? "", r.voltage, r.zone ?? "", r.circle ?? "", r.division ?? "", ROLE_LABEL[r.role], r.feedDegree,
+          r.ss.name, r.ss.ssCode ?? "", r.voltage, r.zone ?? "", r.circle ?? "", r.division ?? "", SUPPLY_LABEL[r.supply.cls],
+          r.supply.headId ? nodeName(model, r.supply.headId) : "", r.supply.depth || "", r.supply.bottleneck ?? "", r.supply.radialKm ? r.supply.radialKm.toFixed(1) : "",
+          ROLE_LABEL[r.role], r.feedDegree,
           r.ss.connectedLineCount, r.feeders, r.feederKm.toFixed(1), r.discomSsIds.length, r.discoms.join("; "), r.ss.coastalKm ?? "",
           r.ss.lng, r.ss.lat,
         ]),
@@ -325,11 +342,11 @@ export function Register({ scope, label }: { scope: Scope; label: string }) {
     } else {
       csvFile(
         `ap-transco-mis-lines.csv`,
-        ["Name", "kV", "Tower", "Circuits (this row)", "Length km", "Route-km share", "Circuit-km", "Conductor", "Indicative MVA", "Commissioned", "Age (yrs)", "Age band", "Circle", "Zone (from end SS)", "Division (from end SS)", "Bridge: SS islanded (inferred)"],
+        ["Name", "kV", "Tower", "Circuits (this row)", "Length km", "Route-km share", "Circuit-km", "Conductor", "Indicative MVA", "Commissioned", "Age (yrs)", "Age band", "Circle", "Zone (from end SS)", "Division (from end SS)", "Bridge: SS islanded (inferred)", "Corridor circuits", "Corridor is a single point of failure"],
         lineRows.map((r) => [
           r.line.name, r.voltage, r.line.circuitType ?? r.line.circuit, r.circuits, r.line.lengthKm ?? "", r.routeKm.toFixed(2), r.ckm.toFixed(2),
           r.line.conductor ?? "", r.mva ?? "", r.line.commissioned ?? "", r.age ?? "", AGE_BAND_LABEL[r.ageBand], r.circle ?? "", r.zone ?? "",
-          r.division ?? "", r.islanded.length || "",
+          r.division ?? "", r.islanded.length || "", r.corridorCircuits ?? "", r.corridorBridge ? "yes" : "",
         ]),
       );
     }
@@ -376,6 +393,7 @@ export function Register({ scope, label }: { scope: Scope; label: string }) {
               <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
                 <th className="py-2 pl-4 pr-2 font-medium">Substation</th>
                 <th className="px-2 font-medium">Division</th>
+                <th className="px-2 font-medium" title="Corridor-level radial screening (inferred)">Supply</th>
                 <th className="px-2 font-medium" title="Inferred from the connectivity graph">N-1 role</th>
                 <th className="px-2 text-right font-medium" title="Distinct neighbouring substations">Feeds</th>
                 <th className="px-2 text-right font-medium" title="33 kV feeders traced out of this SS">Feeders</th>
@@ -392,6 +410,9 @@ export function Register({ scope, label }: { scope: Scope; label: string }) {
                     </span>
                   </td>
                   <td className="px-2 text-ink-2">{r.division ?? "—"}</td>
+                  <td className="px-2 text-ink-2" title={r.supply.headId ? `Fed radially from ${nodeName(model, r.supply.headId)}` : undefined}>
+                    <SupplyText cls={r.supply.cls} />
+                  </td>
                   <td className="px-2 text-ink-2">
                     <RoleText role={r.role} />
                   </td>
@@ -410,7 +431,7 @@ export function Register({ scope, label }: { scope: Scope; label: string }) {
                 <th className="px-2 text-right font-medium">ckm</th>
                 <th className="px-2 font-medium">Conductor</th>
                 <th className="px-2 text-right font-medium">Year</th>
-                <th className="px-2 pr-4 text-right font-medium" title="Inferred: an outage would island substations">N-1</th>
+                <th className="px-2 pr-4 text-right font-medium" title="Inferred: a circuit outage (Bridge) or a corridor / tower outage (Corridor) would island substations">N-1</th>
               </tr>
             </thead>
             <tbody>
@@ -436,6 +457,11 @@ export function Register({ scope, label }: { scope: Scope; label: string }) {
                         <span className="h-2 w-2 rounded-full bg-[#d03b3b]" aria-hidden />
                         Bridge
                       </span>
+                    ) : r.corridorBridge ? (
+                      <span className="inline-flex items-center gap-1 text-ink" title={`One corridor of ${r.corridorCircuits} circuits: a tower failure islands substations`}>
+                        <span className="h-2 w-2 rounded-full bg-[#ec835a]" aria-hidden />
+                        Corridor
+                      </span>
                     ) : (
                       "·"
                     )}
@@ -459,6 +485,18 @@ export function RoleText({ role }: { role: SsRow["role"] }) {
     <span className="inline-flex items-center gap-1 whitespace-nowrap">
       {c && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c }} aria-hidden />}
       {ROLE_LABEL[role]}
+    </span>
+  );
+}
+
+const SUPPLY_DOT: Partial<Record<SupplyClass, string>> = { "radial-sc": "#d03b3b", "radial-dc": "#ec835a", unconnected: "#9aa0a6" };
+
+export function SupplyText({ cls }: { cls: SupplyClass }) {
+  const c = SUPPLY_DOT[cls];
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap" title={SUPPLY_HINT[cls]}>
+      {c && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c }} aria-hidden />}
+      {SUPPLY_LABEL[cls]}
     </span>
   );
 }

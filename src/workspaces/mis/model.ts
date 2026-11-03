@@ -15,6 +15,16 @@ import type { ConnectivityIndex } from "../../data/connectivity.ts";
 import type { GridData, LineProps, SubstationProps, Voltage } from "../../data/types.ts";
 import { conductorRating, lineCapacityFor } from "../../lib/capacity.ts";
 import { commissionYear } from "../../lib/format.ts";
+import {
+  computeSupplySecurity,
+  GEN_PREFIX,
+  isGenNode,
+  SUPPLY_LABEL,
+  SUPPLY_ORDER,
+  type SsSupply,
+  type SupplyClass,
+  type SupplySecurity,
+} from "../../lib/supply-security.ts";
 
 // ---------------------------------------------------------------------------------------------
 // Rows
@@ -73,6 +83,12 @@ export interface SsRow {
   discomSsIds: string[];
   /** DISCOMs whose feeders originate here. */
   discoms: string[];
+  /** Corridor-level supply security (radial feed analysis). */
+  supply: SsSupply;
+  /** Lines touching this SS whose far end resolved to nothing (a data gap that may hide a feed). */
+  openEnds: number;
+  /** TRANSCO SS islanded by a total outage of this SS (cut points only; else empty). */
+  cutIslands: string[];
 }
 
 export interface LineRow {
@@ -97,6 +113,10 @@ export interface LineRow {
   islanded: string[];
   /** Non-TRANSCO terminal categories (Generation / Railway / PowerGrid / HT consumer). */
   external: string[];
+  /** The corridor (all circuits between this line's two nodes) is a single point of failure. */
+  corridorBridge: boolean;
+  /** Circuits in this line's corridor (null when an end didn't resolve). */
+  corridorCircuits: number | null;
 }
 
 export interface MisModel {
@@ -106,6 +126,8 @@ export interface MisModel {
   lineById: Map<string, LineRow>;
   /** True once the 33 kV index was folded in (downstream metrics are 0 / empty before). */
   hasDownstream: boolean;
+  /** Corridor-graph supply-security analysis (radial pockets, cut points, interfaces). */
+  sec: SupplySecurity;
   asOfYear: number;
 }
 
@@ -132,6 +154,7 @@ export function buildModel(
   conn: Pick<ConnectivityIndex, "bySs"> | null,
   asOfYear: number,
 ): MisModel {
+  const sec = computeSupplySecurity(data.substations, data.lines);
   const ss: SsRow[] = data.substations.map((s) => {
     const feeders = conn?.bySs[s.id] ?? [];
     const discomSs = new Set<string>();
@@ -156,6 +179,9 @@ export function buildModel(
       feederKm,
       discomSsIds: [...discomSs],
       discoms: [...discoms].sort(),
+      supply: sec.bySs.get(s.id)!,
+      openEnds: sec.openEnds.get(s.id) ?? 0,
+      cutIslands: sec.cutImpacts.get(s.id) ?? [],
     };
   });
   const ssById = new Map(ss.map((r) => [r.id, r]));
@@ -166,6 +192,8 @@ export function buildModel(
     const endSs = ssById.get(l.fromSS?.ssId ?? "") ?? ssById.get(l.toSS?.ssId ?? "") ?? null;
     const year = commissionYear(l.commissioned);
     const age = year == null ? null : Math.max(0, asOfYear - year);
+    const ck = sec.corridorOfLine.get(l.id);
+    const corridor = ck ? sec.corridors.get(ck) : undefined;
     return {
       line: l,
       id: l.id,
@@ -183,6 +211,8 @@ export function buildModel(
       mva: lineCapacityFor(l)?.totalMva ?? null,
       islanded: ga.bridgeImpacts.get(l.id) ?? [],
       external: [...new Set((l.externalEndpoints ?? []).map((e) => e.category))],
+      corridorBridge: !!corridor?.bridge,
+      corridorCircuits: corridor?.circuits ?? null,
     };
   });
 
@@ -192,6 +222,7 @@ export function buildModel(
     ssById,
     lineById: new Map(lines.map((r) => [r.id, r])),
     hasDownstream: conn != null,
+    sec,
     asOfYear,
   };
 }
@@ -199,7 +230,7 @@ export function buildModel(
 // ---------------------------------------------------------------------------------------------
 // Dimensions
 
-export type DimId = "circle" | "zone" | "division" | "voltage" | "age" | "conductor" | "role" | "coastal";
+export type DimId = "circle" | "zone" | "division" | "voltage" | "age" | "conductor" | "role" | "supply" | "coastal";
 
 export const NONE = "__none";
 
@@ -276,6 +307,14 @@ export const DIMENSIONS: Record<DimId, Dimension> = {
     order: ROLE_ORDER,
     note: "Inferred from the geometric connectivity graph — screening, not a contingency study.",
   },
+  supply: {
+    id: "supply",
+    label: "Supply security",
+    ss: (r) => r.supply.cls,
+    format: (v) => SUPPLY_LABEL[v as SupplyClass] ?? v,
+    order: SUPPLY_ORDER,
+    note: "Corridor-level screening: circuits between the same two substations form one corridor (usually one tower line). Radial = every path to the meshed grid crosses one corridor.",
+  },
   coastal: {
     id: "coastal",
     label: "Coastal band",
@@ -286,7 +325,7 @@ export const DIMENSIONS: Record<DimId, Dimension> = {
   },
 };
 
-export const DIM_ORDER: DimId[] = ["circle", "zone", "division", "voltage", "age", "conductor", "role", "coastal"];
+export const DIM_ORDER: DimId[] = ["circle", "zone", "division", "voltage", "supply", "age", "conductor", "role", "coastal"];
 
 export function isDimId(v: unknown): v is DimId {
   return typeof v === "string" && v in DIMENSIONS;
@@ -351,6 +390,11 @@ export interface Metrics {
   singleFed: number;
   articulation: number;
   bridges: number;
+  /** Radially fed SS: through a single circuit / through one multi-circuit corridor. */
+  radialSc: number;
+  radialDc: number;
+  /** Distinct 33/11 kV SS fed from radially fed TRANSCO SS. */
+  radialDiscomSs: number;
   feeders: number;
   feederKm: number;
   discomSs: number;
@@ -375,14 +419,21 @@ export function metrics(ss: readonly SsRow[], lines: readonly LineRow[]): Metric
     singleFed: 0,
     articulation: 0,
     bridges: 0,
+    radialSc: 0,
+    radialDc: 0,
+    radialDiscomSs: 0,
     feeders: 0,
     feederKm: 0,
     discomSs: 0,
     coastalSs: 0,
   };
   const discom = new Set<string>();
+  const radialDiscom = new Set<string>();
   for (const r of ss) {
     m.ssByV[r.voltage]++;
+    if (r.supply.cls === "radial-sc") m.radialSc++;
+    if (r.supply.cls === "radial-dc") m.radialDc++;
+    if (r.supply.cls === "radial-sc" || r.supply.cls === "radial-dc") for (const id of r.discomSsIds) radialDiscom.add(id);
     if (r.role === "single-fed") m.singleFed++;
     if (r.role === "articulation") m.articulation++;
     m.feeders += r.feeders;
@@ -391,6 +442,7 @@ export function metrics(ss: readonly SsRow[], lines: readonly LineRow[]): Metric
     if (r.ss.coastalBand === 0) m.coastalSs++;
   }
   m.discomSs = discom.size;
+  m.radialDiscomSs = radialDiscom.size;
   let ageCkm = 0;
   let pastCkm = 0;
   for (const r of lines) {
@@ -564,4 +616,196 @@ export function bboxOf(ss: readonly SsRow[]): [[number, number], [number, number
     [w, s],
     [e, n],
   ];
+}
+
+// ---------------------------------------------------------------------------------------------
+// Supply security (radial feeds) — rows for the "Radial feeds" tab, the dossier and the map focus
+
+export const isRadial = (r: SsRow) => r.supply.cls === "radial-sc" || r.supply.cls === "radial-dc";
+
+/** Display name of a corridor-graph node (a TRANSCO SS, or a generation switchyard). */
+export function nodeName(model: MisModel, id: string | null): string {
+  if (!id) return "—";
+  if (isGenNode(id)) return `${titleCase(id.slice(GEN_PREFIX.length))} (generation)`;
+  return model.ssById.get(id)?.ss.name ?? id;
+}
+
+/** A highlight the MIS pushes onto the map (dims everything else and fits to the SS). */
+export interface MapFocus {
+  key: string;
+  label: string;
+  ssIds: string[];
+  lineIds: string[];
+}
+
+/** The radial feed of one substation: the bridge corridors from the core head out to it. */
+export function feedPathFocus(model: MisModel, row: SsRow): MapFocus | null {
+  const s = row.supply;
+  if (!s.path.length) return null;
+  const ssIds = new Set<string>([row.id]);
+  const lineIds: string[] = [];
+  for (const key of s.path) {
+    const c = model.sec.corridors.get(key);
+    if (!c) continue;
+    lineIds.push(...c.lineIds);
+    for (const n of [c.a, c.b]) if (!isGenNode(n)) ssIds.add(n);
+  }
+  return { key: `feed:${row.id}`, label: `Radial feed of ${row.ss.name}`, ssIds: [...ssIds], lineIds };
+}
+
+/** Risk overlaps a planner screens radial substations for. */
+export type RadialFlag = "sc" | "coastal" | "aged" | "long" | "load" | "gap";
+export const RADIAL_FLAG_LABEL: Record<RadialFlag, string> = {
+  sc: "Single circuit",
+  coastal: "Coastal < 25 km",
+  aged: `Feed ≥ ${LINE_USEFUL_LIFE_YRS} yrs`,
+  long: "Radial ≥ 50 km",
+  load: "≥ 10 × 33/11 kV SS",
+  gap: "Data gap nearby",
+};
+export const RADIAL_FLAG_HINT: Record<RadialFlag, string> = {
+  sc: "A single circuit trip on the feed interrupts supply",
+  coastal: "Cyclone exposure: the substation is within 25 km of the coast — tower failure is the credible contingency",
+  aged: `A circuit on the radial feed is at or past the ${LINE_USEFUL_LIFE_YRS}-year CERC useful life`,
+  long: "Long radial route — more exposure to faults and tail-end voltage drop",
+  load: "Ten or more 33/11 kV substations depend on it (traced 33 kV feeders)",
+  gap: "A line touching this substation or its feed has an unresolved far end — the substation may be better fed than shown",
+};
+export const RADIAL_FLAGS: RadialFlag[] = ["sc", "coastal", "aged", "long", "load", "gap"];
+
+export interface RadialRow {
+  row: SsRow;
+  head: string;
+  /** Oldest circuit on the radial feed (years), null when none dated. */
+  feedAge: number | null;
+  flags: Set<RadialFlag>;
+}
+
+export function radialRows(model: MisModel, ss: readonly SsRow[]): RadialRow[] {
+  const out: RadialRow[] = [];
+  for (const row of ss) {
+    if (!isRadial(row)) continue;
+    let feedAge: number | null = null;
+    let gap = row.openEnds > 0;
+    for (const key of row.supply.path) {
+      const c = model.sec.corridors.get(key);
+      if (!c) continue;
+      for (const id of c.lineIds) {
+        const a = model.lineById.get(id)?.age;
+        if (a != null && (feedAge == null || a > feedAge)) feedAge = a;
+      }
+      for (const n of [c.a, c.b]) if ((model.ssById.get(n)?.openEnds ?? 0) > 0 && n !== row.supply.headId) gap = true;
+    }
+    const flags = new Set<RadialFlag>();
+    if (row.supply.cls === "radial-sc") flags.add("sc");
+    if (row.ss.coastalBand === 0 || row.ss.coastalBand === 1) flags.add("coastal");
+    if (feedAge != null && feedAge >= LINE_USEFUL_LIFE_YRS) flags.add("aged");
+    if (row.supply.radialKm >= 50) flags.add("long");
+    if (row.discomSsIds.length >= 10) flags.add("load");
+    if (gap) flags.add("gap");
+    out.push({ row, head: nodeName(model, row.supply.headId), feedAge, flags });
+  }
+  return out;
+}
+
+export interface PocketRow {
+  key: string;
+  headId: string;
+  head: string;
+  /** TRANSCO SS in the pocket (whole pocket, not just the in-scope part). */
+  ss: SsRow[];
+  ssByV: Record<Voltage, number>;
+  lineIds: string[];
+  entryCircuits: number;
+  entryKm: number;
+  routeKm: number;
+  maxDepth: number;
+  scCount: number;
+  generation: string[];
+  /** Distinct 33/11 kV SS fed from the pocket. */
+  discomSs: number;
+  feeders: number;
+  /** Nearest-coast band of the most exposed pocket SS (0 = < 10 km). */
+  coastalBand: number | null;
+  /** Oldest circuit in the pocket (years). */
+  oldest: number | null;
+}
+
+/** Radial pockets that have at least one substation in `scope`, ranked by load at risk. */
+export function pocketRows(model: MisModel, scope: readonly SsRow[]): PocketRow[] {
+  const inScope = new Set(scope.map((r) => r.id));
+  const out: PocketRow[] = [];
+  for (const p of model.sec.pockets) {
+    if (!p.ssIds.some((id) => inScope.has(id))) continue;
+    const ss = p.ssIds.map((id) => model.ssById.get(id)).filter((r): r is SsRow => !!r);
+    if (!ss.length) continue;
+    const discom = new Set<string>();
+    let feeders = 0;
+    let coastal: number | null = null;
+    const byV = zeroV();
+    for (const r of ss) {
+      byV[r.voltage]++;
+      feeders += r.feeders;
+      for (const id of r.discomSsIds) discom.add(id);
+      const b = r.ss.coastalBand;
+      if (b != null && (coastal == null || b < coastal)) coastal = b;
+    }
+    let oldest: number | null = null;
+    for (const id of p.lineIds) {
+      const a = model.lineById.get(id)?.age;
+      if (a != null && (oldest == null || a > oldest)) oldest = a;
+    }
+    out.push({
+      key: p.key,
+      headId: p.headId,
+      head: nodeName(model, p.headId),
+      ss,
+      ssByV: byV,
+      lineIds: p.lineIds,
+      entryCircuits: p.entryCircuits,
+      entryKm: p.entryKm,
+      routeKm: p.routeKm,
+      maxDepth: p.maxDepth,
+      scCount: p.scCount,
+      generation: p.generation,
+      discomSs: discom.size,
+      feeders,
+      coastalBand: coastal,
+      oldest,
+    });
+  }
+  return out.sort(
+    (a, b) => b.discomSs - a.discomSs || b.ss.length - a.ss.length || a.entryCircuits - b.entryCircuits || b.routeKm - a.routeKm,
+  );
+}
+
+export function pocketFocus(p: PocketRow, model: MisModel): MapFocus {
+  const ssIds = [...p.ss.map((r) => r.id)];
+  if (model.ssById.has(p.headId)) ssIds.push(p.headId);
+  return { key: `pocket:${p.key}`, label: `Radial pocket off ${p.head}`, ssIds, lineIds: p.lineIds };
+}
+
+export interface CutRow {
+  row: SsRow;
+  islanded: SsRow[];
+  discomSs: number;
+}
+
+/** Cut-point substations in scope, ranked by what their total (bus) outage would island. */
+export function cutRows(model: MisModel, scope: readonly SsRow[]): CutRow[] {
+  const out: CutRow[] = [];
+  for (const row of scope) {
+    if (!row.cutIslands.length) continue;
+    const islanded = row.cutIslands.map((id) => model.ssById.get(id)).filter((r): r is SsRow => !!r);
+    const discom = new Set<string>();
+    for (const r of [row, ...islanded]) for (const id of r.discomSsIds) discom.add(id);
+    out.push({ row, islanded, discomSs: discom.size });
+  }
+  return out.sort((a, b) => b.islanded.length - a.islanded.length || b.discomSs - a.discomSs);
+}
+
+export function cutFocus(c: CutRow, model: MisModel): MapFocus {
+  const ids = new Set([c.row.id, ...c.islanded.map((r) => r.id)]);
+  const lineIds = model.lines.filter((l) => l.line.connectsSS.some((id) => ids.has(id))).map((l) => l.id);
+  return { key: `cut:${c.row.id}`, label: `Bus outage at ${c.row.ss.name}`, ssIds: [...ids], lineIds };
 }

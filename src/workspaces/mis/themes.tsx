@@ -1,10 +1,19 @@
 // Network MIS thematic deep-dives: asset age, N-1 exposure, 33 kV downstream, conductors &
 // capacity, and interfaces (generation / railway / bulk-load / PGCIL). Every list row is a drill
 // (adds a scope filter) or a pick (opens the asset dossier + flies the map).
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { PagerBar, usePager } from "../../components/Pager.tsx";
 import { VoltageBadge } from "../../components/VoltageBadge.tsx";
 import { useLiveStatus } from "../../data/live-status.ts";
 import { ENERGY_TYPES, type EnergyType, type Voltage } from "../../data/types.ts";
+import {
+  IFACE_SEC_LABEL,
+  interfaceSecurity,
+  SUPPLY_HINT,
+  SUPPLY_LABEL,
+  SUPPLY_ORDER,
+  type InterfaceSecurity,
+} from "../../lib/supply-security.ts";
 import { DISCOM_COLOR, type DiscomId } from "../../overlays/catalog.ts";
 import { useAppStore } from "../../state/store.ts";
 import { BULKLOAD_COLOR, ENERGY_COLOR, ENERGY_LABEL, POWERGRID_COLOR, RAILWAY_COLOR } from "../../theme/palette.ts";
@@ -14,8 +23,22 @@ import {
   AGE_BAND_ORDER,
   bridgeImpacts,
   commissioningHistogram,
+  cutFocus,
+  cutRows,
+  feedPathFocus,
   groupBy,
   LINE_USEFUL_LIFE_YRS,
+  metrics,
+  nodeName,
+  pocketFocus,
+  pocketRows,
+  RADIAL_FLAG_HINT,
+  RADIAL_FLAG_LABEL,
+  RADIAL_FLAGS,
+  radialRows,
+  type MapFocus,
+  type RadialFlag,
+  type RadialRow,
   ROLE_HINT,
   ROLE_LABEL,
   ROLE_ORDER,
@@ -25,10 +48,12 @@ import {
   type Scope,
   type ScopeFilter,
 } from "./model.ts";
-import { Card, gva, nf0, nf1, Note, pct, StatTile, VoltageLegend } from "./ui.tsx";
+import { csvFile, SupplyText } from "./tables.tsx";
+import { Card, gva, nf0, nf1, Note, pct, Segmented, SmallButton, StatTile, VoltageLegend, VoltageSegBar } from "./ui.tsx";
 
-export type ThemeTab = "age" | "n1" | "downstream" | "conductor" | "interfaces";
+export type ThemeTab = "radial" | "age" | "n1" | "downstream" | "conductor" | "interfaces";
 export const THEME_TABS: { id: ThemeTab; label: string }[] = [
+  { id: "radial", label: "Radial feeds" },
   { id: "age", label: "Asset age" },
   { id: "n1", label: "N-1 exposure" },
   { id: "downstream", label: "33 kV downstream" },
@@ -44,9 +69,411 @@ interface TabProps {
   scope: Scope;
   filters: ScopeFilter[];
   onDrill: (dim: DimId, key: string) => void;
+  /** Highlight a set of assets on the map (null clears). */
+  onFocus: (f: MapFocus | null) => void;
+  focusKey: string | null;
 }
 
 const pick = (id: string) => useAppStore.getState().select(id, { fly: true });
+
+const COAST_SHORT: Record<number, string> = { 0: "< 10 km", 1: "10–25 km", 2: "25–50 km", 3: "inland" };
+const RED = "#d03b3b";
+
+function Th({ children, right, title, className = "" }: { children: ReactNode; right?: boolean; title?: string; className?: string }) {
+  return (
+    <th scope="col" title={title} className={`whitespace-nowrap px-2 py-2 font-medium ${right ? "text-right" : ""} ${className}`}>
+      {children}
+    </th>
+  );
+}
+
+function Chip({ on, onClick, children, title }: { on: boolean; onClick: () => void; children: ReactNode; title?: string }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      title={title}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+        on ? "border-accent bg-accent/10 text-ink" : "border-line text-ink-2 hover:bg-surface-2 hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Radial feeds — corridor-level supply security
+
+type RadialSort = "load" | "km" | "depth";
+
+export function RadialTab({ model, scope, onDrill, onFocus, focusKey }: TabProps) {
+  const m = useMemo(() => metrics(scope.ss, scope.lines), [scope]);
+  const classes = useMemo(() => groupBy(scope, "supply"), [scope]);
+  const radial = useMemo(() => radialRows(model, scope.ss), [model, scope.ss]);
+  const pockets = useMemo(() => pocketRows(model, scope.ss), [model, scope.ss]);
+  const cuts = useMemo(() => cutRows(model, scope.ss), [model, scope.ss]);
+  const [flag, setFlag] = useState<RadialFlag | null>(null);
+  const [sort, setSort] = useState<RadialSort>("load");
+  const [allPockets, setAllPockets] = useState(false);
+
+  const flagCount = useMemo(() => {
+    const c = Object.fromEntries(RADIAL_FLAGS.map((f) => [f, 0])) as Record<RadialFlag, number>;
+    for (const r of radial) for (const f of r.flags) c[f]++;
+    return c;
+  }, [radial]);
+  const listed = useMemo(() => {
+    const key = (r: RadialRow) =>
+      sort === "load" ? r.row.discomSsIds.length * 1e4 + r.row.supply.radialKm : sort === "km" ? r.row.supply.radialKm : r.row.supply.depth * 1e4 + r.row.supply.radialKm;
+    return radial
+      .filter((r) => !flag || r.flags.has(flag))
+      .sort((a, b) => key(b) - key(a) || (a.row.supply.bottleneck ?? 9) - (b.row.supply.bottleneck ?? 9));
+  }, [radial, flag, sort]);
+  const pager = usePager(listed, 15);
+  const shownPockets = allPockets ? pockets : pockets.slice(0, 12);
+  const ssInPockets = pockets.reduce((a, p) => a + p.ss.length, 0);
+  const tracedDiscom = m.discomSs;
+
+  const exportRadial = () =>
+    csvFile(
+      "ap-transco-radial-substations.csv",
+      ["Substation", "kV", "Circle", "Division", "Supply security", "Fed radially from", "Radial depth (corridors)", "Weakest corridor (circuits)", "Radial route km", "Oldest circuit on feed (yrs)", "33 kV feeders", "33/11 kV SS served", "Coastal km", "Flags"],
+      listed.map((r) => [
+        r.row.ss.name, r.row.voltage, r.row.circle ?? "", r.row.division ?? "", SUPPLY_LABEL[r.row.supply.cls], r.head, r.row.supply.depth,
+        r.row.supply.bottleneck ?? "", r.row.supply.radialKm.toFixed(1), r.feedAge ?? "", r.row.feeders, r.row.discomSsIds.length,
+        r.row.ss.coastalKm ?? "", [...r.flags].map((f) => RADIAL_FLAG_LABEL[f]).join("; "),
+      ]),
+    );
+  const exportPockets = () =>
+    csvFile(
+      "ap-transco-radial-pockets.csv",
+      ["Fed from (core SS)", "Pocket substations", "TRANSCO SS", "Entry corridor circuits", "Entry corridor km", "Pocket route km", "Max radial depth", "SS on single-circuit feed", "Local generation", "33 kV feeders", "33/11 kV SS served", "Most exposed coastal band", "Oldest circuit (yrs)"],
+      pockets.map((p) => [
+        p.head, p.ss.map((r) => r.ss.name).join("; "), p.ss.length, p.entryCircuits, p.entryKm.toFixed(1), p.routeKm.toFixed(1), p.maxDepth,
+        p.scCount, p.generation.join("; "), p.feeders, p.discomSs, p.coastalBand == null ? "" : COAST_SHORT[p.coastalBand], p.oldest ?? "",
+      ]),
+    );
+
+  const focusToggle = (f: MapFocus) => onFocus(focusKey === f.key ? null : f);
+
+  return (
+    <div className="space-y-3 p-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatTile label="Radial · single circuit" value={nf0(m.radialSc)} sub="one circuit trip interrupts supply (N-1 insecure)" />
+        <StatTile label="Radial · single corridor" value={nf0(m.radialDc)} sub="survives a circuit trip, not a tower-line failure" />
+        <StatTile label="Radial pockets" value={nf0(pockets.length)} sub={`${nf0(ssInPockets)} TRANSCO SS hang off ${nf0(new Set(pockets.map((p) => p.headId)).size)} core SS`} />
+        <StatTile
+          label="33/11 kV SS behind radial feeds"
+          value={model.hasDownstream ? nf0(m.radialDiscomSs) : "…"}
+          sub={model.hasDownstream ? `${pct(tracedDiscom ? m.radialDiscomSs / tracedDiscom : null)} of the traced 33/11 kV SS in scope` : "loading 33 kV index"}
+        />
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Card title="Supply security of TRANSCO substations" subtitle="Click a class to drill" actions={<VoltageLegend />}>
+          <BarList
+            onPick={(k) => onDrill("supply", k)}
+            items={SUPPLY_ORDER.map((k) => classes.find((c) => c.key === k))
+              .filter((c) => !!c)
+              .map((c) => ({
+                key: c!.key,
+                label: SUPPLY_LABEL[c!.key as keyof typeof SUPPLY_LABEL],
+                value: c!.m.ss,
+                byV: c!.m.ssByV,
+                title: SUPPLY_HINT[c!.key as keyof typeof SUPPLY_HINT],
+                display: `${nf0(c!.m.ss)} SS · ${pct(scope.ss.length ? c!.m.ss / scope.ss.length : 0)}`,
+              }))}
+          />
+        </Card>
+        <Card title="Risk overlaps among radial substations" subtitle="Click one to filter the radial list below">
+          <ul className="space-y-1 text-xs">
+            {RADIAL_FLAGS.map((f) => (
+              <li key={f}>
+                <button
+                  type="button"
+                  onClick={() => setFlag(flag === f ? null : f)}
+                  aria-pressed={flag === f}
+                  title={RADIAL_FLAG_HINT[f]}
+                  className={`flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left ${flag === f ? "bg-accent/10" : "hover:bg-surface-2"}`}
+                >
+                  <span className="min-w-0 flex-1 truncate text-ink">{RADIAL_FLAG_LABEL[f]}</span>
+                  <span className="h-1.5 w-24 shrink-0 rounded-full bg-[#2a78d6]/15">
+                    <span
+                      className="block h-full rounded-full bg-[#2a78d6]"
+                      style={{ width: `${radial.length ? (flagCount[f] / radial.length) * 100 : 0}%` }}
+                    />
+                  </span>
+                  <span className="w-16 shrink-0 text-right tabular-nums font-medium text-ink">
+                    {flagCount[f]} <span className="font-normal text-ink-2">/ {radial.length}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Note>
+            Overlaps sharpen the priority list: a single-circuit radial near the coast with an ageing feed and heavy 33 kV
+            dependence is the classic candidate for a second source (LILO, ring closure or a new 220/132 kV link).
+          </Note>
+        </Card>
+      </div>
+
+      <Card
+        pad={false}
+        title="Radial pockets — ranked by load at risk"
+        subtitle="Each pocket hangs off the meshed grid through ONE corridor. Click a row to highlight it on the map."
+        actions={<SmallButton onClick={exportPockets}>CSV</SmallButton>}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
+                <Th className="pl-4">Fed from</Th>
+                <Th>Pocket substations</Th>
+                <Th right title="Circuits on the corridor joining the pocket to the meshed grid · its route km">Entry</Th>
+                <Th right title="Longest chain of radial corridors">Depth</Th>
+                <Th right title="Route km of all lines in the pocket">Route km</Th>
+                <Th right title="33/11 kV substations on 33 kV feeders out of the pocket">33/11 SS</Th>
+                <Th className="pr-4">Exposure</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {shownPockets.map((p) => {
+                const f = pocketFocus(p, model);
+                const on = focusKey === f.key;
+                return (
+                  <tr
+                    key={p.key}
+                    onClick={() => focusToggle(f)}
+                    className={`cursor-pointer border-b border-line/70 ${on ? "bg-accent/10" : "hover:bg-accent/5"}`}
+                    title={on ? "Click to clear the map highlight" : "Highlight this pocket on the map"}
+                  >
+                    <td className="max-w-[150px] py-1.5 pl-4 pr-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (model.ssById.has(p.headId)) pick(p.headId);
+                        }}
+                        className="truncate font-medium text-ink hover:underline"
+                        title="Open the feeding substation"
+                      >
+                        {p.head}
+                      </button>
+                    </td>
+                    <td className="max-w-[240px] px-2">
+                      <div className="truncate text-ink" title={p.ss.map((r) => `${r.ss.name} (${r.voltage})`).join(", ")}>
+                        <span className="font-medium tabular-nums">{p.ss.length}</span>
+                        <span className="text-ink-2"> · {p.ss.map((r) => r.ss.name).join(", ")}</span>
+                      </div>
+                      <div className="mt-0.5 w-24">
+                        <VoltageSegBar byV={p.ssByV} unit="SS" height={4} />
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-2 text-right tabular-nums">
+                      <span style={{ color: p.entryCircuits <= 1 ? RED : undefined }} className="font-medium">
+                        {p.entryCircuits} ckt
+                      </span>
+                      <span className="text-ink-2"> · {nf0(p.entryKm)} km</span>
+                    </td>
+                    <td className="px-2 text-right tabular-nums">{p.maxDepth}</td>
+                    <td className="px-2 text-right tabular-nums">{nf0(p.routeKm)}</td>
+                    <td className="px-2 text-right font-medium tabular-nums">{p.discomSs || "·"}</td>
+                    <td className="px-2 pr-4 text-[11px] text-ink-2">
+                      {[
+                        p.scCount ? `${p.scCount} SC-fed` : null,
+                        p.coastalBand != null && p.coastalBand <= 1 ? `coast ${COAST_SHORT[p.coastalBand]}` : null,
+                        p.oldest != null && p.oldest >= LINE_USEFUL_LIFE_YRS ? `${p.oldest} y old` : null,
+                        p.generation.length ? "local gen" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "·"}
+                    </td>
+                  </tr>
+                );
+              })}
+              {!pockets.length && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-3 text-ink-2">
+                    No radial pockets in this scope — every substation here has two corridor-independent paths.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {pockets.length > 12 && (
+          <div className="px-4 pt-2">
+            <SmallButton onClick={() => setAllPockets((v) => !v)}>{allPockets ? "Show top 12" : `Show all ${pockets.length}`}</SmallButton>
+          </div>
+        )}
+        <p className="px-4 py-2 text-[11px] leading-snug text-ink-2">
+          A pocket is everything beyond a corridor whose loss disconnects it (corridor = all circuits between the same two
+          substations, usually one tower line). “Entry 1 ckt” = the whole pocket is lost on one trip. Pockets that contain a
+          local loop are still radial to the grid.
+        </p>
+      </Card>
+
+      <Card
+        pad={false}
+        title="Radially fed substations"
+        subtitle={flag ? `Filtered: ${RADIAL_FLAG_LABEL[flag]} — click a row for the dossier and its feed path on the map` : "Click a row for the dossier and its feed path on the map"}
+        actions={
+          <>
+            <Segmented
+              label="Sort radial substations"
+              value={sort}
+              onChange={setSort}
+              options={[
+                { id: "load", label: "33 kV load" },
+                { id: "km", label: "Radial km" },
+                { id: "depth", label: "Depth" },
+              ]}
+            />
+            <SmallButton onClick={exportRadial}>CSV</SmallButton>
+          </>
+        }
+      >
+        <div className="flex flex-wrap gap-1 px-4 pb-2">
+          <Chip on={!flag} onClick={() => setFlag(null)}>
+            All {radial.length}
+          </Chip>
+          {RADIAL_FLAGS.map((f) => (
+            <Chip key={f} on={flag === f} onClick={() => setFlag(flag === f ? null : f)} title={RADIAL_FLAG_HINT[f]}>
+              {RADIAL_FLAG_LABEL[f]} {flagCount[f]}
+            </Chip>
+          ))}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
+                <Th className="pl-4">Substation</Th>
+                <Th>Feed</Th>
+                <Th>Fed from</Th>
+                <Th right title="Radial corridors between it and the meshed grid">Depth</Th>
+                <Th right title="Route km of the radial corridors">Radial km</Th>
+                <Th right title="Oldest circuit on the radial feed">Feed age</Th>
+                <Th right className="pr-4" title="33/11 kV substations on its traced 33 kV feeders">33/11 SS</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {pager.pageItems.map((r) => {
+                const f = feedPathFocus(model, r.row);
+                const on = !!f && focusKey === f.key;
+                return (
+                  <tr
+                    key={r.row.id}
+                    onClick={() => {
+                      // Fit to the feed path rather than flying to the SS alone.
+                      if (f) {
+                        useAppStore.getState().select(r.row.id);
+                        onFocus(f);
+                      } else pick(r.row.id);
+                    }}
+                    className={`cursor-pointer border-b border-line/70 ${on ? "bg-accent/10" : "hover:bg-accent/5"}`}
+                  >
+                    <td className="max-w-[200px] py-1.5 pl-4 pr-2">
+                      <span className="flex items-center gap-1.5">
+                        <VoltageBadge voltage={r.row.voltage} small />
+                        <span className="truncate font-medium text-ink">{r.row.ss.name}</span>
+                      </span>
+                      {r.flags.size > 0 && (
+                        <span className="mt-0.5 block truncate text-[10px] text-ink-2" title={[...r.flags].map((x) => RADIAL_FLAG_HINT[x]).join("\n")}>
+                          {[...r.flags].filter((x) => x !== "sc").map((x) => RADIAL_FLAG_LABEL[x]).join(" · ")}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-2 text-ink-2">
+                      <SupplyText cls={r.row.supply.cls} />
+                    </td>
+                    <td className="max-w-[140px] truncate px-2 text-ink-2" title={r.head}>
+                      {r.head}
+                    </td>
+                    <td className="px-2 text-right tabular-nums">{r.row.supply.depth}</td>
+                    <td className="px-2 text-right tabular-nums">{nf0(r.row.supply.radialKm)}</td>
+                    <td className="px-2 text-right tabular-nums">{r.feedAge == null ? "—" : `${r.feedAge} y`}</td>
+                    <td className="px-2 pr-4 text-right font-medium tabular-nums">{r.row.discomSsIds.length || "·"}</td>
+                  </tr>
+                );
+              })}
+              {!listed.length && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-3 text-ink-2">
+                    {radial.length ? "No radial substation matches this filter." : "No radially fed substations in this scope."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <PagerBar pager={pager} label="radial substations" />
+      </Card>
+
+      <Card
+        pad={false}
+        title="Cut-point substations — consequence of a bus outage"
+        subtitle="A bus-bar fault or total station outage here islands the substations beyond it. Click to highlight."
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
+                <Th className="pl-4">Substation</Th>
+                <Th>Substations islanded</Th>
+                <Th right className="pr-4" title="33/11 kV SS on 33 kV feeders out of the station and the islanded SS">33/11 SS</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {cuts.slice(0, 15).map((c) => {
+                const f = cutFocus(c, model);
+                const on = focusKey === f.key;
+                return (
+                  <tr
+                    key={c.row.id}
+                    onClick={() => focusToggle(f)}
+                    className={`cursor-pointer border-b border-line/70 ${on ? "bg-accent/10" : "hover:bg-accent/5"}`}
+                  >
+                    <td className="max-w-[200px] py-1.5 pl-4 pr-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          pick(c.row.id);
+                        }}
+                        className="flex items-center gap-1.5 hover:underline"
+                      >
+                        <VoltageBadge voltage={c.row.voltage} small />
+                        <span className="truncate font-medium text-ink">{c.row.ss.name}</span>
+                      </button>
+                    </td>
+                    <td className="max-w-[280px] truncate px-2 text-ink-2" title={c.islanded.map((r) => r.ss.name).join(", ")}>
+                      <span className="font-medium tabular-nums text-ink">{c.islanded.length}</span> · {c.islanded.map((r) => r.ss.name).join(", ")}
+                    </td>
+                    <td className="px-2 pr-4 text-right font-medium tabular-nums">{c.discomSs || "·"}</td>
+                  </tr>
+                );
+              })}
+              {!cuts.length && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-3 text-ink-2">
+                    No cut-point substations in this scope.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {cuts.length > 15 && <p className="px-4 pt-2 text-[11px] text-ink-2">Top 15 of {cuts.length}.</p>}
+        <p className="px-4 py-2 text-[11px] leading-snug text-ink-2">
+          Screening on the inferred corridor graph. Generation switchyards that terminate TRANSCO lines count as nodes
+          (a line through a plant is a real path); PGCIL ties that did not snap, 33 kV back-feeds and normally-open points
+          are not modelled, so a “radial” result is a prompt to verify — not a contingency study.
+        </p>
+      </Card>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------------------------
 
@@ -393,7 +820,112 @@ export function ConductorTab({ scope, onDrill }: TabProps) {
 
 // ---------------------------------------------------------------------------------------------
 
-export function InterfacesTab({ scope, filters }: TabProps) {
+const IFACE_SEC_ORDER: InterfaceSecurity[] = ["single-circuit", "single-ss", "multi-ss", "unresolved"];
+const IFACE_CATS: { cat: string; label: string; color: string; list: boolean }[] = [
+  { cat: "Generation", label: "Generating stations", color: ENERGY_COLOR.Thermal, list: true },
+  { cat: "Railway", label: "Railway traction SS", color: RAILWAY_COLOR, list: true },
+  { cat: "HT consumer", label: "EHT / bulk consumers", color: BULKLOAD_COLOR, list: false },
+];
+
+function InterfaceSecurityCard({ model, scope, onFocus, focusKey }: TabProps) {
+  const inScope = useMemo(() => new Set(scope.lines.map((r) => r.id)), [scope.lines]);
+  const feeds = useMemo(
+    () => model.sec.interfaces.filter((f) => f.lineIds.some((id) => inScope.has(id))),
+    [model, inScope],
+  );
+  const [cat, setCat] = useState<string>("Generation");
+  const weak = feeds
+    .filter((f) => f.category === cat && interfaceSecurity(f) === "single-circuit")
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const focusOf = (f: (typeof feeds)[number]): MapFocus => ({
+    key: `iface:${f.category}:${f.name}`,
+    label: `${f.name} (${f.category})`,
+    ssIds: f.ssIds,
+    lineIds: f.lineIds,
+  });
+  const meta = IFACE_CATS.find((c) => c.cat === cat)!;
+
+  return (
+    <Card
+      title="Connection security of interfaces"
+      subtitle="How generation evacuation, traction supply and EHT consumers are tied to the TRANSCO grid (line rows in scope)"
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr className="border-b border-line text-left text-[11px] text-ink-2">
+              <Th className="pl-0">Interface</Th>
+              {IFACE_SEC_ORDER.map((k) => (
+                <Th key={k} right>
+                  {IFACE_SEC_LABEL[k]}
+                </Th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {IFACE_CATS.map((c) => {
+              const rows = feeds.filter((f) => f.category === c.cat);
+              const n = (k: InterfaceSecurity) => rows.filter((f) => interfaceSecurity(f) === k).length;
+              return (
+                <tr key={c.cat} className="border-b border-line/70">
+                  <td className="py-1.5 pr-2">
+                    <span className="inline-flex items-center gap-1.5 text-ink">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
+                      {c.label}
+                    </span>
+                  </td>
+                  {IFACE_SEC_ORDER.map((k) => (
+                    <td key={k} className="px-2 text-right tabular-nums">
+                      <span className={k === "single-circuit" && n(k) ? "font-semibold text-[#d03b3b]" : "text-ink"}>{n(k) || "·"}</span>
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1">
+        <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-ink-2">On one circuit</span>
+        {IFACE_CATS.filter((c) => c.list).map((c) => (
+          <Chip key={c.cat} on={cat === c.cat} onClick={() => setCat(c.cat)}>
+            {c.label}
+          </Chip>
+        ))}
+      </div>
+      <ul className="mt-1 max-h-56 divide-y divide-line/70 overflow-y-auto text-xs">
+        {meta.list &&
+          weak.map((f) => {
+            const fo = focusOf(f);
+            const on = focusKey === fo.key;
+            return (
+              <li key={f.name}>
+                <button
+                  type="button"
+                  onClick={() => onFocus(on ? null : fo)}
+                  className={`flex w-full items-center gap-2 py-1.5 text-left ${on ? "bg-accent/10" : "hover:bg-surface-2"}`}
+                  title="Highlight its connection on the map"
+                >
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.color }} />
+                  <span className="min-w-0 flex-1 truncate text-ink">{f.name}</span>
+                  <span className="shrink-0 truncate text-ink-2">← {f.ssIds.map((id) => nodeName(model, id)).join(", ") || "unresolved"}</span>
+                </button>
+              </li>
+            );
+          })}
+        {meta.list && !weak.length && <li className="py-2 text-ink-2">None in scope.</li>}
+      </ul>
+      <Note>
+        A generating station on one circuit is evacuation-insecure (a single trip backs it down); traction substations are
+        normally given two independent feeds. Counts are per terminal as digitised; a plant whose switchyard appears under
+        two names is counted twice. EHT consumers are summarised only.
+      </Note>
+    </Card>
+  );
+}
+
+export function InterfacesTab(props: TabProps) {
+  const { scope, filters } = props;
   const generation = useAppStore((s) => s.generation);
   const genStatus = useAppStore((s) => s.genStatus);
   const powergrid = useAppStore((s) => s.powergrid);
@@ -429,6 +961,7 @@ export function InterfacesTab({ scope, filters }: TabProps) {
 
   return (
     <div className="space-y-3 p-3">
+      <InterfaceSecurityCard {...props} />
       <Card title="Lines terminating outside TRANSCO" subtitle="Line rows in scope whose end snaps to a non-TRANSCO facility (≤ 1 km)">
         <BarList
           items={[...ext.entries()]

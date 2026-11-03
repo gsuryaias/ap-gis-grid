@@ -84,7 +84,7 @@ export function serializeHash(s: HashState): string {
   if (s.workspace === "mis") {
     if (s.misBy && s.misBy !== "circle") p.set("by", s.misBy);
     if (s.misFilters) p.set("mf", s.misFilters);
-    if (s.misTab && s.misTab !== "age") p.set("tab", s.misTab);
+    if (s.misTab && s.misTab !== "radial") p.set("tab", s.misTab);
     if (s.misTheme && s.misTheme !== "voltage") p.set("theme", s.misTheme);
   }
   return `#${p.toString()}`;

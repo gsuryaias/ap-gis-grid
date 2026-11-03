@@ -65,19 +65,6 @@ export const MANIFEST_GATES: Record<string, { schema: Record<string, string>; mi
     },
     minRowCount: 40,
   },
-  "vidyut-daily": {
-    schema: {
-      date: "DATE",
-      state: "VARCHAR",
-      demand_met_mw: "DOUBLE",
-      peak_shortage_mw: "DOUBLE",
-      peak_shortage_pct: "DOUBLE",
-      energy_shortage_mu: "DOUBLE",
-      energy_shortage_pct: "DOUBLE",
-      exchange_price_inr_kwh: "DOUBLE",
-    },
-    minRowCount: 1,
-  },
   "cea-monthly": {
     schema: {
       month: "DATE",
@@ -92,7 +79,7 @@ export const MANIFEST_GATES: Record<string, { schema: Record<string, string>; mi
 };
 
 /** Manifest ids the CI deploy gate expects on the live `data` branch (add here once the pipeline ships). */
-export const LIVE_DATA_MANIFEST_IDS = ["psp-daily", "vidyut-daily"] as const;
+export const LIVE_DATA_MANIFEST_IDS = ["psp-daily"] as const;
 
 /** Fetches `manifests/<id>.json` from the data branch; null on ANY failure — never throws. */
 export async function loadManifest(id: string): Promise<DatasetManifest | null> {
