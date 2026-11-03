@@ -36,9 +36,11 @@ if [ $rc -eq 3 ]; then echo "Can't reach gis.aptransco.gov.in — it only accept
 if [ $rc -ne 0 ]; then echo "Sync failed (exit $rc) — nothing was changed."; exit $rc; fi
 # Towers (~114k points, grouped by line). Non-fatal: a failed/rejected tower pull keeps the previous files.
 npm run -s sync:towers || echo "Tower sync failed — keeping the previous tower data."
+# DISCOM 11 kV network (feeders, transformers, AB switches — never HT consumers). Non-fatal likewise.
+npm run -s sync:network || echo "Network sync failed — keeping the previous 11 kV data."
 
 changed=false
-[ -n "$(git status --porcelain -- data/raw/live ':!data/raw/live/manifest.json' ':!data/raw/live/towers-manifest.json')" ] && changed=true
+[ -n "$(git status --porcelain -- data/raw/live ':!data/raw/live/manifest.json' ':!data/raw/live/towers-manifest.json' ':!data/raw/live/net-manifest.json')" ] && changed=true
 
 say "3/5  Rebuilding the map data"
 npm run -s build:data > /dev/null

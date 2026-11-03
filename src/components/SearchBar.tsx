@@ -1,4 +1,14 @@
-import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import {
+  dtrShardsFor,
+  loadDtrShard,
+  loadNetworkIndex,
+  looksLikeDtrCode,
+  NET_KIND_LABEL,
+  useNetworkIndex,
+  type NetItem,
+} from "../data/network-search.ts";
+import { useOverlayStore } from "../overlays/store.ts";
 import type { GridData, PlaceItem, SearchItem } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { SearchIcon, CloseIcon, SubstationIcon, LineIcon, PinIcon } from "./icons.tsx";
@@ -20,7 +30,20 @@ const PLACE_LIMIT = 8;
 const PLACE_ZOOM: Record<string, number> = { state: 7, district: 9, mandal: 11, city: 12 };
 const PLACE_ZOOM_DEFAULT = 13;
 
-type Row = { kind: "feature"; item: SearchItem } | { kind: "place"; item: PlaceItem };
+/** Distribution-network hits (33/11 kV SS, 33 / 11 kV feeders, sections) and transformers. */
+const NET_LIMIT = 8;
+const DTR_LIMIT = 6;
+
+type Row =
+  | { kind: "feature"; item: SearchItem }
+  | { kind: "net"; item: NetItem }
+  | { kind: "place"; item: PlaceItem };
+
+const GROUP_LABEL: Record<Row["kind"], string> = {
+  feature: "",
+  net: "Distribution network · 33 / 11 kV",
+  place: "Places",
+};
 
 export function SearchBar({ data }: { data: GridData }) {
   const [query, setQuery] = useState("");
@@ -33,6 +56,41 @@ export function SearchBar({ data }: { data: GridData }) {
   const ensurePlaces = useAppStore((s) => s.ensurePlaces);
   const setNearbyOrigin = useAppStore((s) => s.setNearbyOrigin);
   const inputRef = useRef<HTMLInputElement>(null);
+  const netIndex = useNetworkIndex();
+  const focusNetwork = useOverlayStore((s) => s.focusNetwork);
+
+  const netMatches = useMemo(() => {
+    const q = deferred.trim().toLowerCase();
+    if (q.length < 2 || !netIndex) return [];
+    return netIndex.items
+      .map((it) => ({ it, r: rank({ name: it.label }, q) }))
+      .filter((x) => x.r < 99)
+      .sort((a, b) => a.r - b.r || a.it.label.localeCompare(b.it.label))
+      .slice(0, NET_LIMIT)
+      .map((x) => x.it);
+  }, [deferred, netIndex]);
+
+  // Transformers: only for code-like queries, and only the shard(s) that code can live in.
+  const [dtrMatches, setDtrMatches] = useState<NetItem[]>([]);
+  useEffect(() => {
+    const q = deferred.trim();
+    if (!netIndex || !looksLikeDtrCode(q)) {
+      setDtrMatches([]);
+      return;
+    }
+    let live = true;
+    const lq = q.toLowerCase();
+    Promise.all(dtrShardsFor(q, netIndex.shards).map((k) => loadDtrShard(k, netIndex.chains).catch(() => [])))
+      .then((all) => {
+        if (!live) return;
+        const hits = all.flat().filter((d) => d.label.toLowerCase().startsWith(lq));
+        hits.sort((a, b) => a.label.length - b.label.length || a.label.localeCompare(b.label));
+        setDtrMatches(hits.slice(0, DTR_LIMIT));
+      });
+    return () => {
+      live = false;
+    };
+  }, [deferred, netIndex]);
 
   const matches = useMemo(() => {
     const q = deferred.trim().toLowerCase();
@@ -61,9 +119,10 @@ export function SearchBar({ data }: { data: GridData }) {
   const rows = useMemo<Row[]>(
     () => [
       ...matches.map((item): Row => ({ kind: "feature", item })),
+      ...[...dtrMatches, ...netMatches].map((item): Row => ({ kind: "net", item })),
       ...placeMatches.map((item): Row => ({ kind: "place", item })),
     ],
-    [matches, placeMatches],
+    [matches, dtrMatches, netMatches, placeMatches],
   );
 
   // Which substation names are duplicated → show disambiguating detail.
@@ -75,7 +134,17 @@ export function SearchBar({ data }: { data: GridData }) {
 
   function choose(row: Row) {
     if (row.kind === "feature") {
+      focusNetwork(null);
       select(row.item.id, { fly: true });
+    } else if (row.kind === "net") {
+      // Network assets aren't core features — open the trace panel and fly to the asset.
+      select(null);
+      setNearbyOrigin(null);
+      focusNetwork(row.item);
+      setQuery(row.item.label);
+      setOpen(false);
+      inputRef.current?.blur();
+      return;
     } else {
       // A place isn't a selectable feature — jump there and anchor the nearest-SS readout on it.
       const p = row.item;
@@ -117,12 +186,13 @@ export function SearchBar({ data }: { data: GridData }) {
           }}
           onFocus={() => {
             ensurePlaces(); // first focus kicks off the lazy gazetteer fetch
+            void loadNetworkIndex().catch(() => undefined); // …and the distribution-network tier
             setOpen(true);
           }}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={onKey}
-          placeholder="Search the grid or any AP place…"
-          aria-label="Search substations, lines and Andhra Pradesh places"
+          placeholder="Search grid, feeders, DTR code or place…"
+          aria-label="Search substations, lines, 33 / 11 kV feeders, transformer codes and Andhra Pradesh places"
           className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-2/70"
         />
         {query && (
@@ -149,19 +219,41 @@ export function SearchBar({ data }: { data: GridData }) {
             const rowClass = `flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
               i === active ? "bg-surface-3" : "hover:bg-surface-2"
             }`;
+            const header =
+              row.kind !== "feature" && (i === 0 || rows[i - 1].kind !== row.kind) ? (
+                <div className={`px-3 pb-1 pt-2 text-[10px] uppercase tracking-wide text-ink-2 ${i > 0 ? "mt-1 border-t border-line" : ""}`}>
+                  {GROUP_LABEL[row.kind]}
+                </div>
+              ) : null;
+            if (row.kind === "net") {
+              const n = row.item;
+              return (
+                <li key={`n-${n.kind}-${n.ref || n.label}-${n.lng}`} role="option" aria-selected={i === active}>
+                  {header}
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      choose(row);
+                    }}
+                    onMouseEnter={() => setActive(i)}
+                    className={rowClass}
+                  >
+                    <span className="w-[72px] shrink-0 rounded bg-surface-2 px-1 py-0.5 text-center text-[10px] font-medium text-ink-2">
+                      {NET_KIND_LABEL[n.kind]}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-ink">{n.label}</span>
+                      <span className="block truncate text-[11px] text-ink-2">{n.sub}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            }
             if (row.kind === "place") {
               const p = row.item;
               return (
                 <li key={`p-${p.name}-${p.lng}-${p.lat}`} role="option" aria-selected={i === active}>
-                  {i === matches.length && (
-                    <div
-                      className={`px-3 pb-1 pt-2 text-[10px] uppercase tracking-wide text-ink-2 ${
-                        matches.length > 0 ? "mt-1 border-t border-line" : ""
-                      }`}
-                    >
-                      Places
-                    </div>
-                  )}
+                  {header}
                   <button
                     onMouseDown={(e) => {
                       e.preventDefault();

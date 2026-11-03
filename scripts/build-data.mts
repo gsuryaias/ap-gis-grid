@@ -66,6 +66,18 @@ import {
   type Voltage,
 } from "./etl-lib.ts";
 import { buildWebTowers, normLineName, TOWER_LAYERS, type LineTowerStats, type TowersFile } from "./towers-lib.ts";
+import {
+  anchorOf,
+  buildEpdclFeeders,
+  buildSpdclFeeders,
+  dtrRows,
+  epSsIdIndex,
+  type Chain,
+  type DtrRow,
+  type F11,
+  type SsRef,
+} from "./etl-network.ts";
+import type { GroupedFile } from "./net-lib.ts";
 import { buildDiscomLines, buildDiscomSubstations, type Discom, type DiscomLineOut, type DiscomSubstation } from "./etl-discom.ts";
 import { linkFeederSources, linkServedSubstations, NAME_MATCH_RADIUS_KM, PROXIMITY_KM, SERVES_M, type FeederIn } from "./etl-connectivity.ts";
 import { toCsv } from "../src/lib/export.ts";
@@ -881,6 +893,198 @@ function buildTowers(outDir: string, lines: Array<{ id: string; name: string }>)
   return { stats, summary };
 }
 
+/**
+ * DISCOM 11 kV network (scripts/sync-network.mts → data/raw/live/net-*) → the lazy 11 kV overlay,
+ * DTR search shards and the network search tier with upstream trace chains. Reads the 33 kV
+ * outputs buildDiscom just wrote (discom-ss / discom-lines / transco-33kv). See etl-network.ts.
+ */
+function buildNetwork(outDir: string, transco: Substation[]) {
+  const live = (f: string) => resolve(LIVE_DIR, f);
+  const readJson = <T,>(path: string): T | null => (existsSync(path) ? (JSON.parse(readFileSync(path, "utf-8")) as T) : null);
+  type Fc = { features: Array<{ geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> }> };
+  const epLines = readJson<Fc>(live("net-epdcl-11kv.geojson"));
+  const spLines = readJson<Fc>(live("net-spdcl-11kv.geojson"));
+  if (!epLines && !spLines) {
+    console.log("[etl] network: not synced yet (npm run sync:network) — skipped");
+    return null;
+  }
+  const ssFc = readJson<Fc>(resolve(outDir, "discom-ss.geojson"))!;
+  const f33Fc = readJson<Fc>(resolve(outDir, "discom-lines.geojson"))!;
+  const idx = readJson<{ bySs: Record<string, Array<[string, string | null, string, number, string, string[]]>> }>(resolve(outDir, "transco-33kv.json"))!;
+  const ss: SsRef[] = ssFc.features.map((f) => {
+    const p = f.properties;
+    return { id: String(p.id), discom: String(p.discom), name: String(p.name), lng: Number(p.lng), lat: Number(p.lat) };
+  });
+  const ssById = new Map(ss.map((s) => [s.id, s]));
+  const tLabel = new Map(transco.map((t) => [t.id, `${t.voltage} kV ${t.name}`]));
+  const f33Name = new Map(f33Fc.features.map((f) => [String(f.properties.id), (f.properties.name as string | undefined) ?? "Unnamed 33 kV line"]));
+
+  // 33/11 kV SS → (TRANSCO SS, 33 kV feeder) from the inferred 33 kV connectivity.
+  const up = new Map<string, { tId: string; f33Id: string }>();
+  for (const [tId, feeders] of Object.entries(idx.bySs)) for (const fd of feeders) for (const sid of fd[5]) if (!up.has(sid)) up.set(sid, { tId, f33Id: fd[0] });
+  const chains: Chain[] = [];
+  const chainIdx = new Map<string, number>();
+  const chain = (c: Chain): number => {
+    const k = JSON.stringify(c);
+    let i = chainIdx.get(k);
+    if (i == null) chainIdx.set(k, (i = chains.push(c) - 1));
+    return i;
+  };
+  const ssChain = (ssId: string | null, fallbackName: string | null): number => {
+    const s = ssId ? ssById.get(ssId) : null;
+    const u = ssId ? up.get(ssId) : null;
+    return chain([s?.id ?? null, s?.name ?? fallbackName, u?.f33Id ?? null, u ? (f33Name.get(u.f33Id) ?? null) : null, u?.tId ?? null, u ? (tLabel.get(u.tId) ?? null) : null]);
+  };
+
+  const TOL = 0.00015; // ≈ 15 m — 11 kV is only legible from ~z10, where this is sub-pixel
+  const ep = epLines ? buildEpdclFeeders(epLines.features, epSsIdIndex(ss), TOL) : [];
+  const sp = spLines ? buildSpdclFeeders(spLines.features, ss.filter((s) => s.discom === "APSPDCL"), TOL) : [];
+  const feeders: F11[] = [...ep, ...sp];
+
+  // ---- DTRs + AB switches → per-feeder counts, search shards ----
+  const epByCode = new Map(ep.filter((f) => f.code).map((f) => [f.code!, f]));
+  const spByName = new Map<string, F11[]>();
+  for (const f of sp) {
+    const k = f.name.toLowerCase();
+    (spByName.get(k) ?? spByName.set(k, []).get(k)!).push(f);
+  }
+  const counts = new Map<string, { dtrs: number; kva: number; abs: number }>();
+  const bump = (id: string, k: "dtrs" | "abs", kva = 0) => {
+    const c = counts.get(id) ?? { dtrs: 0, kva: 0, abs: 0 };
+    c[k]++;
+    c.kva += kva;
+    counts.set(id, c);
+  };
+  const epDtrFile = readJson<GroupedFile>(live("net-epdcl-dtr.json"));
+  const spDtrFile = readJson<GroupedFile>(live("net-spdcl-dtr.json"));
+  const abFile = readJson<GroupedFile>(live("net-epdcl-ab.json"));
+  const epDtr = epDtrFile ? dtrRows(epDtrFile, "dtr_code") : [];
+  const spDtr = spDtrFile ? dtrRows(spDtrFile, "serial_number") : [];
+  const dtrFeeder = new Map<DtrRow, F11 | null>();
+  for (const d of epDtr) dtrFeeder.set(d, epByCode.get(d.feederKey) ?? null);
+  for (const d of spDtr) {
+    const cands = spByName.get((feederLabelLc(d.feederKey)) ?? "") ?? [];
+    let best: F11 | null = null;
+    let bestD = Infinity;
+    for (const f of cands) {
+      const a = anchorOf(f.parts);
+      const dd = (a[0] - d.lng) ** 2 + (a[1] - d.lat) ** 2;
+      if (dd < bestD) [best, bestD] = [f, dd];
+    }
+    dtrFeeder.set(d, best);
+  }
+  for (const [d, f] of dtrFeeder) if (f) bump(f.id, "dtrs", d.kva ?? 0);
+  if (abFile) for (const r of abFile.rows) {
+    const f = epByCode.get(abFile.groups[r[0] as number].key);
+    if (f) bump(f.id, "abs");
+  }
+
+  // ---- 11 kV overlay ----
+  const lineFeats = feeders.map((f) => {
+    const c = counts.get(f.id);
+    const ch = chains[ssChain(f.ssId, f.ssName)];
+    const props = Object.fromEntries(
+      Object.entries({
+        id: f.id, kind: "discom11-line", discom: f.discom, name: f.name, code: f.code,
+        ss: f.ssId ? ch[1] : f.ssName, ssId: f.ssId, linkMethod: f.linkMethod,
+        transcoSs: ch[5], transcoSsId: ch[4],
+        section: f.section, subdivision: f.subdivision, division: f.division, circle: f.circle,
+        lengthKm: f.lengthKm, poles: f.poles, dtrs: c?.dtrs || null, dtrKva: c?.kva ? Math.round(c.kva) : null, abSwitches: c?.abs || null,
+      }).filter(([, v]) => v != null),
+    );
+    return { type: "Feature", id: f.id, geometry: f.parts.length === 1 ? { type: "LineString", coordinates: f.parts[0] } : { type: "MultiLineString", coordinates: f.parts }, properties: props };
+  });
+  writeFileSync(resolve(outDir, "discom-11kv-lines.geojson"), JSON.stringify({ type: "FeatureCollection", features: lineFeats }));
+
+  // ---- DTR search shards ----
+  const shardOut = new Map<string, { feeders: unknown[][]; fIdx: Map<string, number>; rows: unknown[][] }>();
+  const DTR_COLS = ["dtr_capacity", "dtr_phase", "dtr_structure", "type_of_load", "pole_no", "dtr_make", "record_status", "phase", "make", "mounting_type", "no_of_lt_feeders"];
+  const addDtr = (shard: string, d: DtrRow, discom: string) => {
+    if (!d.code) return;
+    let s = shardOut.get(shard);
+    if (!s) shardOut.set(shard, (s = { feeders: [], fIdx: new Map(), rows: [] }));
+    const f = dtrFeeder.get(d) ?? null;
+    const fk = f?.id ?? `?${d.feederKey}`;
+    let fi = s.fIdx.get(fk);
+    if (fi == null) {
+      fi = s.feeders.push([f?.id ?? null, f?.name ?? (d.feederKey || null), f ? ssChain(f.ssId, f.ssName) : -1, discom]) - 1;
+      s.fIdx.set(fk, fi);
+    }
+    const row: unknown[] = [d.code, d.lng, d.lat, fi];
+    for (const c of DTR_COLS) row.push(d.attrs[c] ?? null);
+    while (row.length > 4 && row[row.length - 1] == null) row.pop();
+    s.rows.push(row);
+  };
+  // Shard keys = the first 4 characters of the DTR code / serial (APEPDCL codes lead with circle +
+  // division digits) — a typed code fetches exactly one small shard.
+  const shardKey = (prefix: string, code: string) => `${prefix}-${code.slice(0, 4).toLowerCase().replace(/[^a-z0-9]/g, "_") || "xxxx"}`;
+  for (const d of epDtr) addDtr(shardKey("ep", d.code), d, "APEPDCL");
+  for (const d of spDtr) addDtr(`sp-${d.code.slice(0, 2).toLowerCase().replace(/[^a-z0-9]/g, "_") || "xx"}`, d, "APSPDCL");
+  const shards: Record<string, number> = {};
+  for (const [k, s] of shardOut) {
+    // Dictionary-encode the repetitive attribute columns ("100 KVA", "POLE MOUNTED", "ACTIVE" …).
+    const dicts = DTR_COLS.map((_, ci) => [...new Set(s.rows.map((r) => r[4 + ci]).filter((v) => v != null).map(String))].sort());
+    const di = dicts.map((d) => new Map(d.map((v, j) => [v, j])));
+    const rows = s.rows.map((r) => r.map((v, i) => (i >= 4 && v != null ? di[i - 4].get(String(v)) : v)));
+    writeFileSync(resolve(outDir, `net-dtr-${k}.json`), JSON.stringify({ cols: DTR_COLS, dicts, feeders: s.feeders, rows }));
+    shards[k] = s.rows.length;
+  }
+
+  // ---- Network search tier ----
+  type Item = [string, string, string, number, number, string, number];
+  const items: Item[] = [];
+  for (const f of ss) {
+    if (/^unnamed/i.test(f.name)) continue;
+    items.push([f.name, "ss33", `${f.discom} · 33/11 kV substation`, f.lng, f.lat, f.id, ssChain(f.id, f.name)]);
+  }
+  for (const f of f33Fc.features) {
+    const p = f.properties;
+    if (!p.name) continue;
+    const parts = (f.geometry?.type === "LineString" ? [f.geometry.coordinates] : (f.geometry?.coordinates as Position[][])) as Position[][];
+    const [lng, lat] = anchorOf(parts);
+    const tId = (p.transcoSsId as string | undefined) ?? null;
+    items.push([String(p.name), "f33", `${p.discom} · 33 kV feeder${p.transcoSs ? ` from ${p.transcoSs}` : ""}`, lng, lat, String(p.id),
+      chain([null, null, String(p.id), String(p.name), tId, tId ? (tLabel.get(tId) ?? null) : null])]);
+  }
+  const sections = new Map<string, { n: number; lng: number; lat: number; discom: string; label: string; sub: string }>();
+  for (const f of feeders) {
+    const [lng, lat] = anchorOf(f.parts);
+    if (!/^unnamed/i.test(f.name))
+      items.push([f.name, "f11", `${f.discom} · 11 kV${f.ssId || f.ssName ? ` from ${chains[ssChain(f.ssId, f.ssName)][1] ?? f.ssName} SS` : ""}${f.section ? ` · ${f.section}` : ""}`, lng, lat, f.id, ssChain(f.ssId, f.ssName)]);
+    if (f.section) {
+      const k = `${f.discom}|${f.section}|${f.division ?? ""}`;
+      const s = sections.get(k) ?? { n: 0, lng: 0, lat: 0, discom: f.discom, label: `${f.section} section`, sub: `${f.discom} · ${[f.subdivision, f.division].filter(Boolean).join(", ")}` };
+      s.n++;
+      s.lng += lng;
+      s.lat += lat;
+      sections.set(k, s);
+    }
+  }
+  for (const s of sections.values()) items.push([s.label, "sec", s.sub, r5n(s.lng / s.n), r5n(s.lat / s.n), "", -1]);
+  writeFileSync(resolve(outDir, "search-network.json"), JSON.stringify({ generatedAt: new Date().toISOString(), shards, chains, items }));
+
+  const summary: Record<string, unknown> = {};
+  for (const discom of ["APEPDCL", "APSPDCL"]) {
+    const fs = feeders.filter((f) => f.discom === discom);
+    summary[discom] = {
+      feeders: fs.length,
+      km: Math.round(fs.reduce((a, f) => a + f.lengthKm, 0)),
+      feedersLinkedToSs: fs.filter((f) => f.ssId).length,
+      dtrs: discom === "APEPDCL" ? epDtr.length : spDtr.length,
+      dtrsSearchable: discom === "APEPDCL" ? epDtr.filter((d) => d.code).length : spDtr.filter((d) => d.code).length,
+      abSwitches: discom === "APEPDCL" ? (abFile?.count ?? 0) : 0,
+    };
+  }
+  console.log(`[etl] network: ${ep.length} APEPDCL + ${sp.length} APSPDCL 11 kV runs; ${epDtr.length + spDtr.length} DTRs; ${items.length} search items; ${chains.length} chains; shards ${Object.keys(shards).join(",")}`);
+  return { ...summary, searchItems: items.length };
+}
+const r5n = (n: number) => Math.round(n * 1e5) / 1e5;
+/** APSPDCL DTR feeder names are raw ("WW FEEDER"); compare like the 11 kV run labels. */
+function feederLabelLc(raw: string): string | null {
+  const s = raw.replace(/^(11\s*k\.?\s*v\.?\s*)+/i, "").replace(/\s+/g, " ").trim();
+  return s ? `11kv ${s.toLowerCase()}` : null;
+}
+
 async function main(): Promise<void> {
   const outDir = resolve("public/data");
   mkdirSync(outDir, { recursive: true });
@@ -1487,10 +1691,13 @@ async function main(): Promise<void> {
   // ---- DISCOM 33 kV sub-transmission overlay (separate, lazy-loaded) -------
   const { stats: discom, connectivity } = await buildDiscom(outDir, substations);
 
+  // ---- DISCOM 11 kV network + network search tier (separate, lazy-loaded) --
+  const network = buildNetwork(outDir, substations);
+
   // ---- Place-search gazetteer (separate, lazy-loaded by the search box) ----
   buildPlaces(outDir);
 
-  writeLiveStatus(outDir, { discom, footprintSource, connectivity, towers: towers.summary });
+  writeLiveStatus(outDir, { discom, footprintSource, connectivity, towers: towers.summary, network });
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

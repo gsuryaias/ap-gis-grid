@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type { FeatureCollection } from "geojson";
-import { DISCOM_DEFS, DISCOMS, refDef, TOWER_DEFS, type DiscomId, type OverlayDef, type RefCatalogEntry } from "./catalog.ts";
+import { DISCOM11_DEF, DISCOM_DEFS, DISCOMS, refDef, TOWER_DEFS, type DiscomId, type OverlayDef, type RefCatalogEntry } from "./catalog.ts";
 import { decodeTowers, type WebTowersFile } from "./towers.ts";
+import type { NetItem } from "../data/network-search.ts";
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -32,6 +33,13 @@ function writePersisted(p: Persisted): void {
 
 const dataUrl = (file: string) => `${import.meta.env.BASE_URL}data/${file}`;
 
+export interface OverlayFocus {
+  lines: string[];
+  ss: string[];
+  lines11?: string[];
+  point?: [number, number] | null;
+}
+
 interface OverlayState {
   /** All known overlay definitions, by id (DISCOM always; RTGS refs once catalog.json loads). */
   defs: Record<string, OverlayDef>;
@@ -42,10 +50,12 @@ interface OverlayState {
   data: Record<string, FeatureCollection>;
   /** DISCOM sub-filter (which utilities' features are drawn). */
   discoms: Record<DiscomId, boolean>;
-  /** Downstream 33 kV network of the selected TRANSCO SS, highlighted on the map (transient). */
-  focus: { lines: string[]; ss: string[] } | null;
+  /** Highlighted DISCOM features: 33 kV lines / 33/11 kV SS / 11 kV feeders / one point (transient). */
+  focus: OverlayFocus | null;
+  /** Network search pick (33/11 SS, 33 / 11 kV feeder, section, transformer) shown in the trace panel. */
+  netFocus: NetItem | null;
   /** One-shot "fit the map to these bounds" request ([[w,s],[e,n]]). */
-  fitSignal: { bounds: [[number, number], [number, number]]; ts: number } | null;
+  fitSignal: { bounds: [[number, number], [number, number]]; ts: number; maxZoom?: number } | null;
   /** Bumped on every change the map must react to. */
   version: number;
 
@@ -53,8 +63,10 @@ interface OverlayState {
   toggle: (id: string, on?: boolean) => void;
   toggleDiscom: (d: DiscomId) => void;
   restore: () => void;
-  setFocus: (f: { lines: string[]; ss: string[] } | null) => void;
-  fitTo: (bounds: [[number, number], [number, number]]) => void;
+  setFocus: (f: OverlayFocus | null) => void;
+  fitTo: (bounds: [[number, number], [number, number]], maxZoom?: number) => void;
+  /** Open a network search result: switch on its overlay, highlight it, fly there, show the trace. */
+  focusNetwork: (item: NetItem | null) => void;
 }
 
 export const useOverlayStore = create<OverlayState>((set, get) => {
@@ -95,7 +107,7 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
   };
 
   return {
-    defs: Object.fromEntries([...DISCOM_DEFS, ...TOWER_DEFS].map((d) => [d.id, d])),
+    defs: Object.fromEntries([...DISCOM_DEFS, DISCOM11_DEF, ...TOWER_DEFS].map((d) => [d.id, d])),
     catalogStatus: "idle",
     enabled: {},
     status: {},
@@ -103,11 +115,36 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
     data: {},
     discoms: { APSPDCL: true, APEPDCL: true, APCPDCL: true },
     focus: null,
+    netFocus: null,
     fitSignal: null,
     version: 0,
 
     setFocus: (focus) => set((s) => ({ focus, version: s.version + 1 })),
-    fitTo: (bounds) => set((s) => ({ fitSignal: { bounds, ts: Date.now() }, version: s.version + 1 })),
+    fitTo: (bounds, maxZoom) => set((s) => ({ fitSignal: { bounds, ts: Date.now(), maxZoom }, version: s.version + 1 })),
+
+    focusNetwork: (item) => {
+      if (!item) {
+        set((s) => ({ netFocus: null, focus: null, version: s.version + 1 }));
+        return;
+      }
+      const layer =
+        item.kind === "f33" ? "discom-lines" : item.kind === "ss33" ? "discom-ss" : item.kind === "sec" ? null : "discom-11kv-lines";
+      if (layer && !get().enabled[layer]) get().toggle(layer, true);
+      const focus: OverlayFocus = {
+        lines: item.kind === "f33" ? [item.ref] : [],
+        ss: item.kind === "ss33" ? [item.ref] : [],
+        lines11: item.kind === "f11" ? [item.ref] : item.kind === "dtr" && item.dtr?.feederId ? [item.dtr.feederId] : [],
+        point: item.kind === "dtr" || item.kind === "ss33" ? [item.lng, item.lat] : null,
+      };
+      const d = item.kind === "dtr" ? 0.004 : item.kind === "ss33" ? 0.01 : item.kind === "sec" ? 0.05 : 0.03;
+      const maxZoom = item.kind === "dtr" ? 16.5 : item.kind === "ss33" ? 14 : item.kind === "sec" ? 12 : 13;
+      set((s) => ({
+        netFocus: item,
+        focus,
+        fitSignal: { bounds: [[item.lng - d, item.lat - d], [item.lng + d, item.lat + d]], ts: Date.now(), maxZoom },
+        version: s.version + 1,
+      }));
+    },
 
     loadCatalog: () => {
       if (get().catalogStatus !== "idle") return;
