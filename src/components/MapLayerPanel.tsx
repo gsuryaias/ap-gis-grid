@@ -13,7 +13,7 @@ import {
   VoltageSection,
   WeatherSection,
 } from "./layer-controls.tsx";
-import { DistributionSection, ReferenceSection } from "./OverlaySections.tsx";
+import { DistributionSection, ReferenceSection, TransmissionSection } from "./OverlaySections.tsx";
 
 export type MapLayerPanelVariant = "sidebar" | "overlay";
 
@@ -52,6 +52,7 @@ function LayerBody({
       {preset.generation && <GenerationSection />}
       {preset.powergrid && <PowerGridSection />}
       {preset.weather && <WeatherSection />}
+      {preset.grid && <TransmissionSection />}
       <DistributionSection />
       <ReferenceSection />
       <BasemapSection />

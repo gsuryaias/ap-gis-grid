@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-03T08:30:17.603Z",
+  "generatedAt": "2026-11-03T08:55:27.507Z",
   "source": "https://gis.aptransco.gov.in/server/rest/services",
   "lastRun": "2026-11-03T07:57:55.259Z",
   "lastSuccess": "2026-11-03T07:57:55.259Z",
@@ -312,5 +312,37 @@
     "transcoSsWithFeeders": 212,
     "discomSsOnFeeder": 2406,
     "discomSsTracedToTransco": 2098
+  },
+  "towers": {
+    "lastSuccess": "2026-11-03T08:51:05.504Z",
+    "layers": {
+      "towers-400kv": {
+        "voltage": 400,
+        "towers": 16353,
+        "lines": 68,
+        "matchedLines": 68,
+        "matchedTowers": 16353,
+        "fetchedAt": "2026-11-03T08:50:24.321Z",
+        "lastChangedAt": "2026-11-03T08:50:24.321Z"
+      },
+      "towers-220kv": {
+        "voltage": 220,
+        "towers": 44053,
+        "lines": 390,
+        "matchedLines": 380,
+        "matchedTowers": 44015,
+        "fetchedAt": "2026-11-03T08:50:37.524Z",
+        "lastChangedAt": "2026-11-03T08:50:37.524Z"
+      },
+      "towers-132kv": {
+        "voltage": 132,
+        "towers": 53555,
+        "lines": 762,
+        "matchedLines": 755,
+        "matchedTowers": 53146,
+        "fetchedAt": "2026-11-03T08:50:24.321Z",
+        "lastChangedAt": "2026-11-03T08:50:24.321Z"
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DISCOM_COLOR, DISCOMS, formatBytes, GROUP_ORDER, type OverlayDef } from "../overlays/catalog.ts";
+import { DISCOM_COLOR, DISCOMS, formatBytes, GROUP_ORDER, TOWER_DEFS, type OverlayDef } from "../overlays/catalog.ts";
 import { useOverlayStore } from "../overlays/store.ts";
 import { useLiveStatus } from "../data/live-status.ts";
 import { CONNECTIVITY_CSV_URL } from "../data/connectivity.ts";
@@ -46,6 +46,28 @@ function OverlayRow({ def, color }: { def: OverlayDef; color?: string }) {
       </Row>
       {status === "error" && <p className="pb-1 text-[11px] text-red-600 dark:text-red-400">Couldn’t load: {error}</p>}
     </>
+  );
+}
+
+/** AP-TRANSCO transmission towers (live-synced; one lazy layer per voltage). */
+export function TransmissionSection() {
+  const defs = useOverlayStore((s) => s.defs);
+  const anyOn = useOverlayStore((s) => TOWER_DEFS.some((d) => s.enabled[d.id]));
+  const live = useLiveStatus();
+  const layers = live?.towers?.layers ?? {};
+  return (
+    <div className="mt-2 border-t border-line pt-1.5">
+      <div className="py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Transmission · towers</div>
+      {TOWER_DEFS.map((d) => (
+        <OverlayRow key={d.id} def={{ ...defs[d.id], count: layers[d.id]?.towers ?? defs[d.id].count }} />
+      ))}
+      {anyOn && (
+        <p className="pb-1 text-[10px] leading-snug text-ink-2/85">
+          Visible from zoom {TOWER_DEFS[1].style.minzoom} (400 kV from {TOWER_DEFS[0].style.minzoom}). Larger ringed dots are cut /
+          angle points (CP). Tap a tower for its number, type, structure and line details.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -114,7 +136,7 @@ export function ReferenceSection() {
   const defs = useOverlayStore((s) => s.defs);
   const catalogStatus = useOverlayStore((s) => s.catalogStatus);
   const loadCatalog = useOverlayStore((s) => s.loadCatalog);
-  const enabledCount = useOverlayStore((s) => Object.entries(s.enabled).filter(([k, v]) => v && !k.startsWith("discom")).length);
+  const enabledCount = useOverlayStore((s) => Object.entries(s.enabled).filter(([k, v]) => v && !k.startsWith("discom") && !k.startsWith("towers")).length);
 
   useEffect(() => {
     if (open || enabledCount > 0) loadCatalog();

@@ -6,12 +6,12 @@
  */
 
 export type OverlayGeometry = "polygon" | "line" | "point";
-export type OverlayGroup = "Distribution" | "Boundaries" | "Transport" | "Environment" | "Water" | "Hazards";
+export type OverlayGroup = "Transmission" | "Distribution" | "Boundaries" | "Transport" | "Environment" | "Water" | "Hazards";
 
 /** Shape of public/data/ref/catalog.json entries (written by scripts/build-ref-layers.mts). */
 export interface RefCatalogEntry {
   id: string;
-  group: Exclude<OverlayGroup, "Distribution">;
+  group: Exclude<OverlayGroup, "Distribution" | "Transmission">;
   label: string;
   geometry: OverlayGeometry;
   file: string;
@@ -33,12 +33,41 @@ export interface OverlayStyle {
   radius?: number;
   minzoom?: number;
   labelMinzoom?: number;
+  /** Draw ABOVE the grid lines (just beneath substations) — towers sit on the lines. */
+  aboveGrid?: boolean;
 }
 
 export interface OverlayDef extends Omit<RefCatalogEntry, "group"> {
   group: OverlayGroup;
   style: OverlayStyle;
+  /** Non-GeoJSON payload decoded client-side (towers ship grouped by line). */
+  format?: "towers";
 }
+
+/** Transmission towers — one lazy layer per voltage (towers-<kv>.json, see overlays/towers.ts). */
+export const TOWER_VOLTAGES = [400, 220, 132] as const;
+export const TOWER_DEFS: OverlayDef[] = TOWER_VOLTAGES.map((kv) => ({
+  id: `towers-${kv}kv`,
+  group: "Transmission",
+  label: `${kv} kV towers`,
+  geometry: "point",
+  file: `towers-${kv}kv.json`,
+  count: 0,
+  bytes: 0,
+  labelField: "no",
+  fields: [],
+  source: "AP-TRANSCO enterprise GIS — tower layers (live)",
+  vintage: null,
+  note: null,
+  format: "towers",
+  style: {
+    color: kv === 400 ? "#d55e00" : kv === 220 ? "#0072b2" : "#009e73",
+    radius: kv === 400 ? 3.4 : 3,
+    minzoom: kv === 400 ? 8 : 9,
+    labelMinzoom: 14,
+    aboveGrid: true,
+  },
+}));
 
 export const DISCOMS = ["APSPDCL", "APEPDCL", "APCPDCL"] as const;
 export type DiscomId = (typeof DISCOMS)[number];
@@ -121,6 +150,7 @@ const REF_STYLE: Record<string, OverlayStyle> = {
 };
 
 const GROUP_DEFAULT: Record<OverlayGroup, string> = {
+  Transmission: "#334155",
   Distribution: "#c2410c",
   Boundaries: "#475569",
   Transport: "#b91c1c",

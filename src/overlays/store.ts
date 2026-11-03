@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { FeatureCollection } from "geojson";
-import { DISCOM_DEFS, DISCOMS, refDef, type DiscomId, type OverlayDef, type RefCatalogEntry } from "./catalog.ts";
+import { DISCOM_DEFS, DISCOMS, refDef, TOWER_DEFS, type DiscomId, type OverlayDef, type RefCatalogEntry } from "./catalog.ts";
+import { decodeTowers, type WebTowersFile } from "./towers.ts";
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -72,8 +73,9 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
     fetch(dataUrl(def.file))
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return r.json() as Promise<FeatureCollection>;
+        return r.json() as Promise<FeatureCollection | WebTowersFile>;
       })
+      .then((json) => (def.format === "towers" ? decodeTowers(id, json as WebTowersFile) : (json as FeatureCollection)))
       .then((fc) =>
         set((s) => ({
           data: { ...s.data, [id]: fc },
@@ -93,7 +95,7 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
   };
 
   return {
-    defs: Object.fromEntries(DISCOM_DEFS.map((d) => [d.id, d])),
+    defs: Object.fromEntries([...DISCOM_DEFS, ...TOWER_DEFS].map((d) => [d.id, d])),
     catalogStatus: "idle",
     enabled: {},
     status: {},

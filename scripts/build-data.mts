@@ -65,6 +65,7 @@ import {
   type Substation,
   type Voltage,
 } from "./etl-lib.ts";
+import { buildWebTowers, normLineName, TOWER_LAYERS, type LineTowerStats, type TowersFile } from "./towers-lib.ts";
 import { buildDiscomLines, buildDiscomSubstations, type Discom, type DiscomLineOut, type DiscomSubstation } from "./etl-discom.ts";
 import { linkFeederSources, linkServedSubstations, NAME_MATCH_RADIUS_KM, PROXIMITY_KM, SERVES_M, type FeederIn } from "./etl-connectivity.ts";
 import { toCsv } from "../src/lib/export.ts";
@@ -836,6 +837,50 @@ function writeLiveStatus(outDir: string, extra: Record<string, unknown>): void {
   writeFileSync(resolve(outDir, "live-status.json"), JSON.stringify(status, null, 2));
 }
 
+/**
+ * Transmission towers (data/raw/live/towers-<kv>.json from `npm run sync:towers`, grouped by line)
+ * → public/data/towers-<kv>.json (dictionary-encoded, each line matched to its core line id by
+ * normalised name) + a per-line summary (count, CP/SP, top tower types) folded into lines.geojson.
+ */
+function buildTowers(outDir: string, lines: Array<{ id: string; name: string }>) {
+  const idsByName = new Map<string, string[]>();
+  for (const l of lines) {
+    const k = normLineName(l.name);
+    const a = idsByName.get(k);
+    if (a) a.push(l.id);
+    else idsByName.set(k, [l.id]);
+  }
+  const manifestPath = resolve(LIVE_DIR, "towers-manifest.json");
+  const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf-8")) : null;
+  const stats = new Map<string, LineTowerStats>();
+  const summary: Record<string, unknown> = { lastSuccess: manifest?.lastSuccess ?? null, layers: {} };
+  for (const layer of TOWER_LAYERS) {
+    const path = resolve(LIVE_DIR, `${layer.name}.json`);
+    if (!existsSync(path)) {
+      console.log(`[etl] ${layer.name}: not synced yet (npm run sync:towers) — skipped`);
+      continue;
+    }
+    const raw = JSON.parse(readFileSync(path, "utf-8")) as TowersFile;
+    const out = buildWebTowers(raw, idsByName, new Date().toISOString());
+    for (const [id, st] of out.stats) stats.set(id, st);
+    writeFileSync(resolve(outDir, `${layer.name}.json`), JSON.stringify(out.web));
+    (summary.layers as Record<string, unknown>)[layer.name] = {
+      voltage: layer.voltage,
+      towers: raw.count,
+      lines: raw.lines.length,
+      matchedLines: out.matchedLines,
+      matchedTowers: out.matchedTowers,
+      fetchedAt: raw.fetchedAt,
+      lastChangedAt: manifest?.layers?.[layer.name]?.lastChangedAt ?? null,
+    };
+    console.log(
+      `[etl] ${layer.name}: ${raw.count} towers on ${raw.lines.length} lines → ${out.matchedLines} lines / ` +
+        `${out.matchedTowers} towers matched to core lines`,
+    );
+  }
+  return { stats, summary };
+}
+
 async function main(): Promise<void> {
   const outDir = resolve("public/data");
   mkdirSync(outDir, { recursive: true });
@@ -1409,6 +1454,13 @@ async function main(): Promise<void> {
     },
   };
 
+  // ---- Transmission towers (lazy overlay) + per-line tower summary ----------
+  const towers = buildTowers(outDir, lines);
+  for (const f of lineFc.features) {
+    const st = towers.stats.get(String(f.properties!.id));
+    if (st) f.properties!.towers = st;
+  }
+
   writeFileSync(resolve(outDir, "substations.geojson"), JSON.stringify(ssFc));
   writeFileSync(resolve(outDir, "lines.geojson"), JSON.stringify(lineFc));
   writeFileSync(resolve(outDir, "search-index.json"), JSON.stringify(searchIndex));
@@ -1438,7 +1490,7 @@ async function main(): Promise<void> {
   // ---- Place-search gazetteer (separate, lazy-loaded by the search box) ----
   buildPlaces(outDir);
 
-  writeLiveStatus(outDir, { discom, footprintSource, connectivity });
+  writeLiveStatus(outDir, { discom, footprintSource, connectivity, towers: towers.summary });
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

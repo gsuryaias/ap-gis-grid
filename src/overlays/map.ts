@@ -2,9 +2,13 @@ import maplibregl, { type ExpressionSpecification, type Map as MlMap, type MapGe
 import { useAppStore } from "../state/store.ts";
 import { DISCOM_COLOR, DISCOM_NAME, DISCOMS, fieldLabel, type DiscomId, type OverlayDef } from "./catalog.ts";
 import { useOverlayStore } from "./store.ts";
+import { towerPopupHtml } from "./towers.ts";
 
 /** Overlays always sit BENEATH the transmission grid so the core network stays legible. */
 const GRID_FLOOR = "grid-lines-casing";
+/** …except `aboveGrid` layers (towers sit ON the lines): above the line layers, beneath the SS dots. */
+const GRID_CEILING = "grid-substations";
+const GRID_TOP_LINE = "grid-lines-dc";
 
 const e = (x: unknown) => x as ExpressionSpecification;
 const srcId = (id: string) => `ov-src-${id}`;
@@ -31,7 +35,9 @@ function addLayersFor(map: MlMap, def: OverlayDef): void {
   const st = def.style;
   const dark = useAppStore.getState().basemap !== "light";
   const minzoom = st.minzoom ?? 0;
-  const before = map.getLayer(GRID_FLOOR) ? GRID_FLOOR : undefined;
+  const floor = st.aboveGrid ? GRID_CEILING : GRID_FLOOR;
+  const before = map.getLayer(floor) ? floor : undefined;
+  const isTower = def.format === "towers";
   const isDiscom = def.style.color === "discom";
 
   if (def.geometry === "polygon") {
@@ -76,6 +82,8 @@ function addLayersFor(map: MlMap, def: OverlayDef): void {
     );
   } else {
     const r = st.radius ?? 3;
+    // Towers: cut / angle points (CP) drawn larger with a contrasting ring so line deviations read.
+    const cp = (k: number) => (isTower ? ["case", ["==", ["get", "cp"], "CP"], r * k * 1.5, r * k] : r * k);
     map.addLayer(
       {
         id: L.circle,
@@ -84,9 +92,11 @@ function addLayersFor(map: MlMap, def: OverlayDef): void {
         minzoom,
         paint: {
           "circle-color": color,
-          "circle-radius": e(["interpolate", ["linear"], ["zoom"], 6, r * 0.6, 10, r, 14, r * 1.9]),
-          "circle-stroke-color": dark ? "#0e1622" : "#ffffff",
-          "circle-stroke-width": 1,
+          "circle-radius": e(["interpolate", ["linear"], ["zoom"], 6, cp(0.6), 10, cp(1), 14, cp(1.9)]),
+          "circle-stroke-color": isTower
+            ? e(["case", ["==", ["get", "cp"], "CP"], dark ? "#f8fafc" : "#0f172a", dark ? "#0e1622" : "#ffffff"])
+            : dark ? "#0e1622" : "#ffffff",
+          "circle-stroke-width": isTower ? e(["case", ["==", ["get", "cp"], "CP"], 1.6, 1]) : 1,
           "circle-opacity": 0.95,
         },
         ...(isDiscom ? { filter: discomFilter() } : {}),
@@ -159,8 +169,18 @@ function sync(map: MlMap): void {
       const vis = on ? "visible" : "none";
       if (map.getLayoutProperty(lid, "visibility") !== vis) map.setLayoutProperty(lid, "visibility", vis);
       if (def.style.color === "discom" && layer.type !== "fill" && discomChanged && !added) map.setFilter(lid, discomFilter());
-      // Keep beneath the grid even if the grid was (re)added after us.
-      if (map.getLayer(GRID_FLOOR)) {
+      // Keep beneath the grid even if the grid was (re)added after us — or, for `aboveGrid` layers,
+      // between the grid lines and the substation dots.
+      if (def.style.aboveGrid) {
+        if (map.getLayer(GRID_CEILING) && map.getLayer(GRID_TOP_LINE)) {
+          order ??= map.getLayersOrder();
+          const i = order.indexOf(lid);
+          if (i < order.indexOf(GRID_TOP_LINE) || i > order.indexOf(GRID_CEILING)) {
+            map.moveLayer(lid, GRID_CEILING);
+            order = null;
+          }
+        }
+      } else if (map.getLayer(GRID_FLOOR)) {
         order ??= map.getLayersOrder();
         if (order.indexOf(lid) > order.indexOf(GRID_FLOOR)) {
           map.moveLayer(lid, GRID_FLOOR);
@@ -322,14 +342,24 @@ export function attachOverlays(map: MlMap, opts: { suppressed: () => boolean; co
     if (opts.suppressed()) return;
     const layers = interactiveLayers(map);
     if (!layers.length) return;
-    const core = opts.coreLayers.filter((l) => map.getLayer(l));
-    if (core.length && map.queryRenderedFeatures(ev.point, { layers: core }).length) return;
     // A small hit box makes thin lines and small dots tappable on touch screens.
     const pad = 6;
     const box: [maplibregl.PointLike, maplibregl.PointLike] = [
       [ev.point.x - pad, ev.point.y - pad],
       [ev.point.x + pad, ev.point.y + pad],
     ];
+    // Towers sit on the core lines, so a tower hit wins over the line beneath it (the line still
+    // gets selected by the core handler — the popup links back to it).
+    const towerLayers = layers.filter((l) => /^ov-towers-.*-circle$/.test(l));
+    const towerHit = towerLayers.length
+      ? map.queryRenderedFeatures([[ev.point.x - 4, ev.point.y - 4], [ev.point.x + 4, ev.point.y + 4]], { layers: towerLayers })[0]
+      : undefined;
+    if (towerHit) {
+      const def = defForLayer(towerHit.layer.id);
+      if (def) return openPopup(ev.lngLat, towerPopupHtml(def.id, Number(towerHit.properties?.i), def.label));
+    }
+    const core = opts.coreLayers.filter((l) => map.getLayer(l));
+    if (core.length && map.queryRenderedFeatures(ev.point, { layers: core }).length) return;
     let hit: MapGeoJSONFeature | undefined;
     for (const lid of layers) {
       const geomBox = lid.endsWith("-fill") ? ev.point : box;
@@ -339,7 +369,12 @@ export function attachOverlays(map: MlMap, opts: { suppressed: () => boolean; co
     if (!hit) return;
     const def = defForLayer(hit.layer.id);
     if (!def) return;
-    popup.setLngLat(ev.lngLat).setHTML(popupHtml(def, hit)).addTo(map);
+    openPopup(ev.lngLat, popupHtml(def, hit));
+  };
+
+  const openPopup = (at: maplibregl.LngLat, html: string) => {
+    if (!html) return;
+    popup.setLngLat(at).setHTML(html).addTo(map);
     popup.getElement()?.querySelectorAll<HTMLButtonElement>("[data-select]").forEach((b) =>
       b.addEventListener("click", () => {
         popup.remove();

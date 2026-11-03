@@ -37,6 +37,10 @@ export interface LiveStatus {
   layerSources: Record<string, "live" | "snapshot">;
   changes: LiveChange[];
   discom?: Record<string, { substations: number; lines: number; lineKm: number; linesFrom?: string }>;
+  towers?: {
+    lastSuccess: string | null;
+    layers: Record<string, { voltage: number; towers: number; lines: number; matchedLines: number; matchedTowers: number; fetchedAt: string; lastChangedAt: string | null }>;
+  };
   connectivity?: {
     method: string;
     feeders: number;
