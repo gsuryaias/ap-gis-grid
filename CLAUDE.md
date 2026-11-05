@@ -514,6 +514,16 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
     (a selection spotlight, when armed, wins).
   - Pagination is the shared `usePager`/`PagerBar` in `components/Pager.tsx` (also used by the Atlas
     `DataTableSheet`).
+  - **Voltage slicer + multi-value filters**: `ScopeFilter` is `{dim, values[]}` (OR within a dimension; hash
+    `mf=voltage:400,220~circle:Kadapa`, old single-value links still decode). The voltage slicer (`VoltageSlicer`,
+    Grafana-style multi-select) is kept OUT of the breadcrumb and always applied FIRST (`withSlicer`) — order
+    matters for line-only/SS-only filters. Topology (radial / N-1) is never recomputed on a slice.
+  - **Drill-down on every number** (`drill.ts`, pure; `DrillPanel.tsx`): every printed figure is a `MetricId`
+    (`<DrillNum>` / `StatTile metric=` / `VoltageSegBar partMetric=`, via `DrillContext`) that resolves to its
+    records (SS / lines / 33/11 kV SS / 33 kV feeders / interfaces), optionally narrowed to a breakdown group
+    (`groupScope`). The panel lights the records on the map (`recordsFocus`), exports CSV and offers "Apply as
+    filter" where `METRICS[id].asFilter` captures the set exactly. **`drill.test.ts` reconciles every metric
+    against the figure it labels on the real `public/data`** — add new figures there when you add a metric.
 
 ## MIS data pipelines (`pipelines/`, CI-scheduled → `data` branch)
 

@@ -11,7 +11,10 @@ import {
   decodeFilters,
   encodeFilters,
   groupBy,
+  groupScope,
   metrics,
+  pinnedDims,
+  withSlicer,
   NONE,
   feedPathFocus,
   pocketRows,
@@ -117,19 +120,50 @@ describe("row derivation", () => {
 
 describe("scope + aggregation", () => {
   it("narrows both asset types on a shared dimension", () => {
-    const s = applyScope(model, [{ dim: "circle", value: "Ongole" }]);
+    const s = applyScope(model, [{ dim: "circle", values: ["Ongole"] }]);
     expect(s.ss.map((r) => r.id)).toEqual(["b"]);
     expect(s.lines.map((r) => r.id)).toEqual(["l2"]);
   });
 
+  it("ORs the values of one dimension (multi-select)", () => {
+    const s = applyScope(model, [{ dim: "voltage", values: ["400", "132"] }]);
+    expect(s.ss.map((r) => r.id)).toEqual(["a", "d"]);
+    expect(s.lines.map((r) => r.id)).toEqual(["l1", "l3"]);
+  });
+
+  it("applies the voltage slicer before the drill path", () => {
+    // Drill "age ≥ 35" then slice 220 kV: l1 (the only old line) is 400 kV, so nothing is left —
+    // b (220 kV, touched by l1) must NOT survive through the line-only filter.
+    const { all, kv, path } = withSlicer([
+      { dim: "age", values: ["3"] },
+      { dim: "voltage", values: ["220"] },
+    ]);
+    expect(all.map((f) => f.dim)).toEqual(["voltage", "age"]);
+    expect(kv?.values).toEqual(["220"]);
+    expect(path).toHaveLength(1);
+    const s = applyScope(model, all);
+    expect(s.lines).toEqual([]);
+    expect(s.ss).toEqual([]);
+    expect([...pinnedDims([{ dim: "voltage", values: ["400", "220"] }, { dim: "circle", values: ["Ongole"] }])]).toEqual(["circle"]);
+  });
+
+  it("returns exactly the rows a breakdown group aggregated", () => {
+    const scope = { ss: model.ss, lines: model.lines };
+    for (const g of groupBy(scope, "voltage")) {
+      const rows = groupScope(scope, "voltage", g.key);
+      expect(metrics(rows.ss, rows.lines)).toEqual(g.m);
+    }
+    expect(groupScope(scope, "role", "articulation").lines).toEqual([]);
+  });
+
   it("scopes substations through lines for a line-only dimension", () => {
-    const s = applyScope(model, [{ dim: "age", value: "3" }]);
+    const s = applyScope(model, [{ dim: "age", values: ["3"] }]);
     expect(s.lines.map((r) => r.id)).toEqual(["l1"]);
     expect(s.ss.map((r) => r.id).sort()).toEqual(["a", "b"]);
   });
 
   it("scopes lines through substations for a substation-only dimension", () => {
-    const s = applyScope(model, [{ dim: "role", value: "articulation" }]);
+    const s = applyScope(model, [{ dim: "role", values: ["articulation"] }]);
     expect(s.ss.map((r) => r.id).sort()).toEqual(["b", "c"]);
     expect(s.lines.map((r) => r.id).sort()).toEqual(["l1", "l2", "l3"]);
   });
@@ -177,10 +211,14 @@ describe("thematic views", () => {
 
   it("round-trips the drill path and computes bounds", () => {
     const f = [
-      { dim: "circle" as const, value: "Ongole" },
-      { dim: "voltage" as const, value: "220" },
+      { dim: "circle" as const, values: ["Ongole"] },
+      { dim: "voltage" as const, values: ["400", "220"] },
     ];
+    expect(encodeFilters(f)).toBe("circle:Ongole~voltage:400,220");
     expect(decodeFilters(encodeFilters(f))).toEqual(f);
+    // pre-multi-select links, duplicate values and a repeated dimension
+    expect(decodeFilters("voltage:400")).toEqual([{ dim: "voltage", values: ["400"] }]);
+    expect(decodeFilters("voltage:400,400,~voltage:132")).toEqual([{ dim: "voltage", values: ["400"] }]);
     expect(decodeFilters("bogus:1~circle:")).toEqual([]);
     expect(bboxOf(model.ss)).toEqual([
       [80, 16],
@@ -233,6 +271,6 @@ describe("supply security (radial feeds)", () => {
     const f = feedPathFocus(m, m.ssById.get("t")!)!;
     expect(f.lineIds.sort()).toEqual(["rs", "st1", "st2"]);
     expect(f.ssIds.sort()).toEqual(["r", "s", "t"]);
-    expect(decodeFilters("supply:radial-sc")).toEqual([{ dim: "supply", value: "radial-sc" }]);
+    expect(decodeFilters("supply:radial-sc")).toEqual([{ dim: "supply", values: ["radial-sc"] }]);
   });
 });
