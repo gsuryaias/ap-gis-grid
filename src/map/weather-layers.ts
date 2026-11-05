@@ -10,7 +10,10 @@ import type { GeoJSONSource } from "maplibre-gl";
 import type { FilterState } from "../data/selectors.ts";
 import type { WeatherData } from "../data/weather.ts";
 import { WX_ALERT_COLOR, WX_RISK_COLOR, WX_TRACK_COLOR } from "../theme/palette.ts";
+import type { SubstationProps } from "../data/types.ts";
+import { assetsInCone } from "../lib/weather.ts";
 import { LAYER, SRC } from "./layers.ts";
+import { applySpec, type MapSpec, type Visibility } from "./spec.ts";
 
 export const WX_SRC = {
   radar: "src-wx-radar",
@@ -37,14 +40,16 @@ const alertColor = e([
   WX_ALERT_COLOR.Green,
 ]);
 
-/** One FeatureCollection with every active cyclone's kept geometry (tagged by `wxKind`). */
-function cycloneFc(weather: WeatherData): FeatureCollection {
+/** Pure: one FeatureCollection with every active cyclone's kept geometry (tagged by `wxKind`). */
+export function cycloneFc(weather: WeatherData): FeatureCollection {
   const features: Feature[] = weather.cyclones.flatMap((ev) => ev.geometry.features);
   return { type: "FeatureCollection", features };
 }
 
 // The latest radar tile URL per map, so a refresh only swaps tiles when the frame advanced.
 const radarUrl = new WeakMap<MlMap, string>();
+// The weather payload last pushed into the cyclone source, so a re-mount doesn't re-upload it.
+const cycloneData = new WeakMap<MlMap, WeatherData>();
 
 /**
  * Add (or update) every weather source/layer. Idempotent — call after the lazy fetch resolves,
@@ -81,10 +86,10 @@ export function addWeatherLayers(map: MlMap, weather: WeatherData, riskIds: stri
   }
 
   // ---- Cyclones (geojson) ----
-  const fc = cycloneFc(weather);
   const cySrc = map.getSource(WX_SRC.cyclone) as GeoJSONSource | undefined;
-  if (!cySrc) map.addSource(WX_SRC.cyclone, { type: "geojson", data: fc });
-  else cySrc.setData(fc);
+  if (!cySrc) map.addSource(WX_SRC.cyclone, { type: "geojson", data: cycloneFc(weather) });
+  else if (cycloneData.get(map) !== weather) cySrc.setData(cycloneFc(weather));
+  cycloneData.set(map, weather);
 
   if (!map.getLayer(WX_LAYER.cycloneAlert)) {
     map.addLayer(
@@ -159,23 +164,37 @@ export function addWeatherLayers(map: MlMap, weather: WeatherData, riskIds: stri
       },
     });
   }
-  if (map.getLayer(WX_LAYER.riskSubstations)) {
-    map.setFilter(WX_LAYER.riskSubstations, e(["in", ["get", "id"], ["literal", riskIds]]));
-  }
+  applySpec(map, wxRiskSpec(riskIds));
+}
+
+/** Pure: the amber at-risk halo shows exactly the substations inside an active forecast cone. */
+export function wxRiskSpec(riskIds: readonly string[]): MapSpec {
+  return { [WX_LAYER.riskSubstations]: { filter: ["in", ["get", "id"], ["literal", [...riskIds].sort()]] } };
+}
+
+/** Pure: the substations inside any active cyclone's forecast cone (feeds `wxRiskSpec`). */
+export function wxRiskIds(weather: WeatherData, substations: SubstationProps[]): string[] {
+  const cones = weather.cyclones.flatMap((ev) => ev.conePolygons);
+  return cones.length ? assetsInCone(substations, cones).map((s) => s.id) : [];
+}
+
+/** Pure: weather-layer visibility = the master toggle × the per-layer sub-toggles. */
+export function weatherVisibilitySpec(filters: FilterState): MapSpec {
+  const vis = (on: boolean): Visibility => (on ? "visible" : "none");
+  const on = filters.showWeather;
+  const cy = vis(on && filters.wxLayers.cyclone);
+  return {
+    [WX_LAYER.radar]: { visibility: vis(on && filters.wxLayers.radar) },
+    [WX_LAYER.cycloneAlert]: { visibility: cy },
+    [WX_LAYER.cycloneCone]: { visibility: cy },
+    [WX_LAYER.cycloneConeOutline]: { visibility: cy },
+    [WX_LAYER.cycloneTrack]: { visibility: cy },
+    [WX_LAYER.cyclonePosition]: { visibility: cy },
+    [WX_LAYER.riskSubstations]: { visibility: cy },
+  };
 }
 
 /** Gate weather-layer visibility on the master toggle × per-layer sub-toggles. */
 export function applyWeatherVisibility(map: MlMap, filters: FilterState): void {
-  const set = (id: string, on: boolean) => {
-    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
-  };
-  const on = filters.showWeather;
-  set(WX_LAYER.radar, on && filters.wxLayers.radar);
-  const cy = on && filters.wxLayers.cyclone;
-  set(WX_LAYER.cycloneAlert, cy);
-  set(WX_LAYER.cycloneCone, cy);
-  set(WX_LAYER.cycloneConeOutline, cy);
-  set(WX_LAYER.cycloneTrack, cy);
-  set(WX_LAYER.cyclonePosition, cy);
-  set(WX_LAYER.riskSubstations, cy);
+  applySpec(map, weatherVisibilitySpec(filters));
 }
