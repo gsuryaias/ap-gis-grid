@@ -27,10 +27,11 @@ export type MapSpec = Record<string, LayerState>;
  * Desired feature-state on one source, for the `keys` this spec owns (other keys — hover,
  * selected — are left alone). A feature absent from `states` has every owned key removed.
  */
+export type FeatureStateValue = number | boolean;
 export interface FeatureStateSpec {
   source: string;
   keys: readonly string[];
-  states: Record<string, Record<string, number>>;
+  states: Record<string, Record<string, FeatureStateValue>>;
 }
 
 /** The slice of the MapLibre API the appliers need (lets tests drive them with a fake map). */
@@ -97,7 +98,7 @@ export function applySpec(map: SpecMap, spec: MapSpec): number {
 interface FsRecord {
   /** The source instance the states were written to — a style reload replaces it (and drops them). */
   src: unknown;
-  states: Record<string, Record<string, number>>;
+  states: Record<string, Record<string, FeatureStateValue>>;
 }
 const fsRecords = new WeakMap<object, Map<string, FsRecord>>();
 
@@ -134,7 +135,7 @@ export function syncFeatureState(map: SpecMap, owner: string, spec: FeatureState
   }
   for (const [id, next] of Object.entries(spec.states)) {
     const old = prev[id];
-    const changed: Record<string, number> = {};
+    const changed: Record<string, FeatureStateValue> = {};
     let any = false;
     for (const key of spec.keys) {
       if (next[key] != null && next[key] !== old?.[key]) {

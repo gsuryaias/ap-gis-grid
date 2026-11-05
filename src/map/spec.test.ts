@@ -6,7 +6,7 @@ import { buildLayers, gridSpec, LAYER, spotlightSpec, SRC } from "./layers.ts";
 import { MIS_LAYER, misThemeSpec, type MisMapState } from "./mis-layers.ts";
 import { applySpec, mergeSpecs, sameValue, syncFeatureState } from "./spec.ts";
 import { FakeMap } from "./testing/fake-map.ts";
-import { weatherVisibilitySpec, WX_LAYER, wxRiskIds, wxRiskSpec } from "./weather-layers.ts";
+import { weatherOn, WX_LAYER, wxRiskIds, wxRiskSpec } from "./weather-layers.ts";
 
 function gridMap(): FakeMap {
   const m = new FakeMap();
@@ -224,14 +224,13 @@ describe("syncFeatureState", () => {
 });
 
 describe("weather specs", () => {
-  it("visibility is the master toggle × per-layer sub-toggle", () => {
+  it("a weather layer is on = master toggle × its sub-toggle", () => {
     const f = freshFilters();
-    const off = weatherVisibilitySpec(f);
-    expect(Object.values(off).every((l) => l.visibility === "none")).toBe(true);
-    const on = weatherVisibilitySpec({ ...f, showWeather: true, wxLayers: { ...f.wxLayers, radar: false } });
-    expect(on[WX_LAYER.radar].visibility).toBe("none");
-    expect(on[WX_LAYER.cycloneTrack].visibility).toBe("visible");
-    expect(on[WX_LAYER.riskSubstations].visibility).toBe("visible");
+    expect(weatherOn(f, "radar")).toBe(false);
+    expect(weatherOn(f, "cyclone")).toBe(false);
+    const on = { ...f, showWeather: true, wxLayers: { ...f.wxLayers, radar: false } };
+    expect(weatherOn(on, "radar")).toBe(false);
+    expect(weatherOn(on, "cyclone")).toBe(true);
   });
 
   it("the risk halo filters to exactly the substations inside a cone", () => {

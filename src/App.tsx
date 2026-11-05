@@ -261,7 +261,6 @@ export function App() {
                 data={data}
                 mode={mapMode}
                 layers={layerPreset}
-                interactive
               />
             </div>
 

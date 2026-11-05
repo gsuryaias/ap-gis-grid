@@ -1,17 +1,14 @@
-import type { ExpressionSpecification, LayerSpecification, Map as MlMap } from "maplibre-gl";
-import type { FeatureCollection } from "geojson";
+import type { ExpressionSpecification, LayerSpecification } from "maplibre-gl";
 import type { FilterState } from "../data/selectors.ts";
-import { ENERGY_TYPES, VOLTAGES, type GridData } from "../data/types.ts";
+import { ENERGY_TYPES, VOLTAGES } from "../data/types.ts";
 import {
-  BULKLOAD_COLOR,
   ENERGY_COLOR,
   POWERGRID_COLOR,
   POWERGRID_HALO,
-  RAILWAY_COLOR,
   VOLTAGE_COLOR,
 } from "../theme/palette.ts";
 import { BASEMAPS, SELECT_HALO } from "./basemaps.ts";
-import { applySpec, type MapSpec, type Visibility } from "./spec.ts";
+import type { MapSpec, Visibility } from "./spec.ts";
 import type { Basemap } from "../state/store.ts";
 
 export const SRC = {
@@ -39,18 +36,6 @@ export const LAYER = {
   bulkloadSubstations: "bulkload-substations",
   bulkloadLabels: "bulkload-labels",
 } as const;
-
-/** Bound at map load — these layers always exist. (Overlays are bound separately when lazily added.) */
-export const INTERACTIVE_LAYERS = [LAYER.linesSC, LAYER.linesDC, LAYER.substations];
-/** "Power grid" overlay-group clickable layers (lazily added — all three classes). */
-export const POWERGRID_INTERACTIVE = [
-  LAYER.pgLines,
-  LAYER.pgSubstations,
-  LAYER.railwaySubstations,
-  LAYER.bulkloadSubstations,
-];
-/** All clickable layers; filter by existence before querying (overlays may not be loaded yet). */
-export const ALL_INTERACTIVE = [...INTERACTIVE_LAYERS, LAYER.generation, ...POWERGRID_INTERACTIVE];
 
 const e = (x: unknown): ExpressionSpecification => x as ExpressionSpecification;
 
@@ -160,7 +145,7 @@ const genRadius = e([
   14, ["*", 11, GEN_SEL],
 ]);
 
-function buildGenerationLayers(basemap: Basemap): LayerSpecification[] {
+export function buildGenerationLayers(basemap: Basemap): LayerSpecification[] {
   const def = BASEMAPS[basemap];
   return [
     {
@@ -209,16 +194,6 @@ function buildGenerationLayers(basemap: Basemap): LayerSpecification[] {
   ] as LayerSpecification[];
 }
 
-/** Lazily add the generation source + layers (idempotent — safe to call after every style reload). */
-export function addGenerationLayers(map: MlMap, fc: FeatureCollection, basemap: Basemap): void {
-  if (!map.getSource(SRC.generation)) {
-    map.addSource(SRC.generation, { type: "geojson", data: fc, promoteId: "id" });
-  }
-  for (const layer of buildGenerationLayers(basemap)) {
-    if (!map.getLayer(layer.id)) map.addLayer(layer);
-  }
-}
-
 // ---- POWERGRID (PGCIL) overlay (lazy) --------------------------------------
 // A single rose hue for every feature — the inter-state grid reads as one distinct layer
 // (no per-voltage palette here, unlike the AP-TRANSCO grid).
@@ -248,7 +223,7 @@ const pgSsRadius = e([
   14, ["*", 11.5, PG_SS_SEL],
 ]);
 
-function buildPowerGridLayers(basemap: Basemap): LayerSpecification[] {
+export function buildPowerGridLayers(basemap: Basemap): LayerSpecification[] {
   const def = BASEMAPS[basemap];
   return [
     {
@@ -329,7 +304,7 @@ const loadRadius = e([
 ]);
 
 /** A small solid-circle point layer (+ its label) for a load class inside the Power grid group. */
-function buildLoadLayers(
+export function buildLoadLayers(
   basemap: Basemap,
   source: string,
   circleId: string,
@@ -380,42 +355,6 @@ function buildLoadLayers(
       },
     },
   ] as LayerSpecification[];
-}
-
-/**
- * Lazily add the whole "Power grid" overlay group — PowerGrid lines+SS plus the railway-traction
- * and bulk-load substation classes (idempotent — safe to call after every style reload).
- */
-export function addPowerGridLayers(
-  map: MlMap,
-  linesFc: FeatureCollection,
-  substationsFc: FeatureCollection,
-  railwayFc: FeatureCollection,
-  bulkloadFc: FeatureCollection,
-  basemap: Basemap,
-): void {
-  if (!map.getSource(SRC.powergridLines)) {
-    map.addSource(SRC.powergridLines, { type: "geojson", data: linesFc, promoteId: "id" });
-  }
-  if (!map.getSource(SRC.powergridSubstations)) {
-    map.addSource(SRC.powergridSubstations, { type: "geojson", data: substationsFc, promoteId: "id" });
-  }
-  if (!map.getSource(SRC.railwaySubstations)) {
-    map.addSource(SRC.railwaySubstations, { type: "geojson", data: railwayFc, promoteId: "id" });
-  }
-  if (!map.getSource(SRC.bulkloadSubstations)) {
-    map.addSource(SRC.bulkloadSubstations, { type: "geojson", data: bulkloadFc, promoteId: "id" });
-  }
-  for (const layer of buildPowerGridLayers(basemap)) {
-    if (!map.getLayer(layer.id)) map.addLayer(layer);
-  }
-  const loadLayers = [
-    ...buildLoadLayers(basemap, SRC.railwaySubstations, LAYER.railwaySubstations, LAYER.railwayLabels, RAILWAY_COLOR),
-    ...buildLoadLayers(basemap, SRC.bulkloadSubstations, LAYER.bulkloadSubstations, LAYER.bulkloadLabels, BULKLOAD_COLOR),
-  ];
-  for (const layer of loadLayers) {
-    if (!map.getLayer(layer.id)) map.addLayer(layer);
-  }
 }
 
 export function buildLayers(basemap: Basemap): LayerSpecification[] {
@@ -501,18 +440,6 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
   ] as LayerSpecification[];
 }
 
-export function addGridLayers(map: MlMap, data: GridData, basemap: Basemap): void {
-  if (!map.getSource(SRC.lines)) {
-    map.addSource(SRC.lines, { type: "geojson", data: data.linesFc, promoteId: "id" });
-  }
-  if (!map.getSource(SRC.substations)) {
-    map.addSource(SRC.substations, { type: "geojson", data: data.substationsFc, promoteId: "id" });
-  }
-  for (const layer of buildLayers(basemap)) {
-    if (!map.getLayer(layer.id)) map.addLayer(layer);
-  }
-}
-
 /**
  * Pure: the dynamic state the shared slicing filters put on the core grid + the generation and
  * power-grid overlay layers (filters + visibility). Layers that aren't on the map yet are skipped
@@ -571,10 +498,6 @@ export function gridSpec(filters: FilterState): MapSpec {
   };
 }
 
-export function applyFilters(map: MlMap, filters: FilterState): void {
-  applySpec(map, gridSpec(filters));
-}
-
 // Spotlight dim levels for core features outside the selection's inferred neighborhood.
 const SPOT_DIM_LINE = 0.12;
 const SPOT_DIM_SS = 0.15;
@@ -609,9 +532,4 @@ export function spotlightSpec(spot: { ssIds: Set<string>; lineIds: Set<string> }
     },
     [LAYER.ssLabels]: { paint: { "text-opacity": ["case", inSs, 1, SPOT_DIM_SS] } },
   };
-}
-
-/** Apply the connection spotlight (see `spotlightSpec`). Conditional — safe to re-run any time. */
-export function applySpotlight(map: MlMap, spot: { ssIds: Set<string>; lineIds: Set<string> } | null): void {
-  applySpec(map, spotlightSpec(spot));
 }
