@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-03T09:04:31.525Z",
+  "generatedAt": "2026-11-05T05:49:32.202Z",
   "source": "AP-TRANSCO enterprise GIS (gis.aptransco.gov.in, live REST pull) — Transco SS + Lines 400/220/132 kV",
   "counts": {
     "substations": 389,
-    "lines": 1222
+    "lines": 1226
   },
   "byVoltage": {
     "132": {
@@ -14,9 +14,9 @@
     },
     "220": {
       "substations": 117,
-      "lines": 385,
-      "lengthKm": 9433.4,
-      "circuitKm": 13548.8
+      "lines": 389,
+      "lengthKm": 9498.3,
+      "circuitKm": 13678.6
     },
     "400": {
       "substations": 19,
@@ -57,7 +57,7 @@
       "circuitKm": 2124
     },
     "Visakhapatnam": {
-      "substations": 36,
+      "substations": 35,
       "lines": 153,
       "lengthKm": 2966.3,
       "circuitKm": 4230.4
@@ -75,10 +75,10 @@
       "circuitKm": 2357.3
     },
     "Vijayawada": {
-      "substations": 27,
-      "lines": 101,
-      "lengthKm": 2349.8,
-      "circuitKm": 3210.9
+      "substations": 28,
+      "lines": 105,
+      "lengthKm": 2414.7,
+      "circuitKm": 3340.7
     },
     "Vizianagaram": {
       "substations": 12,
@@ -237,9 +237,9 @@
       },
       "Vijayawada": {
         "substations": 9,
-        "lines": 29,
-        "lengthKm": 926.6,
-        "circuitKm": 1181.6
+        "lines": 33,
+        "lengthKm": 991.5,
+        "circuitKm": 1311.4
       },
       "Tirupati": {
         "substations": 10,
@@ -297,17 +297,23 @@
         "lengthKm": 1170.2,
         "circuitKm": 2229.8
       },
-      "Visakhapatnam": {
-        "substations": 5,
-        "lines": 30,
-        "lengthKm": 1613.1,
-        "circuitKm": 2383.4
+      "Vijayawada": {
+        "substations": 3,
+        "lines": 15,
+        "lengthKm": 656.2,
+        "circuitKm": 1084.4
       },
       "Anantapur": {
         "substations": 2,
         "lines": 0,
         "lengthKm": 0,
         "circuitKm": 0
+      },
+      "Visakhapatnam": {
+        "substations": 4,
+        "lines": 30,
+        "lengthKm": 1613.1,
+        "circuitKm": 2383.4
       },
       "Nellore": {
         "substations": 1,
@@ -326,12 +332,6 @@
         "lines": 0,
         "lengthKm": 0,
         "circuitKm": 0
-      },
-      "Vijayawada": {
-        "substations": 2,
-        "lines": 15,
-        "lengthKm": 656.2,
-        "circuitKm": 1084.4
       }
     }
   },
@@ -351,8 +351,8 @@
     "Vizianagaram",
     "Unassigned"
   ],
-  "totalLengthKm": 24287.1,
-  "totalCircuitKm": 33474.2,
+  "totalLengthKm": 24352,
+  "totalCircuitKm": 33604,
   "bounds": [
     [
       76.49844,

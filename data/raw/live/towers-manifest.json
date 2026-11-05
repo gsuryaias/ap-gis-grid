@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "lastRun": "2026-11-03T08:51:05.504Z",
-  "lastSuccess": "2026-11-03T08:51:05.504Z",
+  "lastRun": "2026-11-05T05:48:47.096Z",
+  "lastSuccess": "2026-11-05T05:48:47.096Z",
   "layers": {
     "towers-400kv": {
       "label": "400 kV towers",
@@ -9,7 +9,7 @@
       "status": "unchanged",
       "count": 16353,
       "lines": 68,
-      "fetchedAt": "2026-11-03T08:50:37.524Z",
+      "fetchedAt": "2026-11-05T05:48:47.096Z",
       "lastChangedAt": "2026-11-03T08:50:24.321Z",
       "diff": {
         "added": 0,
@@ -20,15 +20,15 @@
     "towers-220kv": {
       "label": "220 kV towers",
       "url": "https://gis.aptransco.gov.in/server/rest/services/AP_Grid_Map/gridmapkml/MapServer/3",
-      "status": "unchanged",
-      "count": 44053,
-      "lines": 390,
-      "fetchedAt": "2026-11-03T08:51:05.504Z",
-      "lastChangedAt": "2026-11-03T08:50:37.524Z",
+      "status": "ok",
+      "count": 44305,
+      "lines": 393,
+      "fetchedAt": "2026-11-05T05:48:47.096Z",
+      "lastChangedAt": "2026-11-05T05:48:47.096Z",
       "diff": {
-        "added": 0,
-        "removed": 0,
-        "modified": 0
+        "added": 260,
+        "removed": 8,
+        "modified": 5
       }
     },
     "towers-132kv": {
@@ -37,7 +37,7 @@
       "status": "unchanged",
       "count": 53555,
       "lines": 762,
-      "fetchedAt": "2026-11-03T08:50:37.524Z",
+      "fetchedAt": "2026-11-05T05:48:47.096Z",
       "lastChangedAt": "2026-11-03T08:50:24.321Z",
       "diff": {
         "added": 0,

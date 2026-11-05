@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-03T09:04:31.525Z",
+  "generatedAt": "2026-11-05T05:49:32.202Z",
   "notes": [
     "Source migrated from the Google-Earth KML to the authoritative AP-TRANSCO Gridmap ESRI shapefiles.",
     "Circle / voltage are now authoritative from the source layers, so inferredCircles = 0 and there are no circuit/voltage-mismatch flags.",
@@ -30,13 +30,13 @@
   "inferredCircles": 0,
   "adjacency": {
     "method": "geometric endpoint-snapping to TRANSCO SS polygons (0 m if inside the compound; ≤ 1000 m to the edge otherwise)",
-    "linesBothEndpoints": 874,
+    "linesBothEndpoints": 878,
     "linesOneEndpoint": 337,
     "linesNoEndpoint": 11,
-    "pctBoth": 71.5,
+    "pctBoth": 71.6,
     "pctAtLeastOne": 99.1,
     "linesWithExternalEndpoint": 295,
-    "linesBothEndsResolved": 1163,
+    "linesBothEndsResolved": 1167,
     "pctBothEndsResolved": 95.2,
     "linesTranscoPlusExternal": 285,
     "linesBothExternal": 4,
@@ -152,7 +152,7 @@
         ]
       },
       {
-        "id": "l-0089",
+        "id": "l-0090",
         "name": "220KV SullurPet- Gummadipudi SC Line (Z)",
         "endpoints": [
           "Sullurpet",
@@ -160,7 +160,7 @@
         ]
       },
       {
-        "id": "l-0096",
+        "id": "l-0097",
         "name": "220KV Chillakallu- Pulichinthala DC/SC Line (M)",
         "endpoints": [
           "Chillakallu",
@@ -168,7 +168,7 @@
         ]
       },
       {
-        "id": "l-0150",
+        "id": "l-0151",
         "name": "220KV Lower Sileru- Barsoor DC Line (Z), Ckt-1",
         "endpoints": [
           "Lower Sileru",
@@ -176,7 +176,7 @@
         ]
       },
       {
-        "id": "l-0187",
+        "id": "l-0189",
         "name": "220KV Tallapalli- Nagarjunasagar PH DC Line (TM), Ckt-2",
         "endpoints": [
           "Tallapalli",
@@ -184,7 +184,7 @@
         ]
       },
       {
-        "id": "l-0191",
+        "id": "l-0193",
         "name": "220KV Tiruvuru- KTPS SC Line (Dr,M)",
         "endpoints": [
           "Tiruvuru",
@@ -192,7 +192,7 @@
         ]
       },
       {
-        "id": "l-0209",
+        "id": "l-0211",
         "name": "220KV Tallapalli- Nagarjuna Sagar Ckt-3 DC/SC Line (Z)",
         "endpoints": [
           "Tallapalli",
@@ -200,7 +200,7 @@
         ]
       },
       {
-        "id": "l-0220",
+        "id": "l-0222",
         "name": "220KV Ragulapadu- Somasamudra SC Line (Z& M)",
         "endpoints": [
           "Ragulapadu",
@@ -208,7 +208,7 @@
         ]
       },
       {
-        "id": "l-0221",
+        "id": "l-0223",
         "name": "220KV Brandix-Atchuthapuram DC Line, Ckt-1 (M)",
         "endpoints": [
           "Brandix",
@@ -216,7 +216,7 @@
         ]
       },
       {
-        "id": "l-0247",
+        "id": "l-0249",
         "name": "220KV Tallapalli- Nagarjunasagar PH DC Line (TM), Ckt-1",
         "endpoints": [
           "Tallapalli",
@@ -224,7 +224,7 @@
         ]
       },
       {
-        "id": "l-0261",
+        "id": "l-0263",
         "name": "220KV Chillakallu- Suryapeta DC/SC Line (M)",
         "endpoints": [
           "Chillakallu",
@@ -232,7 +232,7 @@
         ]
       },
       {
-        "id": "l-0265",
+        "id": "l-0267",
         "name": "220KV Tallapalli- Chalakurthy DC/SC Line (Z)",
         "endpoints": [
           "Tallapalli",
@@ -240,7 +240,7 @@
         ]
       },
       {
-        "id": "l-0281",
+        "id": "l-0283",
         "name": "220KV Brandix-Atchuthapuram DC Line, Ckt-2 (M)",
         "endpoints": [
           "Brandix",

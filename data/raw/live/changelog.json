@@ -1,0 +1,30 @@
+[
+  {
+    "at": "2026-11-05T05:48:19.392Z",
+    "layers": [
+      {
+        "name": "lines-220kv",
+        "label": "220 kV lines",
+        "owner": "APTRANSCO",
+        "before": 385,
+        "after": 389,
+        "added": 4,
+        "removed": 0,
+        "modified": 2,
+        "samples": {
+          "added": [
+            "220KV Gudivada[400]- Gudivada DC Line (M), Ckt-1",
+            "220KV Gudivada[400]- Gopavaram DC Line (M), Ckt-1",
+            "220KV Gudivada[400]- Gopavaram DC Line (M), Ckt-2",
+            "220KV Gudivada[400]- Gudivada DC Line (M), Ckt-2"
+          ],
+          "removed": [],
+          "modified": [
+            "220KV Gudiwada- Akiveedu DC/SC Line (M)",
+            "220KV Gudiwada- Undi DC/SC Line (M)"
+          ]
+        }
+      }
+    ]
+  }
+]

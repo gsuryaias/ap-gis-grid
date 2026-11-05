@@ -1,30 +1,38 @@
 {
   "schema": 1,
-  "lastRun": "2026-11-03T09:07:36.597Z",
-  "lastSuccess": "2026-11-03T09:07:36.597Z",
+  "lastRun": "2026-11-05T05:48:56.683Z",
+  "lastSuccess": "2026-11-05T05:48:56.683Z",
   "layers": {
     "net-epdcl-11kv": {
       "label": "APEPDCL 11 kV feeders",
       "url": "https://gis.aptransco.gov.in/server/rest/services/Epdcl_11KV/Epdcl_11KV/MapServer/3",
-      "status": "ok",
+      "status": "unchanged",
       "count": 3612,
-      "fetchedAt": "2026-11-03T08:59:31.677Z",
-      "lastChangedAt": "2026-11-03T08:59:31.677Z"
+      "fetchedAt": "2026-11-05T05:48:56.683Z",
+      "lastChangedAt": "2026-11-03T08:59:31.677Z",
+      "diff": {
+        "added": 0,
+        "removed": 0
+      }
     },
     "net-epdcl-dtr": {
       "label": "APEPDCL distribution transformers",
       "url": "https://gis.aptransco.gov.in/server/rest/services/Epdcl_11KV/Epdcl_11KV/MapServer/1",
-      "status": "ok",
+      "status": "unchanged",
       "count": 238755,
-      "fetchedAt": "2026-11-03T08:59:31.677Z",
-      "lastChangedAt": "2026-11-03T08:59:31.677Z"
+      "fetchedAt": "2026-11-05T05:48:56.683Z",
+      "lastChangedAt": "2026-11-03T08:59:31.677Z",
+      "diff": {
+        "added": 0,
+        "removed": 0
+      }
     },
     "net-epdcl-ab": {
       "label": "APEPDCL AB switches",
       "url": "https://gis.aptransco.gov.in/server/rest/services/Epdcl_11KV/Epdcl_11KV/MapServer/2",
       "status": "unchanged",
       "count": 17519,
-      "fetchedAt": "2026-11-03T09:07:36.597Z",
+      "fetchedAt": "2026-11-05T05:48:56.683Z",
       "lastChangedAt": "2026-11-03T08:59:31.677Z",
       "diff": {
         "added": 0,
@@ -34,18 +42,26 @@
     "net-spdcl-11kv": {
       "label": "APSPDCL 11 kV lines",
       "url": "https://gis.aptransco.gov.in/server/rest/services/SPDCL/SPDCL_Network_11KV/MapServer/3",
-      "status": "ok",
+      "status": "unchanged",
       "count": 32505,
-      "fetchedAt": "2026-11-03T08:59:31.677Z",
-      "lastChangedAt": "2026-11-03T08:59:31.677Z"
+      "fetchedAt": "2026-11-05T05:48:56.683Z",
+      "lastChangedAt": "2026-11-03T08:59:31.677Z",
+      "diff": {
+        "added": 0,
+        "removed": 0
+      }
     },
     "net-spdcl-dtr": {
       "label": "APSPDCL distribution transformers",
       "url": "https://gis.aptransco.gov.in/server/rest/services/SPDCL/SPDCL_Network_11KV/MapServer/1",
-      "status": "ok",
+      "status": "unchanged",
       "count": 114571,
-      "fetchedAt": "2026-11-03T08:59:31.677Z",
-      "lastChangedAt": "2026-11-03T08:59:31.677Z"
+      "fetchedAt": "2026-11-05T05:48:56.683Z",
+      "lastChangedAt": "2026-11-03T08:59:31.677Z",
+      "diff": {
+        "added": 0,
+        "removed": 0
+      }
     }
   }
 }
