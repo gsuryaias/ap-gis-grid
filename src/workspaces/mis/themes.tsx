@@ -49,7 +49,7 @@ import {
   type ScopeFilter,
 } from "./model.ts";
 import { csvFile, SupplyText } from "./tables.tsx";
-import { Card, gva, nf0, nf1, Note, pct, Segmented, SmallButton, StatTile, VoltageLegend, VoltageSegBar } from "./ui.tsx";
+import { Card, DrillNum, gva, nf0, nf1, Note, pct, Segmented, SmallButton, StatTile, VoltageLegend, VoltageSegBar } from "./ui.tsx";
 
 export type ThemeTab = "radial" | "age" | "n1" | "downstream" | "conductor" | "interfaces";
 export const THEME_TABS: { id: ThemeTab; label: string }[] = [
@@ -160,12 +160,13 @@ export function RadialTab({ model, scope, onDrill, onFocus, focusKey }: TabProps
   return (
     <div className="space-y-3 p-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatTile label="Radial · single circuit" value={nf0(m.radialSc)} sub="one circuit trip interrupts supply (N-1 insecure)" />
-        <StatTile label="Radial · single corridor" value={nf0(m.radialDc)} sub="survives a circuit trip, not a tower-line failure" />
+        <StatTile label="Radial · single circuit" value={nf0(m.radialSc)} metric="radialSc" sub="one circuit trip interrupts supply (N-1 insecure)" />
+        <StatTile label="Radial · single corridor" value={nf0(m.radialDc)} metric="radialDc" sub="survives a circuit trip, not a tower-line failure" />
         <StatTile label="Radial pockets" value={nf0(pockets.length)} sub={`${nf0(ssInPockets)} TRANSCO SS hang off ${nf0(new Set(pockets.map((p) => p.headId)).size)} core SS`} />
         <StatTile
           label="33/11 kV SS behind radial feeds"
           value={model.hasDownstream ? nf0(m.radialDiscomSs) : "…"}
+          metric={model.hasDownstream ? "radialDiscom" : undefined}
           sub={model.hasDownstream ? `${pct(tracedDiscom ? m.radialDiscomSs / tracedDiscom : null)} of the traced 33/11 kV SS in scope` : "loading 33 kV index"}
         />
       </div>
@@ -588,10 +589,10 @@ export function N1Tab({ model, scope, onDrill }: TabProps) {
   return (
     <div className="space-y-3 p-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatTile label="Bridge lines" value={nf0(bridges.length)} sub="single-path links whose outage islands SS" />
-        <StatTile label="Cut-point SS" value={nf0(roles.find((r) => r.key === "articulation")?.m.ss ?? 0)} sub="loss splits the grid" />
-        <StatTile label="Single-fed SS" value={nf0(singles.length)} sub="one neighbouring source" />
-        <StatTile label="33/11 kV SS exposed" value={nf0(exposedDiscom)} sub="downstream of an islandable SS" />
+        <StatTile label="Bridge lines" value={nf0(bridges.length)} metric="bridges" sub="single-path links whose outage islands SS" />
+        <StatTile label="Cut-point SS" value={nf0(roles.find((r) => r.key === "articulation")?.m.ss ?? 0)} metric="cut" sub="loss splits the grid" />
+        <StatTile label="Single-fed SS" value={nf0(singles.length)} metric="singleFed" sub="one neighbouring source" />
+        <StatTile label="33/11 kV SS exposed" value={nf0(exposedDiscom)} metric={model.hasDownstream ? "bridgeDiscom" : undefined} sub="downstream of an islandable SS" />
       </div>
 
       <Card
@@ -697,9 +698,16 @@ export function DownstreamTab({ model, scope }: TabProps) {
   return (
     <div className="space-y-3 p-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatTile label="TRANSCO SS with 33 kV feeders" value={`${nf0(fed)} / ${nf0(scope.ss.length)}`} />
-        <StatTile label="33 kV feeders traced" value={nf0(feeders)} sub={`${nf0(km)} km of route`} />
-        <StatTile label="33/11 kV SS served" value={nf0(discomSs)} sub="distinct, on traced feeders" />
+        <StatTile
+          label="TRANSCO SS with 33 kV feeders"
+          value={
+            <>
+              <DrillNum metric="feedingSs">{nf0(fed)}</DrillNum> / <DrillNum metric="ss">{nf0(scope.ss.length)}</DrillNum>
+            </>
+          }
+        />
+        <StatTile label="33 kV feeders traced" value={nf0(feeders)} metric="feeders" sub={`${nf0(km)} km of route`} />
+        <StatTile label="33/11 kV SS served" value={nf0(discomSs)} metric="discomSs" sub="distinct, on traced feeders" />
         <StatTile label="Avg per feeding SS" value={fed ? nf1(discomSs / fed) : "—"} sub="33/11 kV SS" />
       </div>
 
@@ -936,12 +944,12 @@ export function InterfacesTab(props: TabProps) {
   }, []);
 
   // Overlay assets carry circle (+ interconnection voltage for plants) — scope them by those only.
-  const circleF = filters.find((f) => f.dim === "circle")?.value ?? null;
-  const voltF = filters.find((f) => f.dim === "voltage")?.value ?? null;
+  const circleF = filters.find((f) => f.dim === "circle")?.values ?? null;
+  const voltF = filters.find((f) => f.dim === "voltage")?.values ?? null;
   const otherDims = filters.filter((f) => f.dim !== "circle" && f.dim !== "voltage").length > 0;
-  const inCircle = (c: string | null) => !circleF || c === circleF;
+  const inCircle = (c: string | null) => !circleF || (c != null && circleF.includes(c));
 
-  const plants = (generation?.plants ?? []).filter((p) => inCircle(p.circle) && (!voltF || String(p.voltage) === voltF));
+  const plants = (generation?.plants ?? []).filter((p) => inCircle(p.circle) && (!voltF || voltF.includes(String(p.voltage))));
   const mix = ENERGY_TYPES.map((t) => {
     const ps = plants.filter((p) => p.energy === t);
     return { t, n: ps.length, mw: ps.reduce((a, p) => a + (p.capacityMw ?? 0), 0), mwKnown: ps.filter((p) => p.capacityMw).length };
@@ -974,7 +982,7 @@ export function InterfacesTab(props: TabProps) {
       <div className="grid gap-3 lg:grid-cols-2">
         <Card
           title="Generation connected"
-          subtitle={genStatus === "ready" ? `${plants.length} plants${circleF ? ` in ${circleF}` : ""}${voltF ? ` at ${voltF} kV` : ""}` : "Loading plants…"}
+          subtitle={genStatus === "ready" ? `${plants.length} plants${circleF ? ` in ${circleF.join(", ")}` : ""}${voltF ? ` at ${voltF.join(" + ")} kV` : ""}` : "Loading plants…"}
         >
           {genStatus === "error" ? (
             <p className="text-xs text-ink-2">Couldn’t load the generation layer.</p>

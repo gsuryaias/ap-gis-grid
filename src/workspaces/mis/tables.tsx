@@ -18,7 +18,8 @@ import {
   type Scope,
   type SsRow,
 } from "./model.ts";
-import { Card, gva, nf0, nf1, pct, Segmented, SmallButton, VoltageSegBar } from "./ui.tsx";
+import type { MetricId } from "./drill.ts";
+import { Card, DrillNum, gva, nf0, nf1, pct, Segmented, SmallButton, VoltageSegBar } from "./ui.tsx";
 
 export const csvFile = (name: string, headers: string[], rows: unknown[][]) =>
   downloadText(name, "text/csv", "﻿" + toCsv(headers, rows));
@@ -32,22 +33,24 @@ interface Col {
   id: ColId;
   label: string;
   title: string;
+  /** Drill-down behind the cell's number. */
+  metric: MetricId;
   value: (m: Metrics, r?: GroupRow) => number | string | null;
   /** Needs substation (s) or line (l) rows to be meaningful under the grouping dimension. */
   needs?: "s" | "l";
 }
 
 const COLS: Col[] = [
-  { id: "ss", label: "Substations", title: "TRANSCO substations, split by voltage", value: (m) => m.ss, needs: "s" },
-  { id: "ckm", label: "Circuit-km", title: "Circuit-km, split by voltage", value: (m) => m.ckm, needs: "l" },
-  { id: "route", label: "Route-km", title: "Route km (shared towers counted once)", value: (m) => m.routeKm, needs: "l" },
-  { id: "mva", label: "Σ rating", title: "Sum of indicative thermal ratings (conductor nominal ampacity)", value: (m) => m.mva, needs: "l" },
-  { id: "age", label: "Avg age", title: "Circuit-km-weighted mean line age", value: (m) => m.meanAge, needs: "l" },
-  { id: "past", label: "≥ 35 y", title: "Share of circuit-km at or past the 35-year useful life", value: (m) => m.pctPastLife, needs: "l" },
-  { id: "radial", label: "Radial", title: "Radially fed substations (single circuit + single corridor) — corridor-level screening", value: (m) => m.radialSc + m.radialDc, needs: "s" },
-  { id: "single", label: "Single-fed", title: "Substations fed from one neighbour (inferred)", value: (m) => m.singleFed, needs: "s" },
-  { id: "cut", label: "Cut-pt", title: "Substations whose loss splits the inferred grid", value: (m) => m.articulation, needs: "s" },
-  { id: "discom", label: "33/11 SS", title: "Distinct 33/11 kV substations on inferred 33 kV feeders", value: (m) => m.discomSs, needs: "s" },
+  { id: "ss", metric: "ss", label: "Substations", title: "TRANSCO substations, split by voltage", value: (m) => m.ss, needs: "s" },
+  { id: "ckm", metric: "lines", label: "Circuit-km", title: "Circuit-km, split by voltage", value: (m) => m.ckm, needs: "l" },
+  { id: "route", metric: "route", label: "Route-km", title: "Route km (shared towers counted once)", value: (m) => m.routeKm, needs: "l" },
+  { id: "mva", metric: "mva", label: "Σ rating", title: "Sum of indicative thermal ratings (conductor nominal ampacity)", value: (m) => m.mva, needs: "l" },
+  { id: "age", metric: "age", label: "Avg age", title: "Circuit-km-weighted mean line age", value: (m) => m.meanAge, needs: "l" },
+  { id: "past", metric: "past", label: "≥ 35 y", title: "Share of circuit-km at or past the 35-year useful life", value: (m) => m.pctPastLife, needs: "l" },
+  { id: "radial", metric: "radial", label: "Radial", title: "Radially fed substations (single circuit + single corridor) — corridor-level screening", value: (m) => m.radialSc + m.radialDc, needs: "s" },
+  { id: "single", metric: "singleFed", label: "Single-fed", title: "Substations fed from one neighbour (inferred)", value: (m) => m.singleFed, needs: "s" },
+  { id: "cut", metric: "cut", label: "Cut-pt", title: "Substations whose loss splits the inferred grid", value: (m) => m.articulation, needs: "s" },
+  { id: "discom", metric: "discomSs", label: "33/11 SS", title: "Distinct 33/11 kV substations on inferred 33 kV feeders", value: (m) => m.discomSs, needs: "s" },
 ];
 
 /** Which dimension to regroup by after drilling into a value of `dim`. */
@@ -119,45 +122,55 @@ export function Breakdown({
       ]),
     );
 
-  const cell = (c: Col, m: Metrics): ReactNode => {
+  const cell = (c: Col, m: Metrics, g?: GroupRow): ReactNode => {
+    const group = g ? { dim: by, key: g.key, label: `${dim.label}: ${g.label}` } : undefined;
+    const d = (children: ReactNode, metric: MetricId = c.metric) => (
+      <DrillNum metric={metric} group={group}>
+        {children}
+      </DrillNum>
+    );
     switch (c.id) {
       case "ss":
         return (
           <div className="min-w-[84px]">
-            <div className="tabular-nums">{nf0(m.ss)}</div>
-            <VoltageSegBar byV={m.ssByV} unit="SS" height={5} scale={m.ss / maxSs} />
+            <div>{m.ss ? d(nf0(m.ss)) : "·"}</div>
+            {g && <VoltageSegBar byV={m.ssByV} unit="SS" height={5} scale={m.ss / maxSs} />}
           </div>
         );
       case "ckm":
         return (
           <div className="min-w-[96px]">
-            <div className="tabular-nums">{nf0(m.ckm)}</div>
-            <VoltageSegBar byV={m.ckmByV} unit="ckm" height={5} scale={m.ckm / maxCkm} />
+            <div>{m.lines ? d(nf0(m.ckm)) : "·"}</div>
+            {g && <VoltageSegBar byV={m.ckmByV} unit="ckm" height={5} scale={m.ckm / maxCkm} />}
           </div>
         );
       case "route":
-        return nf0(m.routeKm);
+        return m.lines ? d(nf0(m.routeKm)) : "·";
       case "mva":
-        return m.ratedLines ? gva(m.mva).replace("≈ ", "") : "—";
+        return m.ratedLines ? d(gva(m.mva).replace("≈ ", "")) : "—";
       case "age":
-        return m.meanAge == null ? "—" : nf1(m.meanAge);
+        return m.meanAge == null ? "—" : d(nf1(m.meanAge));
       case "past":
-        return pct(m.pctPastLife);
+        return m.pctPastLife ? d(pct(m.pctPastLife)) : pct(m.pctPastLife);
       case "radial":
         return m.radialSc + m.radialDc ? (
-          <span title={`${m.radialSc} on a single circuit · ${m.radialDc} on one multi-circuit corridor`}>
-            {m.radialSc + m.radialDc}
-            {m.radialSc > 0 && <span className="ml-1 text-[10px] text-[#d03b3b]">({m.radialSc} SC)</span>}
+          <span className="whitespace-nowrap" title={`${m.radialSc} on a single circuit · ${m.radialDc} on one multi-circuit corridor`}>
+            {d(m.radialSc + m.radialDc)}
+            {m.radialSc > 0 && (
+              <span className="ml-1 text-[10px] text-[#d03b3b]">
+                ({d(m.radialSc, "radialSc")} SC)
+              </span>
+            )}
           </span>
         ) : (
           "·"
         );
       case "single":
-        return m.singleFed || "·";
+        return m.singleFed ? d(m.singleFed) : "·";
       case "cut":
-        return m.articulation || "·";
+        return m.articulation ? d(m.articulation) : "·";
       case "discom":
-        return m.discomSs ? nf0(m.discomSs) : "·";
+        return m.discomSs ? d(nf0(m.discomSs)) : "·";
       default:
         return null;
     }
@@ -189,7 +202,7 @@ export function Breakdown({
           </select>
         </span>
       }
-      subtitle="Click a row to drill into it — the whole page, the register and the map follow."
+      subtitle="Click a name to drill into it (the page, register and map follow) · click any number to list the assets behind it."
       actions={<SmallButton onClick={exportCsv}>CSV</SmallButton>}
     >
       <div className="overflow-x-auto">
@@ -208,30 +221,23 @@ export function Breakdown({
           </thead>
           <tbody>
             {sorted.map((r) => (
-              <tr
-                key={r.key}
-                onClick={() => onDrill(r.key)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onDrill(r.key);
-                  }
-                }}
-                tabIndex={0}
-                className="group cursor-pointer border-b border-line/70 hover:bg-accent/5 focus:bg-accent/10 focus:outline-none"
-                title={`Drill into ${dim.label.toLowerCase()} “${r.label}”`}
-              >
-                <td className="sticky left-0 max-w-[180px] bg-surface py-2 pl-4 pr-3 font-medium text-ink group-hover:bg-surface-2">
-                  <span className="flex items-center gap-1.5">
+              <tr key={r.key} className="group border-b border-line/70 hover:bg-accent/5">
+                <td className="sticky left-0 max-w-[180px] bg-surface p-0 font-medium text-ink group-hover:bg-surface-2">
+                  <button
+                    type="button"
+                    onClick={() => onDrill(r.key)}
+                    className="flex w-full items-center gap-1.5 py-2 pl-4 pr-3 text-left hover:text-accent focus-visible:bg-accent/10 focus-visible:outline-none"
+                    title={`Drill into ${dim.label.toLowerCase()} “${r.label}” — the whole page follows`}
+                  >
                     <span className="truncate">{r.label}</span>
-                    <span className="text-ink-2 opacity-0 group-hover:opacity-100" aria-hidden>
+                    <span className="text-ink-2 opacity-40 group-hover:opacity-100" aria-hidden>
                       ›
                     </span>
-                  </span>
+                  </button>
                 </td>
                 {cols.map((c) => (
                   <td key={c.id} className="px-2.5 py-2 text-right align-top tabular-nums text-ink">
-                    <div className="flex justify-end">{cell(c, r.m)}</div>
+                    <div className="flex justify-end">{cell(c, r.m, r)}</div>
                   </td>
                 ))}
               </tr>
@@ -242,11 +248,7 @@ export function Breakdown({
               <td className="sticky left-0 bg-surface py-2 pl-4 pr-3 font-semibold">Total in scope</td>
               {cols.map((c) => (
                 <td key={c.id} className="px-2.5 py-2 text-right font-semibold tabular-nums">
-                  {c.id === "ss"
-                    ? nf0(total.ss)
-                    : c.id === "ckm"
-                      ? nf0(total.ckm)
-                      : cell(c, total)}
+                  <div className="flex justify-end">{cell(c, total)}</div>
                 </td>
               ))}
             </tr>

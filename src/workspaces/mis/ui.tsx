@@ -1,8 +1,9 @@
 // Network MIS — small presentational primitives (cards, stat tiles, segmented bars, legends,
 // tabs). Colour comes only from data marks; all text wears ink tokens (dataviz convention).
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { VOLTAGES, type Voltage } from "../../data/types.ts";
 import { VOLTAGE_COLOR } from "../../theme/palette.ts";
+import { METRICS, type DrillSpec, type MetricId } from "./drill.ts";
 
 export const nf0 = (n: number) => Math.round(n).toLocaleString("en-IN");
 export const nf1 = (n: number) => n.toLocaleString("en-IN", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
@@ -47,32 +48,149 @@ export function StatTile({
   value,
   sub,
   children,
-  onClick,
+  metric,
+  more,
   title,
 }: {
   label: string;
   value: ReactNode;
   sub?: ReactNode;
   children?: ReactNode;
-  onClick?: () => void;
+  /** The headline number drills down to these records. */
+  metric?: MetricId;
+  /** Secondary action (e.g. open the matching analysis tab), shown as a chevron in the corner. */
+  more?: { onClick: () => void; title: string };
   title?: string;
 }) {
-  const body = (
-    <>
-      <div className="text-[11px] font-medium text-ink-2">{label}</div>
-      <div className="mt-0.5 text-2xl font-semibold leading-tight text-ink">{value}</div>
+  return (
+    <div className="relative min-w-0 rounded-xl border border-line bg-surface px-3.5 py-3 text-left shadow-sm" title={title}>
+      <div className="pr-6 text-[11px] font-medium text-ink-2">{label}</div>
+      {more && (
+        <button
+          type="button"
+          onClick={more.onClick}
+          title={more.title}
+          aria-label={more.title}
+          className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-md text-ink-2 hover:bg-surface-2 hover:text-accent"
+        >
+          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
+            <path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+      <div className="mt-0.5 text-2xl font-semibold leading-tight text-ink">
+        {metric ? <DrillNum metric={metric}>{value}</DrillNum> : value}
+      </div>
       {sub && <div className="mt-0.5 text-[11px] leading-snug text-ink-2">{sub}</div>}
       {children && <div className="mt-2">{children}</div>}
-    </>
+    </div>
   );
-  const cls = "min-w-0 rounded-xl border border-line bg-surface px-3.5 py-3 text-left shadow-sm";
-  return onClick ? (
-    <button type="button" onClick={onClick} title={title} className={`${cls} transition-colors hover:border-accent/50 hover:bg-surface-2`}>
-      {body}
+}
+
+// ---------------------------------------------------------------------------------------------
+// Drill-down: any number wrapped in <DrillNum> lists the records behind it (see drill.ts).
+
+export interface DrillApi {
+  open: (spec: DrillSpec) => void;
+  active: DrillSpec | null;
+}
+export const DrillContext = createContext<DrillApi | null>(null);
+
+export const drillKey = (s: Pick<DrillSpec, "metric" | "group">) => `${s.metric}|${s.group ? `${s.group.dim}:${s.group.key}` : ""}`;
+
+/** A number that opens its drill-down list. Renders plain text outside a DrillContext. */
+export function DrillNum({
+  metric,
+  group,
+  children,
+  className = "",
+}: {
+  metric: MetricId;
+  group?: DrillSpec["group"];
+  children: ReactNode;
+  className?: string;
+}) {
+  const api = useContext(DrillContext);
+  if (!api) return <>{children}</>;
+  const on = api.active != null && drillKey(api.active) === drillKey({ metric, group });
+  const what = METRICS[metric].title.toLowerCase();
+  const onClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    api.open({ metric, group });
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      title={`List the ${what}${group ? ` — ${group.label}` : ""}`}
+      className={`rounded-[3px] tabular-nums underline decoration-dotted decoration-1 underline-offset-[3px] transition-colors hover:text-accent hover:decoration-solid focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+        on ? "bg-accent/15 text-accent decoration-solid" : "decoration-ink-2/50"
+      } ${className}`}
+    >
+      {children}
     </button>
-  ) : (
-    <div className={cls} title={title}>
-      {body}
+  );
+}
+
+/**
+ * Multi-select voltage slicer. Grafana-style: from "All", a click selects only that voltage;
+ * further clicks add / remove; ⌥ / ⇧ / ⌘-click selects only that one; emptying it (or picking all
+ * three) returns to All.
+ */
+export function VoltageSlicer({
+  value,
+  onChange,
+  counts,
+}: {
+  value: Voltage[] | null;
+  onChange: (v: Voltage[] | null) => void;
+  /** Tooltip detail per voltage (what selecting it would show in the current drill path). */
+  counts?: Record<Voltage, string>;
+}) {
+  const click = (v: Voltage, only: boolean) => {
+    let next: Voltage[];
+    if (!value || only) next = [v];
+    else next = value.includes(v) ? value.filter((x) => x !== v) : [...value, v];
+    next = VOLTAGES.filter((x) => next.includes(x));
+    onChange(next.length === 0 || next.length === VOLTAGES.length ? null : next);
+  };
+  return (
+    <div role="group" aria-label="Voltage filter (multi-select)" className="inline-flex items-center gap-0.5 rounded-lg border border-line bg-surface-2 p-0.5">
+      <button
+        type="button"
+        aria-pressed={!value}
+        onClick={() => onChange(null)}
+        className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${!value ? "bg-surface text-ink shadow-sm" : "text-ink-2 hover:text-ink"}`}
+        title="All voltages"
+      >
+        All kV
+      </button>
+      {VOLTAGES.map((v) => {
+        const on = !!value?.includes(v);
+        return (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={on}
+            onClick={(e) => click(v, e.altKey || e.shiftKey || e.metaKey || e.ctrlKey)}
+            title={`${counts?.[v] ? `${counts[v]}. ` : ""}${
+              !value ? `Show only ${v} kV` : on ? `Remove ${v} kV` : `Add ${v} kV`
+            } — ⌥/⇧-click for ${v} kV only`}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors ${
+              on ? "bg-surface text-ink shadow-sm ring-1 ring-inset" : value ? "text-ink-2/70 hover:text-ink" : "text-ink-2 hover:text-ink"
+            }`}
+            style={on ? ({ "--tw-ring-color": VOLTAGE_COLOR[v] } as React.CSSProperties) : undefined}
+          >
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: value && !on ? "transparent" : VOLTAGE_COLOR[v], boxShadow: `inset 0 0 0 1.5px ${VOLTAGE_COLOR[v]}` }}
+              aria-hidden
+            />
+            {v}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -83,26 +201,42 @@ export function VoltageSegBar({
   unit,
   height = 6,
   scale = 1,
+  partMetric,
 }: {
   byV: Record<Voltage, number>;
   unit: string;
   height?: number;
   /** Fraction (0–1) of the track the whole bar fills — lets rows share one scale. */
   scale?: number;
+  /** Make each voltage part a drill-down. */
+  partMetric?: (v: Voltage) => MetricId;
 }) {
+  const api = useContext(DrillContext);
   const total = VOLTAGES.reduce((a, v) => a + byV[v], 0);
   const parts = VOLTAGES.filter((v) => byV[v] > 0);
   const label = parts.map((v) => `${v} kV ${nf0(byV[v])} ${unit}`).join(" · ");
   return (
     <div className="flex w-full" style={{ height }} role="img" aria-label={label} title={label}>
       <div className="flex gap-[2px]" style={{ width: `${Math.max(0, Math.min(1, scale)) * 100}%` }}>
-        {parts.map((v) => (
-          <span
-            key={v}
-            className="rounded-full"
-            style={{ width: `${(byV[v] / total) * 100}%`, minWidth: 2, backgroundColor: VOLTAGE_COLOR[v] }}
-          />
-        ))}
+        {parts.map((v) =>
+          partMetric && api ? (
+            <button
+              key={v}
+              type="button"
+              onClick={() => api.open({ metric: partMetric(v) })}
+              title={`${v} kV: ${nf0(byV[v])} ${unit} — list them`}
+              aria-label={`List ${v} kV (${nf0(byV[v])} ${unit})`}
+              className="rounded-full hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              style={{ width: `${(byV[v] / total) * 100}%`, minWidth: 2, backgroundColor: VOLTAGE_COLOR[v] }}
+            />
+          ) : (
+            <span
+              key={v}
+              className="rounded-full"
+              style={{ width: `${(byV[v] / total) * 100}%`, minWidth: 2, backgroundColor: VOLTAGE_COLOR[v] }}
+            />
+          ),
+        )}
       </div>
     </div>
   );

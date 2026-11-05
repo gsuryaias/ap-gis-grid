@@ -334,9 +334,16 @@ export function isDimId(v: unknown): v is DimId {
 // ---------------------------------------------------------------------------------------------
 // Scope (drill path)
 
+/** One drill step: keep assets whose `dim` key is any of `values` (multi-select = OR within a dimension). */
 export interface ScopeFilter {
   dim: DimId;
-  value: string;
+  values: string[];
+}
+
+/** Human label for a filter's values ("400 + 220 kV", "Kadapa, Nellore"). */
+export function formatFilter(f: ScopeFilter): string {
+  if (f.dim === "voltage") return `${f.values.join(" + ")} kV`;
+  return f.values.map((v) => DIMENSIONS[f.dim].format(v)).join(", ");
 }
 
 export interface Scope {
@@ -345,29 +352,60 @@ export interface Scope {
 }
 
 /**
- * Apply a drill path. A filter on a dimension that applies to both asset types narrows both;
- * a line-only filter (age, conductor) keeps the substations those lines touch; a substation-only
- * filter (N-1 role) keeps the lines touching those substations.
+ * Apply a drill path, in order. A filter on a dimension that applies to both asset types narrows
+ * both; a line-only filter (age, conductor) keeps the substations those lines touch; a
+ * substation-only filter (N-1 role) keeps the lines touching those substations. Order matters for
+ * the mixed cases, which is why the voltage slicer is always applied first (see `withSlicer`).
  */
 export function applyScope(model: MisModel, filters: readonly ScopeFilter[]): Scope {
   let ss = model.ss;
   let lines = model.lines;
   for (const f of filters) {
     const d = DIMENSIONS[f.dim];
+    const keys = new Set(f.values);
     if (d.ss && d.line) {
-      ss = ss.filter((r) => d.ss!(r) === f.value);
-      lines = lines.filter((r) => d.line!(r) === f.value);
+      ss = ss.filter((r) => keys.has(d.ss!(r)));
+      lines = lines.filter((r) => keys.has(d.line!(r)));
     } else if (d.line) {
-      lines = lines.filter((r) => d.line!(r) === f.value);
+      lines = lines.filter((r) => keys.has(d.line!(r)));
       const touched = new Set(lines.flatMap((r) => r.line.connectsSS));
       ss = ss.filter((r) => touched.has(r.id));
     } else if (d.ss) {
-      ss = ss.filter((r) => d.ss!(r) === f.value);
+      ss = ss.filter((r) => keys.has(d.ss!(r)));
       const keep = new Set(ss.map((r) => r.id));
       lines = lines.filter((r) => r.line.connectsSS.some((id) => keep.has(id)));
     }
   }
   return { ss, lines };
+}
+
+/**
+ * The voltage slicer sits outside the ordered drill path and is applied FIRST, so "≥ 35 yrs" at
+ * 400 kV means old 400 kV lines and the 400 kV SS they touch — not 400 kV SS touched by an old
+ * 220 kV line. Returns the normalised filter list (slicer first) plus its parts.
+ */
+export function withSlicer(filters: readonly ScopeFilter[]): {
+  kv: ScopeFilter | null;
+  path: ScopeFilter[];
+  all: ScopeFilter[];
+} {
+  const kv = filters.find((f) => f.dim === "voltage") ?? null;
+  const path = filters.filter((f) => f.dim !== "voltage");
+  return { kv, path, all: kv ? [kv, ...path] : path };
+}
+
+/** Dimensions pinned to a single value (no longer useful to group by). */
+export function pinnedDims(filters: readonly ScopeFilter[]): Set<DimId> {
+  return new Set(filters.filter((f) => f.values.length === 1).map((f) => f.dim));
+}
+
+/** The rows of one breakdown group — exactly the rows `groupBy` aggregated for that key. */
+export function groupScope(scope: Scope, dimId: DimId, key: string): Scope {
+  const d = DIMENSIONS[dimId];
+  return {
+    ss: d.ss ? scope.ss.filter((r) => d.ss!(r) === key) : [],
+    lines: d.line ? scope.lines.filter((r) => d.line!(r) === key) : [],
+  };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -580,10 +618,12 @@ export function topBy<T>(rows: readonly T[], key: (r: T) => number, n: number): 
 }
 
 // ---------------------------------------------------------------------------------------------
-// URL encoding for the drill path (hash key `mf`)
+// URL encoding for the drill path (hash key `mf`): `dim:v1,v2~dim:v` (a single value is the
+// pre-multi-select form, so old links keep working). No dimension value contains `,` or `~`
+// (asserted against the emitted data in drill.test.ts).
 
 export function encodeFilters(filters: readonly ScopeFilter[]): string {
-  return filters.map((f) => `${f.dim}:${f.value}`).join("~");
+  return filters.map((f) => `${f.dim}:${f.values.join(",")}`).join("~");
 }
 
 export function decodeFilters(s: string | null | undefined): ScopeFilter[] {
@@ -593,8 +633,8 @@ export function decodeFilters(s: string | null | undefined): ScopeFilter[] {
     const i = part.indexOf(":");
     if (i <= 0) continue;
     const dim = part.slice(0, i);
-    const value = part.slice(i + 1);
-    if (isDimId(dim) && value) out.push({ dim, value });
+    const values = [...new Set(part.slice(i + 1).split(",").filter(Boolean))];
+    if (isDimId(dim) && values.length && !out.some((f) => f.dim === dim)) out.push({ dim, values });
   }
   return out;
 }
