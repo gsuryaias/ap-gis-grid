@@ -16,60 +16,58 @@ The reference map is the **Atlas** workspace. On top of it sits a **decision-sup
 one more workspace — **Network MIS** — a lazy-loaded chunk sharing one embedded map. Everything the app
 renders is pure static assets, so there is no backend at request time.
 
-> **Risk Room removed, Network MIS added (2026-11):** the Risk Room workspace (`workspaces/risk/`,
-> `map/risk-layers.ts`) was replaced by the **Network MIS** (`workspaces/mis/`) and preserved on the
-> local `archive/risk-room` branch. `WorkspaceId` is now `atlas | mis`. `lib/risk.ts` stays (DetailPanel,
-> SummaryView, WeatherView use it); `lib/risk-engine.ts` + `public/data/wind-zones.geojson` now have no
-> in-app consumer (kept, tested — like `dcflow.ts`).
+> **Atlas 2.0 revamp in progress (2026-11):** an approved, phased re-architecture — four task *lenses*
+> (Explore · Field · Plan · Storm) over one map, a single layer registry + sync engine, one resource
+> loader, one Inspector, URL v2 with real Back/Forward, a layer catalogue + ⌘K omnisearch, then static
+> vector tiles. **Read `docs/specs/2026-11-05-atlas-2-design.md` (progress table at the top) before
+> touching the shell, map wiring, store, URL or search** — several modules below are slated for
+> replacement there.
 
-> **Removed workspaces (2026-06):** the **Planning Studio** and **MIS** workspaces were removed from the
-> app and preserved on the `archive/planning-studio` and `archive/mis-workspace` branches (cut from
-> `main` before removal). The **MIS data pipelines** (`pipelines/`,
-> the `data` branch, the freshness manifests) and the pure analytics libs (`dcflow.ts`, `dlr.ts`) are
-> **still in the repo** — they no longer have an in-app consumer (the MIS dashboards that read the
-> parquet, and the Planning Studio that drove `dcflow`, are gone). The pipelines section below is
-> retained for reference; if you don't intend to revive MIS, the `pipelines.yml` CI job and the `data`
-> branch can be disabled separately (out of scope of the removal).
+> **Dormant code retired (2026-11, Atlas 2.0 phase 0):** `lib/dcflow.ts`, `lib/risk-engine.ts`,
+> `public/data/wind-zones.geojson`, `data/manifests.ts` + `FreshnessBadge`/`MethodCard`, the `MapView`
+> shim, the whole `pipelines/` directory + `pipelines.yml`, and the `@duckdb/*`, `echarts`, `xlsx`,
+> `undici` deps were removed — preserved on the local `archive/dormant-2026-11` branch. The remote
+> `data` branch (old parquet) is untouched and unused. Don't revive these without an explicit ask.
+
+> **Risk Room removed, Network MIS added (2026-11):** the Risk Room workspace was replaced by the
+> **Network MIS** (`workspaces/mis/`), preserved on the local `archive/risk-room` branch. `WorkspaceId`
+> is `atlas | mis`. `lib/risk.ts` stays (DetailPanel, SummaryView, WeatherView use it).
+
+> **Removed workspaces (2026-06):** the Planning Studio and the old parquet MIS live on the
+> `archive/planning-studio` / `archive/mis-workspace` branches.
 
 ## Commands
 
 ```bash
 npm run sync:live    # pull TRANSCO + DISCOM layers from gis.aptransco.gov.in → data/raw/live/* (India-only network!)
 npm run sync:towers  # pull the ~114k transmission towers (400/220/132 kV) → data/raw/live/towers-*.json (~8 s)
+npm run sync:network # pull the DISCOM 11 kV network (feeders, DTRs, AB switches) → data/raw/live/net-*
 npm run build:ref    # RTGS shapefile library (OneDrive, RTGS_DIR) → public/data/ref/* — run locally, commit outputs
 npm run dev          # Vite dev server → http://localhost:5173/ap-gis-grid/
 npm run build:data   # ETL: data/raw/{gridmap/*.shp, generation.kml, geonames-ap.tsv, coastline-ap.geojson} → public/data/*
 npm run build        # tsc --noEmit && vite build  (production)
 npm run preview      # serve dist/ (use this to verify prod; dev HMR can be flaky for map state)
-npm test             # Vitest run: ETL + lib + pipeline-parser unit tests + emitted-data integrity checks
+npm test             # Vitest run: ETL + lib + URL-contract unit tests + emitted-data integrity checks
 npm run typecheck    # tsc --noEmit
-
-# MIS data pipelines (run in CI; see "MIS data pipelines" below). Each needs the cert bundle, so
-# invoke via the npm script (it sets NODE_EXTRA_CA_CERTS) rather than calling tsx directly.
-npm run pipelines              # all three in sequence
-npm run pipeline:psp           # NLDC daily PSP (.xls)         → data branch parquet
-npm run pipeline:psp-frequency # NLDC frequency / FVI compliance
-npm run pipeline:cea           # CEA monthly generation mix (JSON)
+npm run e2e          # Playwright smoke suite vs `vite preview` (run `npm run build` first; browsers in node_modules)
+npm run e2e:install  # one-time: download the project-local headless Chromium
 ```
 
 Run a single test file with `npx vitest run src/lib/graph.test.ts` (add `-t "<name>"` to filter by
 test name). After ANY ETL or component change, run `npm run typecheck` (strict, `noUnusedLocals`).
-**There is no ESLint/Prettier step** — the only quality gates are `npm run typecheck` (strict;
-`noUnusedLocals` + `noUnusedParameters`, so unused imports/params *fail* the build) and `npm test`.
+**There is no ESLint/Prettier step** — the quality gates are `npm run typecheck` (strict;
+`noUnusedLocals` + `noUnusedParameters`, so unused imports/params *fail* the build), `npm test`, and the
+Playwright smoke suite `npm run e2e` (`e2e/*.spec.ts`; opens the app with `?e2e`, which exposes the map as
+`window.__map`; runs as a **non-blocking** CI job in `deploy.yml`). `src/url/hash.test.ts` pins the v1
+deep-link contract — URL v2 must keep decoding every fixture there.
 
 ## Architecture
 
 ```
-data/raw/{generation.kml, gridmap/*.shp+dbf,    ─(build:data ETL)─▶ public/data/*.{geojson,json}  ─┐
-          geonames-ap.tsv, coastline-ap.geojson}    [committed]                                     ├▶ React + MapLibre + DSS shell ─▶ GitHub Pages
-NLDC / CEA (live public sources)        ─(pipelines, CI)─▶ `data` branch /timeseries/*.parquet ─┘  (manifests/*.json read over HTTP)
+gis.aptransco.gov.in ─(sync:live / sync:towers / sync:network, India-only)─▶ data/raw/live/*  ─┐
+data/raw/{gridmap/*.shp, generation.kml, geonames-ap.tsv, coastline-ap.geojson, discom/…}  ───┼─(build:data ETL)─▶ public/data/*  ─▶ React + MapLibre shell ─▶ GitHub Pages
+RTGS shapefile library (OneDrive) ─(build:ref, local)─▶ public/data/ref/*  [committed]          ┘   [committed]
 ```
-
-> **No in-app parquet reader since the MIS removal.** The app fetches only the data-branch
-> `manifests/*.json` at runtime (`manifests.ts` → `FreshnessBadge`/`MethodCard` — freshness
-> only); nothing reads the `timeseries/*.parquet` anymore. Consequently `@duckdb/duckdb-wasm` and
-> `echarts` are now **dependencies with no importer in `src`** (they powered the removed MIS dashboards)
-> — leave them unless you're deliberately pruning, but don't reach for them expecting a live consumer.
 
 `build:data` reads the shapefiles via the `shapefile` dep (build-time only). All source layers are
 WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference but is **no longer a source**.
@@ -77,17 +75,15 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Layer | Path | Notes |
 |-------|------|-------|
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
-| Pipelines | `pipelines/*.mts` + `pipelines/*-parse.ts` + `pipelines/lib.ts` | live MIS ETL → `data` branch parquet (see "MIS data pipelines") |
-| Data | `src/data/` | `types.ts` (canonical types), `load.ts` (fetch via `import.meta.env.BASE_URL`), `selectors.ts`, `graph-data.ts` (memoised topology), `manifests.ts` (dataset freshness), `weather.ts` |
+| Data | `src/data/` | `types.ts` (canonical types), `load.ts` (fetch via `import.meta.env.BASE_URL`), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR search tier), `live-status.ts` |
 | State | `src/state/store.ts` (Zustand) + `src/url/` | versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
-| Map | `src/map/` | `MapView.tsx` (Atlas full-screen) / `MapPane.tsx` (shared embeddable wrapper), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `mis-layers.ts` (MIS thematic layer), `map-helpers.ts` (shared map utils) |
-| Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, `FreshnessBadge`, SearchBar, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
+| Map | `src/map/` | `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `mis-layers.ts` (MIS thematic layer), `map-helpers.ts` (shared map utils) |
+| Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, `NetworkTracePanel`, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
 | Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
-| Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `dcflow.ts`, `risk.ts`, `risk-engine.ts`, `format.ts`, `export.ts` |
+| Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `risk.ts`, `weather.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
 
-The emitted `public/data/*` files are **committed** so CI/Pages builds don't need the raw sources. The
-`data`-branch parquet is **not** committed to `main` — it is published by the pipelines and fetched at runtime.
+The emitted `public/data/*` files are **committed** so CI/Pages builds don't need the raw sources.
 
 ## Live network sync (`scripts/sync-live.mts` → `data/raw/live/`)
 
@@ -194,6 +190,29 @@ date (`live-status.json → discom.APCPDCL.linesFrom`).
   per-SS CSV/GeoJSON, statewide CSV link); selection sets the overlay store `focus` → amber highlight layers
   `ov-focus-lines`/`ov-focus-ss` in `overlays/map.ts`; popups link "TRANSCO source" back to the SS (`data-select`).
 
+## DISCOM 11 kV network + transformer search (`scripts/sync-network.mts`, `scripts/etl-network.ts`, lazy)
+
+`npm run sync:network` (also run by `npm run update`, non-fatal) pulls from the open APEPDCL
+(`Epdcl_11KV/Epdcl_11KV/MapServer`) and APSPDCL (`SPDCL/SPDCL_Network_11KV/MapServer`) services: 11 kV
+feeders/lines, distribution transformers (DTRs) and APEPDCL AB switches → `data/raw/live/net-*`
+(`net-lib.ts` `NET_LAYERS`; points grouped by feeder like towers; floor + >15 %-drop gates; `net-manifest.json`).
+- **Privacy — allow-lists, never drop-lists** (`keep` per layer, see the header of `net-lib.ts`): HT consumer
+  services are never pulled; `dtr_loc_name` (often a private person's name), `ht_scno`, remarks, device and
+  employee ids are deliberately not kept. **Owner decision (2026-11-05): the AB-switch raw file and DTR
+  `pole_no` (from the open GIS) stay published as they are** — don't re-raise.
+- **ETL** (`buildNetwork` in build-data → `etl-network.ts`): `discom-11kv-lines.geojson` (lazy overlay,
+  ≈ 20 MB raw / 3.1 MB gz — the biggest file; tiling it is Atlas 2.0 phase 4), `net-dtr-<shard>.json`
+  (≈ 305k DTRs in ~380 shards: APEPDCL by the first 4 chars of the DTR code, APSPDCL by the first 2 of the
+  serial) and `search-network.json` (the "network" search tier + upstream trace chains). Every 11 kV feeder is
+  linked to its 33/11 kV SS (APEPDCL: recorded `sub_station_id`; APSPDCL: name within 5 km, else a run end
+  ≤ 500 m), which the 33 kV connectivity already ties to a TRANSCO SS — giving the **inferred** trace
+  TRANSCO SS → 33 kV feeder → 33/11 kV SS → 11 kV feeder → DTR.
+- **UI**: `data/network-search.ts` — `search-network.json` fetched on first search focus; a query that
+  `looksLikeDtrCode` (≥ 4 chars, has a digit, no spaces) fetches only the matching DTR shard(s). Picking a
+  result sets the overlay store `netFocus` → `components/NetworkTracePanel.tsx` (attributes + clickable trace,
+  coverage caveat) and turns on/zooms the overlay. Coverage is partial (APSPDCL sparse; APCPDCL has no open
+  11 kV data) — the UI says so.
+
 ## RTGS reference layers (`scripts/build-ref-layers.mts` → `public/data/ref/`, lazy)
 
 27 curated layers from the RTGS (AP Real-Time Governance Society) shapefile library on the owner's OneDrive
@@ -242,7 +261,7 @@ none of its code path runs until the user enables it.
   source/layers are added by `addGenerationLayers()` only once data arrives (re-added after a basemap
   style reload, same as the grid layers). Plants are NOT in the initial search index or the data table.
 - **Not in `data.byId`**: plants live in a separate `generation.byId` (store). `DetailPanel` and
-  `MapView` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
+  `MapPane` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
   `energy` drives `ENERGY_COLOR` / the legend. The KML had no capacity; the **live layer carries
   `capacityMw` (`total_capacity`) + `units`** for the plants the source has filled in (null otherwise). **No grid
   connectivity** is modelled for plants.
@@ -309,7 +328,7 @@ in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
   outline on top. Radar frame swap uses `RasterTileSource.setTiles` (URL memoised per map in a
   WeakMap). Substations inside a forecast cone get an amber halo — a separate `wx-risk-substations`
   circle layer on the core SS source with an id `in`-filter (NOT feature-state). Visibility is
-  gated by `applyWeatherVisibility(map, filters)` — called by MapView alongside `applyFilters`.
+  gated by `applyWeatherVisibility(map, filters)` — called by MapPane alongside `applyFilters`.
 - **Weather monitor** (`WeatherView`, `weatherOpen` like `summaryOpen`, not in hash): cyclone alert
   cards (GDACS level colours + "N substations inside the forecast envelope" via `assetsInCone`),
   13-circle conditions grid, coastal sea state, 3-day outlook table, last-updated + manual refresh.
@@ -334,7 +353,7 @@ A client-side **distance / area** measure tool (top-centre `MeasureControl` pill
 - Click adds vertices, a dashed rubber-band tracks the cursor, **double-click / Enter** finishes,
   **Esc** clears (or exits if empty), **Backspace** undoes. Live readout published to the store
   (`measureMode` / `measureStats` — **transient, never in the URL hash**).
-- While a mode is active, `MapView`'s feature hover/select handlers early-return (`clickSuppressed()`,
+- While a mode is active, `MapPane`'s feature hover/select handlers early-return (`clickSuppressed()`,
   which is true for **either** the measure tool or the nearest-SS tool) and `doubleClickZoom` is
   disabled, so clicks place points instead of selecting features / zooming.
 
@@ -350,7 +369,7 @@ deps, no backend.
   is the only impure helper (Blob + anchor; no-op outside a browser, so the builders stay testable).
 - **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The `ControlPanel`
   **Region → Circle** `<select>` (13 canonical circles from `meta.circles`) filters the **core** lines +
-  substations (`applyFilters` ANDs `["==",["get","circle"],…]`) and `MapView.fitToCircle` zooms to the
+  substations (`applyFilters` ANDs `["==",["get","circle"],…]`) and `fitToCircle` (MapPane) zooms to the
   circle's SS bounds (back to `meta.bounds` when cleared). Deep-linkable: hash key **`circle`**.
   **Circle-only** because `zone`/`division` exist on substations but are **absent on all lines** — circle
   is the one admin field both layers carry. Overlays are not sliced (PGCIL has no circle).
@@ -382,7 +401,7 @@ extract** (`data/raw/geonames-ap.tsv` — the `IN` dump filtered to admin1 = `02
   `SearchBar` appends up to 8 gazetteer hits under a "Places" divider (grid assets always rank
   first; rank ties break by population so Tirupati-the-city beats its namesake villages, and
   same-name villages disambiguate by district). Choosing one calls `setNearbyOrigin` with a
-  type-based zoom (state 7 / district 9 / mandal 11 / city 12 / default 13) — `MapView`'s
+  type-based zoom (state 7 / district 9 / mandal 11 / city 12 / default 13) — `MapPane`'s
   `NearbyOrigin.zoom` branch **flies** there (may zoom OUT, unlike the GPS `easeTo`), drops the
   azure nearby-dot and opens the nearest-substations panel. All transient, like the nearby tool.
 
@@ -414,11 +433,11 @@ honesty convention.
 
 The topological criticality / N-1 islanding work that earlier docs flagged as *deferred* is now built.
 All of it is **pure, side-effect-free, unit-tested** (node env) and **indicative only** — it runs on the
-inferred geometric connectivity, hand-digitised wind zones and assumed impedances, never authoritative
-ratings or a real load-flow. `graph.ts` (via `graph-data.ts`) drives the Network MIS N-1 screening and the
-map spotlight; `risk.ts` the DetailPanel / Summary / Weather vulnerability read-outs. `risk-engine.ts`
-(the removed Risk Room), `dcflow.ts` and `dlr.ts` (the removed Planning Studio) currently have no in-app
-consumer (kept, tested, importable — see the intro notes).
+inferred geometric connectivity, never authoritative ratings or a real load-flow. `graph.ts` (via
+`graph-data.ts`) drives the Network MIS N-1 screening and the map spotlight; `supply-security.ts` the MIS
+radial-feed views; `risk.ts` the DetailPanel / Summary / Weather vulnerability read-outs; `dlr.ts` the
+DetailPanel's ambient-temperature derating (live — it is used). The DC load-flow and the three-axis risk
+engine were retired (see the intro notes).
 
 - **`src/lib/graph.ts`** — a multigraph over substation ids (parallel circuits are distinct edges, since
   N-1 line loss ≠ corridor loss). `buildGridGraph(substations, lines)`, then `connectedComponents()`,
@@ -438,22 +457,11 @@ consumer (kept, tested, importable — see the intro notes).
 - **`src/data/graph-data.ts`** — `graphAnalysis(data)` memoises the above per `GridData` instance
   (WeakMap) → `{graph, bridgeImpacts, articulationIds, singleFedIds, feedDegrees}`; `spotlightFor(...)`
   returns the SS/line ids to highlight for a selection.
-- **`src/lib/dcflow.ts`** — indicative **DC load-flow** (B′θ, flat 1.0 pu, lossless, no reactive power)
-  over the largest connected component. Per-voltage series reactance (`DEFAULT_OHM_PER_KM` 400/220/132),
-  `DEFAULT_ASSUMED_LENGTH_KM = 30` for missing length, `DEFAULT_BASE_MVA = 100`, slack = highest-degree
-  400 kV SS. `buildDcNetwork` → `solveDcFlow` (dense Gaussian elimination, n≈376) → `lineUtilisation`
-  (flow vs. the `capacity.ts` thermal rating) + `n1Screen` (per-line outage → newly-overloaded survivors
-  + islanded SS).
 - **`src/lib/dlr.ts`** — **dynamic line rating**: ambient-temperature derating of the `capacity.ts`
   nominal ampacity, `I(Ta)/I(Tref) = √((Tcond − Ta)/(Tcond − Tref))` (Tcond 75 °C, Tref 40 °C, cool-weather
   uprate capped 1.15 — no wind/solar data). `deratingFactor` / `deratedCapacityMva` / `formatDerating`.
 - **`src/lib/risk.ts`** — single-axis **vulnerability** index `substationRisk()` (coastal band, redundancy
   via feed degree, age, voltage → 0–100 + factor list) + `riskTier()`.
-- **`src/lib/risk-engine.ts`** — three-axis DSS model: `hazardScore` (wind zone + coastal + active cyclone
-  cone), `criticalityScore` (voltage + hub size + redundancy), `compositeRisk` (weighted geometric mean,
-  hazard^0.4 · vulnerability^0.4 · criticality^0.2, each axis floored at 5 so none vetoes), and
-  `windZoneAt(lng, lat, zones)` over the IS 875 wind-zone polygons (`public/data/wind-zones.geojson`).
-
 ## Workspaces (DSS shell)
 
 The app is a **multi-workspace shell** (`src/App.tsx` + `src/workspaces/registry.ts`). `WorkspaceId` =
@@ -462,8 +470,7 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
 + routing); the shell is workspace-agnostic, so a registry entry is all it takes to add/remove a tab.
 
 - **Code-split**: `atlas` is the inline default (never split out); `mis` declares a
-  `load: () => import(...)` and mounts lazily in a `<Suspense>` boundary. Each declares `requiredManifests`
-  the shell can gate/badge on (both are now `[]`).
+  `load: () => import(...)` and mounts lazily in a `<Suspense>` boundary.
 - **Map embedding**: `MapPane` renders the shared map in `full` (Atlas), `embedded` (split layout) or
   `hidden` (collapsed) modes; the collapse is `mapLayout` (`open|collapsed|atlas-only`). The split is
   **drag-resizable** — `App`'s `PaneSplitter` sets the map-column width (persisted to localStorage under
@@ -525,44 +532,6 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
     filter" where `METRICS[id].asFilter` captures the set exactly. **`drill.test.ts` reconciles every metric
     against the figure it labels on the real `public/data`** — add new figures there when you add a metric.
 
-## MIS data pipelines (`pipelines/`, CI-scheduled → `data` branch)
-
-The only live-ETL part of the system. Three scheduled jobs fetch official, keyless public-sector data,
-parse it, gate it, upsert into Parquet, write a manifest, and force-publish to a dedicated **`data` git
-branch** (never to `main`, never triggers a Pages deploy). Since the MIS removal the parquet has **no
-in-app reader** — only the `manifests/*.json` are still fetched at runtime (for the freshness badges)
-over `DATA_BRANCH_BASE` (raw.githubusercontent.com of the `data` branch by default; overridable via env,
-see `src/data/manifests.ts`).
-
-| Pipeline | Source | Output (on `data` branch) |
-|----------|--------|---------------------------|
-| `pipeline:psp` | Grid-India / NLDC daily PSP `.xls` | `timeseries/psp-daily.parquet` (energy met/shortage/demand by entity) |
-| `pipeline:psp-frequency` | same `.xls`, section B | `timeseries/psp-frequency.parquet` (FVI band compliance + net exchange) |
-| `pipeline:cea` | cea.nic.in generation + renewable APIs (JSON) | `timeseries/cea-monthly.parquet` (generation mix BU→MU) |
-
-- **Layout**: pure parsers `pipelines/*-parse.ts` (xlsx for `.xls`, `node-html-parser` for HTML, JSON for
-  CEA — unit-tested in `pipelines.test.ts` against committed `pipelines/fixtures/*`) + orchestration
-  `pipelines/*.mts` (fetch → parse → **hard validation gates** → idempotent upsert keyed on date/entity).
-  Shared helpers in `pipelines/lib.ts` (`fetchWithRetry`, IST date math, the manifest writer).
-- **Vidyut Pravah removed (2026-11)**: the `vidyut-daily` / `vidyut-blocks` pipelines, parser, fixture,
-  emSign cert and manifest gate are gone; `pipelines.yml` purges their leftovers from the `data` branch on
-  its next run. Don't re-add it.
-- **TLS quirk**: Grid-India serves an **incomplete TLS chain** (missing intermediate CA),
-  so the npm scripts set `NODE_EXTRA_CA_CERTS=pipelines/certs/extra-cas.pem` (Go Daddy G2
-  intermediate) **and** `lib.ts` loads the same bundle into an undici Agent. The `.pem` must contain
-  certs only — no `#` comment lines (OpenSSL rejects them in `NODE_EXTRA_CA_CERTS`). **Always invoke via
-  the npm script**, not `tsx` directly, or the fetch fails cert verification.
-- **Manifests + freshness** (`src/data/manifests.ts`): each pipeline writes `manifests/<id>.json`
-  (`id, schema, source, licence, attribution, cadence, vintage, lastSuccess, paths, rowCount`). The app
-  binds to **manifest ids, never raw URLs**. `staleness(m, now)` → `fresh|stale|missing` (stale past
-  2× cadence; `static`/`one-time` never stale) drives `FreshnessBadge`. `MANIFEST_GATES` are CI lower-bound
-  row checks; `LIVE_DATA_MANIFEST_IDS = ["psp-daily"]` are what the deploy gate expects to
-  already exist on the `data` branch.
-- **Schedule** (`.github/workflows/pipelines.yml`, single-concurrency): daily 05:30 UTC (PSP + PSP-freq),
-  `cea-monthly` on the 5th. CI restores the `data` branch into a
-  worktree first (to accumulate history), force-publishes only if files changed, and opens a
-  `pipeline-failure` issue on daily failure (its URL is surfaced in the manifest → the badge).
-
 ## Data decisions (core network now sourced from the Gridmap ESRI shapefiles)
 
 The core transmission substations + lines were **migrated off `Transco.kml`** onto the authoritative
@@ -620,9 +589,6 @@ left in the repo but is **no longer a source** (generation still uses `generatio
 ## Gotchas / conventions
 
 - **Never install to global space** — all deps are project-local (`npm install`, `npx`/`tsx`).
-- **`xlsx` is pinned to the SheetJS CDN tarball** (`https://cdn.sheetjs.com/xlsx-0.20.3/...tgz` in
-  `package.json`), NOT the npm-registry package (which SheetJS froze/deprecated). Don't "fix" it to a
-  `^x` registry range — keep the CDN URL when bumping. It's used only by the `.xls` PSP pipeline parser.
 - **MapLibre + Tailwind v4 CSS layering**: MapLibre's unlayered `.maplibregl-map { position: relative }`
   beats Tailwind's layered `.absolute`. Size the map container with `h-full w-full`, NOT `absolute inset-0`.
 - **MapLibre paint expressions**: `["zoom"]` must be the TOP-LEVEL input of `interpolate`/`step`.
@@ -657,22 +623,18 @@ re-runs ETL + tests + build and redeploys). All sources are processed by the one
 shapefile parser is the `shapefile` dev-dep (build-time only); keep the `gridmap/` raw files committed
 so CI can regenerate. `Transco.kml` is retained for reference but unused.
 
-The **MIS time-series** data is NOT part of `build:data` — it is refreshed by the `pipelines/` jobs on
-their own CI schedule into the `data` branch (see "MIS data pipelines"). To test a pipeline locally run
-its npm script (which sets the cert bundle); it writes to a `data-branch/` worktree, not `public/data/`.
-
 ## Deploy
 
 `.github/workflows/deploy.yml` publishes `dist/` to Pages on push to `main` (it runs `build:data` →
-`npm test` → `build`). Vite `base` is `/ap-gis-grid/` (override via `BASE_PATH` env — `/` for a
-user/org site, `/<repo>/` if renamed). Repo: Settings → Pages → Source = GitHub Actions. The
-**`data` branch is separate** — written only by `pipelines.yml`, consumed at runtime over HTTP
-(`DATA_BRANCH_BASE`), and never triggers a Pages deploy.
+`npm test` → `build`); a parallel, non-blocking `e2e` job runs the Playwright smoke suite against the build
+and uploads traces on failure. Vite `base` is `/ap-gis-grid/` (override via `BASE_PATH` env — `/` for a
+user/org site, `/<repo>/` if renamed). Repo: Settings → Pages → Source = GitHub Actions.
 
 ## Design docs
 
-In-repo design specs live under `docs/specs/` (e.g. `2026-06-11-dss-revamp-design.md`, the rationale
-for the multi-workspace DSS shell). Read the relevant spec before reworking a feature it covers.
+In-repo design specs live under `docs/specs/`: **`2026-11-05-atlas-2-design.md`** (the current Atlas 2.0
+revamp — lenses, platform core, phases, budgets; keep its progress table current) and
+`2026-06-11-dss-revamp-design.md` (the earlier multi-workspace DSS shell, partly superseded). Read the relevant spec before reworking a feature it covers.
 
 ## Where non-repo artifacts live
 

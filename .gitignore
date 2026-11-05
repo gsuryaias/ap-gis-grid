@@ -46,3 +46,7 @@ Thumbs.db
 
 # Playwright MCP artifacts
 .playwright-mcp/
+
+# Playwright
+test-results/
+playwright-report/

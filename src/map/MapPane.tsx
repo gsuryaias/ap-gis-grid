@@ -301,6 +301,10 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
       });
       readyRef.current = true;
       setMapReady(true);
+      // End-to-end test hook (e2e/smoke.spec.ts) — only exposed when the page is opened with `?e2e`.
+      if (new URLSearchParams(window.location.search).has("e2e")) {
+        (window as unknown as { __map?: MlMap }).__map = map;
+      }
 
       const st = useAppStore.getState();
       setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
