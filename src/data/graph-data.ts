@@ -1,6 +1,6 @@
 // Memoised access to the inferred connectivity graph (src/lib/graph.ts) for the UI layer.
 // The graph + its expensive aggregates are computed ONCE per GridData instance (WeakMap memo,
-// same pattern as the radar-URL memo in weather-layers.ts) — components/MapView consume this,
+// same pattern as the radar-URL memo in weather-layers.ts) — components/MapPane consume this,
 // never rebuilding per render. Everything here is INFERRED from geometric endpoint snapping —
 // indicative screening only, per the repo's honesty convention.
 import {
