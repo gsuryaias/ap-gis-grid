@@ -10,8 +10,6 @@ export interface WorkspaceDef {
   description: string;
   /** Lazy chunk loader. Absent for the Atlas — it is the inline default, never code-split out. */
   load?: () => Promise<{ default: ComponentType }>;
-  /** Dataset manifests (by id) this workspace depends on; the shell can gate/badge on them. */
-  requiredManifests: string[];
 }
 
 export const WORKSPACES: WorkspaceDef[] = [
@@ -19,14 +17,12 @@ export const WORKSPACES: WorkspaceDef[] = [
     id: "atlas",
     label: "Atlas",
     description: "The reference map and lookup tool for the AP-TRANSCO transmission network.",
-    requiredManifests: [],
   },
   {
     id: "mis",
     label: "Network MIS",
     description: "Asset inventory, line age, N-1 exposure and 33 kV downstream load — drill down by circle, zone, division, voltage and more.",
     load: () => import("./mis/MisWorkspace.tsx"),
-    requiredManifests: [],
   },
 ];
 

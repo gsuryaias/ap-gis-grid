@@ -126,7 +126,7 @@ export const DISCOM11_DEF: OverlayDef = {
   geometry: "line",
   file: "discom-11kv-lines.geojson",
   count: 0,
-  bytes: 3_100_000,
+  bytes: 20_100_000, // raw size, like the ref catalog (≈3.1 MB gz on the wire); whole file is parsed — tiling is Atlas 2.0 phase 4
   labelField: "name",
   fields: [],
   source: "AP-TRANSCO enterprise GIS — DISCOM 11 kV layers (live)",

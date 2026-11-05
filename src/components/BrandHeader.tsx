@@ -83,7 +83,7 @@ export function BrandHeader({
             </svg>
           </span>
           <div className="min-w-0">
-            <h1 className="truncate text-sm font-bold leading-none text-ink">AP-TRANSCO Grid DSS</h1>
+            <h1 className="truncate text-sm font-bold leading-none text-ink">AP-TRANSCO Grid Atlas</h1>
             <p className="mt-0.5 truncate text-[10px] text-ink-2">
               {formatInt(data.meta.counts.substations)} SS · {formatInt(data.meta.counts.lines)} lines · {formatInt(km)} km
             </p>
