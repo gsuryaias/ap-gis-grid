@@ -77,6 +77,35 @@ test("generation overlay lazy-loads and survives a basemap switch", async ({ pag
   await expect.poll(() => hasLayer(page, "grid-generation")).toBe(true);
 });
 
+test("overlay choices saved by the old store (legacy localStorage shape) are restored", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("seeded")) {
+      localStorage.setItem("apgg-overlays-v1", JSON.stringify({ enabled: ["discom-ss"], discoms: ["APEPDCL"] }));
+      sessionStorage.setItem("seeded", "1");
+    }
+  });
+  await openApp(page);
+  await expect.poll(() => hasLayer(page, "ov-discom-ss-circle")).toBe(true);
+  // Still stored in the legacy raw shape (older cached builds can read it).
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("apgg-overlays-v1") ?? "null"));
+  expect(stored).toEqual({ enabled: ["discom-ss"], discoms: ["APEPDCL"] });
+});
+
+test("data table and map share one filter model", async ({ page }) => {
+  await openApp(page, "#v=1&tbl=1");
+  const ssTab = page.getByRole("button", { name: /^Substations · / });
+  const before = Number((await ssTab.innerText()).replace(/\D/g, ""));
+  const sheet = page.getByRole("separator", { name: "Resize table" }).locator("..");
+  await sheet.getByRole("button", { name: "400", exact: true }).click();
+  // The table chip drives the shared filter: the URL (= map filter) drops 400 kV …
+  await expect(page).toHaveURL(/volt=220(,|%2C)132/);
+  // … and the table lists fewer substations.
+  await expect.poll(async () => Number((await ssTab.innerText()).replace(/\D/g, ""))).toBeLessThan(before);
+  await sheet.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page).not.toHaveURL(/volt=/);
+  await expect.poll(async () => Number((await ssTab.innerText()).replace(/\D/g, ""))).toBe(before);
+});
+
 test("v1 deep link opens the Network MIS", async ({ page }) => {
   await page.goto("./?e2e#v=1&w=mis");
   const misTab = page.getByRole("navigation", { name: "Workspace" }).getByRole("button", { name: /MIS/ });

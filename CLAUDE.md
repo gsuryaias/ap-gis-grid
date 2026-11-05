@@ -76,7 +76,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 |-------|------|-------|
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
-| State | `src/state/store.ts` (Zustand) + `src/url/` | versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
+| State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices"; versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
 | Map | `src/map/` | `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `mis-layers.ts` (MIS thematic layer), `map-helpers.ts` (shared map utils) |
 | Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, `NetworkTracePanel`, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
 | Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
@@ -177,11 +177,30 @@ Every lazy asset goes through **one loader**: `defineResource<T>(name, {load(par
 (`null` = disabled) → `{status, data, error}`. It de-dupes in-flight loads per key, retries transient
 failures (network / 5xx / 429) twice with backoff, aborts a load once every signalled (hook) caller has
 gone (un-signalled `ensure()` pins it), never makes errors sticky, and re-polls `refreshMs` resources while
-subscribed and the tab is visible (keeping stale data on failure). Current resources: `connectivity`
-(`transco-33kv.json`), `liveStatus` (15-min poll), `spotWeather` (per cell), `refCatalog` + `overlayLayer`
-(per overlay id — the map layer and the DISCOM GeoJSON download share one fetch), `placesTier` /
-`networkTier` (search worker). **Add new lazy data as a resource** — don't hand-roll a module promise.
-The core grid, generation, power-grid and weather loads move over in phase 1 PR 2 (store slices).
+subscribed by an **active** consumer and the tab is visible (keeping stale data on failure).
+`useResourceSnapshot(res, param)` observes **passively** — no load, and it does NOT keep the refresh timer
+alive (use it for opportunistic reads, e.g. DLR in DetailPanel). Current resources: `gridRes` (core grid;
+the store mirrors it as `data`), `generationRes`, `powerGridRes` (`data/load.ts`), `weatherRes` (10-min
+poll, awaits `gridRes` for circle points), `connectivity` (`transco-33kv.json`), `liveStatus` (15-min poll),
+`spotWeather` (per cell), `refCatalog` + `overlayLayer` (`overlays/resources.ts`, per overlay id — the map
+layer and the DISCOM GeoJSON download share one fetch), `placesTier` / `networkTier` (search worker).
+**Add new lazy data as a resource** — don't hand-roll a module promise, and don't copy loaded data or its
+status into the store. **Whoever draws/uses lazy data loads it** (`useResource(res, on ? "" : null)`);
+store toggles and `applyHash` only flip visibility flags.
+
+## Store slices (`src/state/`, Atlas 2.0 phase 1)
+
+One zustand store composed from slices: `slices/{core,selection,view,filters,ui,ctx,layers,url}.ts`, shapes
+in `state/types.ts`. `useAppStore` is the flat legacy facade (= the store); `useOverlayStore`
+(`overlays/store.ts`) is a facade over the nested **`layers`** slice (ex-overlay store: defs, enabled, status,
+DISCOM sub-filter, focus, netFocus, fitSignal — its `subscribe` fires only on `layers` changes). Named hooks
+with `useShallow` in `state/hooks.ts` (`useGrid`, `useFilters`, `useSelection`, `useView`) — prefer them in
+new/migrated code; call sites move over file by file. **One filter model**: `filters` (voltage, circuit,
+circle, coast + layer visibility) is read by the map AND the data table (`passesSlice`/`sliceActive` in
+`data/selectors.ts`; the table's chips drive the map; only its text search is local). **Persistence**:
+`persist` stores only the overlay choices under the legacy key `apgg-overlays-v1`, in the legacy raw shape
+`{enabled, discoms}` (old cached builds still read it); `layersStorage` never throws and skips no-op writes
+(persist calls setItem on every update); `parseStoredLayers` sanitises (tested in `state/store.test.ts`).
 
 ## TRANSCO → 33 kV connectivity (`scripts/etl-connectivity.ts`, inferred)
 
@@ -244,8 +263,9 @@ rewrite `catalog.json`).
 ## Overlay catalog module (`src/overlays/`)
 
 DISCOM + RTGS overlays live in a **self-contained module** rather than the per-overlay store/selection plumbing:
-`catalog.ts` (defs + cartography `REF_STYLE`), `store.ts` (own zustand store: enabled/status/data, DISCOM
-sub-filter, per-device persistence in localStorage `apgg-overlays-v1` — NOT in the URL hash), `map.ts`
+`catalog.ts` (defs + cartography `REF_STYLE`), `resources.ts` (`overlayLayer` / `refCatalog`), `store.ts`
+(facade over the app store's `layers` slice: enabled/status, DISCOM sub-filter, per-device persistence in
+localStorage `apgg-overlays-v1` — NOT in the URL hash), `map.ts`
 (`attachOverlays(map)` — called once in `MapPane`'s `load`; re-mounts after style reloads; keeps every overlay
 **beneath `grid-lines-casing`**; tap → MapLibre popup, core grid features always win the tap; outline-only
 boundaries are not tappable). **Every map mutation in `sync()` is conditional** — setLayoutProperty/moveLayer/
@@ -270,12 +290,13 @@ none of its code path runs until the user enables it.
   `Solar | Wind | Thermal | Gas | Hydro | Other`; source spells hydro "Hydal", `<Null>` → `Other`).
   IDs are synthetic `g-<slug(name)>`. Validation gate: **57 plants**. Counts (current data):
   Solar 21, Thermal 11, Wind 10, Gas 9, Hydro 5, Other 1.
-- **Lazy contract**: `loadGridData()` does NOT fetch `generation.geojson`. The store action
-  `toggleGeneration()` fetches it via `loadGeneration()` on first enable, caches it
-  (`genStatus: idle→loading→ready`), and `applyHash` re-triggers it for a `gen=1` deep link. The map
+- **Lazy contract**: the initial grid load does NOT fetch `generation.geojson`. It is the
+  `generationRes` resource: `MapPane` (and the layer panel) `useResource` it while `filters.showGeneration`
+  is on — so a manual toggle and a `gen=1` deep link behave the same; the MIS Interfaces tab loads it
+  without switching the layer on. The map
   source/layers are added by `addGenerationLayers()` only once data arrives (re-added after a basemap
   style reload, same as the grid layers). Plants are NOT in the initial search index or the data table.
-- **Not in `data.byId`**: plants live in a separate `generation.byId` (store). `DetailPanel` and
+- **Not in `data.byId`**: plants live in a separate `generation.byId` (`generationRes`). `DetailPanel` and
   `MapPane` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
   `energy` drives `ENERGY_COLOR` / the legend. The KML had no capacity; the **live layer carries
   `capacityMw` (`total_capacity`) + `units`** for the plants the source has filled in (null otherwise). **No grid
@@ -299,9 +320,8 @@ user enables it. It bundles **three classes** behind one master toggle, each wit
   (these layers are already curated), and emits the four geojson. Pure helpers (`cleanPgName`,
   `normalizeKv`, `parseMva`) live in `etl-lib.ts`. Voltage is a **`number`** (765 supported); a few
   source rows have unparseable voltage → `0` (UI shows "—"). Validation gate: build fails on 0 features.
-- **Lazy contract**: `loadGridData()` does NOT fetch these. `togglePowerGrid()` fetches all four files
-  via `loadPowerGrid()` (one `Promise.all`) on first enable, caches them (`pgStatus`), and `applyHash`
-  re-triggers for a `pg=1` deep link. Per-class visibility is `filters.pgClasses` (NOT in the URL hash —
+- **Lazy contract**: the initial grid load does NOT fetch these. `powerGridRes` loads all four files
+  (one `Promise.all`) while `filters.showPowerGrid` is on (toggle or `pg=1` deep link alike). Per-class visibility is `filters.pgClasses` (NOT in the URL hash —
   only the single `pg=1` key, like generation's `genTypes`). Layers added by `addPowerGridLayers()`,
   re-added on `styledata`.
 - **Not in `data.byId`**: all classes live in a shared `powergrid.byId` (store) with kinds
@@ -330,14 +350,13 @@ unit-tested; fetch clients in `src/data/weather.ts` (`loadWeather()` = one `Prom
 **per-source degradation**: failures land in `sourceErrors`, only all-four-down rejects); map layers
 in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
 
-- **Lazy contract**: same as generation/powergrid — nothing fetches until the ControlPanel "Live
-  weather" toggle OR the BrandHeader "Weather" dashboard opens (`toggleWeather` /
-  `toggleWeatherView` → `refreshWeather`; `wxStatus` mirrors `genStatus`). Hash key **`wx=1`**
-  (master only; `wxLayers` radar/cyclone sub-toggles are NOT in the hash, like `genTypes`). A wx=1
-  deep link arrives before grid data, so `init()` re-triggers the fetch once circle points exist.
-- **Auto-refresh**: one module-level 10-min `setInterval`, alive only while the overlay or dashboard
-  is in use (`syncWeatherTimer`); refreshes keep stale data on screen and only error when empty.
-  `weather`/`wxStatus` are otherwise transient — never persisted.
+- **Lazy contract**: same as generation/powergrid — `weatherRes` loads only while the overlay is on
+  (`MapPane` / layer panel) or the Weather monitor is open (`WeatherView`). Hash key **`wx=1`**
+  (master only; `wxLayers` radar/cyclone sub-toggles are NOT in the hash, like `genTypes`). The load awaits
+  `gridRes` for circle points, so a wx=1 deep link needs no special casing.
+- **Auto-refresh**: `weatherRes.refreshMs` = 10 min, alive only while an active consumer is mounted
+  (passive readers like DetailPanel's DLR don't count) and the tab is visible; refreshes keep stale data
+  on screen. Never persisted.
 - **Map layers** (`addWeatherLayers`, idempotent, re-run on `styledata`): radar raster + cyclone
   fills inserted **beneath `grid-lines-casing`** so the grid stays legible; track/positions/cone
   outline on top. Radar frame swap uses `RasterTileSource.setTiles` (URL memoised per map in a
@@ -492,8 +511,8 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
   `dss-map-pane-w`, clamped to `[320, innerWidth−380]`), and a `ResizeObserver` in `MapPane` redraws the
   canvas on any container size change. `WORKSPACE_LAYER_PRESETS[ws]` (in `map/layer-presets.ts`) declares
   which overlay groups the embedded map may mount (no auto-toggling — visibility stays user-controlled
-  via `MapLayerPanel`). An analysis workspace that needs overlay DATA without showing the layer calls the
-  store's `ensureGeneration()` / `ensurePowerGrid()`.
+  via `MapLayerPanel`). An analysis workspace that needs overlay DATA without showing the layer calls
+  `useResource(generationRes)` / `useResource(powerGridRes)`.
 - **`workspaceContext`** (store) carries cross-workspace focus. Hash-synced (only while `w=mis`): `misBy`
   (`by=`, default circle), `misFilters` (`mf=`, the drill path `dim:value~dim:value`), `misTab` (`tab=`),
   `misTheme` (`theme=`). Transient, never hashed: `misMap` (thematic classes + scope ids for the map) and

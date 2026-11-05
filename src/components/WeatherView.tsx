@@ -4,7 +4,8 @@
 import { useMemo } from "react";
 import { graphAnalysis } from "../data/graph-data.ts";
 import type { GridData } from "../data/types.ts";
-import type { CircleWeather, CycloneEvent, WeatherData } from "../data/weather.ts";
+import { weatherRes, type CircleWeather, type CycloneEvent, type WeatherData } from "../data/weather.ts";
+import { useResource } from "../data/resources.ts";
 import { downloadText, toCsv } from "../lib/export.ts";
 import { compass8 } from "../lib/geo.ts";
 import { riskTier, substationRisk, type RiskTier } from "../lib/risk.ts";
@@ -315,10 +316,9 @@ function Body({ weather, data }: { weather: WeatherData; data: GridData }) {
 export function WeatherView({ data }: { data: GridData }) {
   const open = useAppStore((s) => s.weatherOpen);
   const toggle = useAppStore((s) => s.toggleWeatherView);
-  const weather = useAppStore((s) => s.weather);
-  const wxStatus = useAppStore((s) => s.wxStatus);
-  const wxError = useAppStore((s) => s.wxError);
-  const refresh = useAppStore((s) => s.refreshWeather);
+  // Loads (and re-polls every 10 min) only while the monitor is open.
+  const { data: weather, status: wxStatus, error: wxError } = useResource(weatherRes, open ? "" : null);
+  const refresh = () => void weatherRes.refresh().catch(() => undefined);
   if (!open) return null;
 
   return (

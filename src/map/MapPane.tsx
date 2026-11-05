@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MlMap, type LngLatBoundsLike } from "maplibre-gl";
 import type { GridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
+import { generationRes, powerGridRes } from "../data/load.ts";
+import { useResource, useResourceSnapshot } from "../data/resources.ts";
+import { weatherRes } from "../data/weather.ts";
 import { graphAnalysis, spotlightFor, type SpotlightSets } from "../data/graph-data.ts";
 import { assetsInCone } from "../lib/weather.ts";
 import { BASEMAPS } from "./basemaps.ts";
@@ -96,9 +99,14 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
   const selectedId = useAppStore((s) => s.selectedId);
   const hoverId = useAppStore((s) => s.hoverId);
   const flySignal = useAppStore((s) => s.flySignal);
-  const generation = useAppStore((s) => s.generation);
-  const powergrid = useAppStore((s) => s.powergrid);
-  const weather = useAppStore((s) => s.weather);
+  // Lazy overlays load while they're switched on (the weather one also re-polls while on);
+  // the map then observes whatever has loaded.
+  useResource(generationRes, filters.showGeneration ? "" : null);
+  useResource(powerGridRes, filters.showPowerGrid ? "" : null);
+  useResource(weatherRes, filters.showWeather ? "" : null);
+  const generation = useResourceSnapshot(generationRes).data;
+  const powergrid = useResourceSnapshot(powerGridRes).data;
+  const weather = useResourceSnapshot(weatherRes).data;
   const measureMode = useAppStore((s) => s.measureMode);
   const measureClearNonce = useAppStore((s) => s.measureClearNonce);
   const regionCircle = useAppStore((s) => s.filters.circle);
@@ -132,11 +140,12 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
     (map: MlMap) => {
       if (!layers.generation) return;
       const st = useAppStore.getState();
-      if (!st.generation) return;
-      addGenerationLayers(map, st.generation.fc, st.basemap);
+      const gen = generationRes.peek();
+      if (!gen) return;
+      addGenerationLayers(map, gen.fc, st.basemap);
       applyFilters(map, st.filters);
-      setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
-      setFeatState(map, data, st.generation, st.powergrid, st.hoverId, "hover", true);
+      setFeatState(map, data, generationRes.peek(), powerGridRes.peek(), st.selectedId, "selected", true);
+      setFeatState(map, data, generationRes.peek(), powerGridRes.peek(), st.hoverId, "hover", true);
       if (!interactive || genBound.current) return;
       const select = st.select;
       const setHover = st.setHover;
@@ -167,12 +176,12 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
     (map: MlMap) => {
       if (!layers.powergrid) return;
       const st = useAppStore.getState();
-      if (!st.powergrid) return;
-      const pgd = st.powergrid;
+      const pgd = powerGridRes.peek();
+      if (!pgd) return;
       addPowerGridLayers(map, pgd.linesFc, pgd.substationsFc, pgd.railwayFc, pgd.bulkloadFc, st.basemap);
       applyFilters(map, st.filters);
-      setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
-      setFeatState(map, data, st.generation, st.powergrid, st.hoverId, "hover", true);
+      setFeatState(map, data, generationRes.peek(), powerGridRes.peek(), st.selectedId, "selected", true);
+      setFeatState(map, data, generationRes.peek(), powerGridRes.peek(), st.hoverId, "hover", true);
       if (!interactive || pgBound.current) return;
       const select = st.select;
       const setHover = st.setHover;
@@ -205,10 +214,11 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
     (map: MlMap) => {
       if (!layers.weather) return;
       const st = useAppStore.getState();
-      if (!st.weather) return;
-      const cones = st.weather.cyclones.flatMap((ev) => ev.conePolygons);
+      const wx = weatherRes.peek();
+      if (!wx) return;
+      const cones = wx.cyclones.flatMap((ev) => ev.conePolygons);
       const riskIds = cones.length ? assetsInCone(data.substations, cones).map((s) => s.id) : [];
-      addWeatherLayers(map, st.weather, riskIds);
+      addWeatherLayers(map, wx, riskIds);
       applyWeatherVisibility(map, st.filters);
     },
     [data, layers.weather],
@@ -307,7 +317,7 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
       }
 
       const st = useAppStore.getState();
-      setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
+      setFeatState(map, data, generationRes.peek(), powerGridRes.peek(), st.selectedId, "selected", true);
       prevSelected.current = st.selectedId;
       prevCircle.current = st.filters.circle;
       mountGeneration(map);
@@ -315,7 +325,7 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
       mountWeather(map);
       mountMis(map);
       applySpotlight(map, currentSpotlight());
-      if (st.flySignal) flyToFeature(map, data, st.generation, st.powergrid, st.flySignal.id);
+      if (st.flySignal) flyToFeature(map, data, generationRes.peek(), powerGridRes.peek(), st.flySignal.id);
       else if (st.filters.circle) fitToCircle(map, data, st.filters.circle);
     });
 
@@ -437,8 +447,8 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
       applyFilters(map, useAppStore.getState().filters);
       applySpotlight(map, currentSpotlight());
       const st = useAppStore.getState();
-      setFeatState(map, data, st.generation, st.powergrid, st.selectedId, "selected", true);
-      setFeatState(map, data, st.generation, st.powergrid, st.hoverId, "hover", true);
+      setFeatState(map, data, generationRes.peek(), powerGridRes.peek(), st.selectedId, "selected", true);
+      setFeatState(map, data, generationRes.peek(), powerGridRes.peek(), st.hoverId, "hover", true);
       if (choroplethSource && map.getLayer(LAYER.substations)) {
         map.setPaintProperty(LAYER.substations, "circle-color", choroplethColor(choroplethSource) as maplibregl.ExpressionSpecification);
       }

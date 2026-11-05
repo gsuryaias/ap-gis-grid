@@ -9,6 +9,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { CIRCUITS, VOLTAGES, type GridData, type LineProps, type SubstationProps, type Voltage } from "../data/types.ts";
+import { passesSlice, sliceActive } from "../data/selectors.ts";
+import { COASTAL_BAND_LABEL } from "../lib/risk.ts";
+import { useFilters } from "../state/hooks.ts";
 import { formatKm } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
 import { CIRCUIT_LABEL, VOLTAGE_COLOR } from "../theme/palette.ts";
@@ -166,10 +169,10 @@ export function DataTableSheet({ data }: { data: GridData }) {
   const selectedId = useAppStore((s) => s.selectedId);
   const selectedKind = selectedId ? data.byId.get(selectedId)?.kind : undefined;
   const [tab, setTab] = useState<Tab>("substation");
+  // Text search is local to the table; voltage / circuit / circle / coast are the SHARED filters,
+  // so the table always lists exactly what the map draws (and its chips drive the map too).
   const [filter, setFilter] = useState("");
-  const [volts, setVolts] = useState<Record<Voltage, boolean>>({ 400: true, 220: true, 132: true });
-  const [circle, setCircle] = useState("");
-  const [circuit, setCircuit] = useState("");
+  const { filters, toggleVoltage, toggleCircuit, setRegionCircle, resetFilters } = useFilters();
 
   // Resizable sheet height (drag the top edge), persisted across reloads.
   const [sheetH, setSheetH] = useState<number | null>(null);
@@ -185,19 +188,13 @@ export function DataTableSheet({ data }: { data: GridData }) {
   }, [selectedKind]);
 
   const q = filter.trim().toLowerCase();
-  const ssRows = data.substations.filter(
-    (s) => volts[s.voltage] && (!circle || s.circle === circle) && matchSubstation(s, q),
-  );
-  const lineRows = data.lines.filter(
-    (l) => volts[l.voltage] && (!circuit || l.circuit === circuit) && matchLine(l, q),
-  );
+  const ssRows = data.substations.filter((s) => passesSlice(s, filters) && matchSubstation(s, q));
+  const lineRows = data.lines.filter((l) => passesSlice(l, filters) && matchLine(l, q));
 
-  const filtersActive = !!q || !volts[400] || !volts[220] || !volts[132] || !!circle || !!circuit;
+  const filtersActive = !!q || sliceActive(filters);
   const clearFilters = () => {
     setFilter("");
-    setVolts({ 400: true, 220: true, 132: true });
-    setCircle("");
-    setCircuit("");
+    resetFilters();
   };
 
   const suffix = filtersActive ? "-filtered" : "";
@@ -312,41 +309,45 @@ export function DataTableSheet({ data }: { data: GridData }) {
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-medium uppercase tracking-wide text-ink-2">kV</span>
           {VOLTAGES.map((v) => (
-            <VoltChip key={v} v={v} on={volts[v]} onToggle={() => setVolts((s) => ({ ...s, [v]: !s[v] }))} />
+            <VoltChip key={v} v={v} on={!!filters.voltages[v]} onToggle={() => toggleVoltage(v)} />
           ))}
         </div>
-        {tab === "substation" ? (
-          <label className="flex items-center gap-1.5 text-[11px] text-ink-2">
-            Circle
-            <select
-              value={circle}
-              onChange={(e) => setCircle(e.target.value)}
-              className="rounded-md border border-line bg-surface px-1.5 py-1 text-xs text-ink focus:outline-none"
-            >
-              <option value="">All</option>
-              {data.meta.circles.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <label className="flex items-center gap-1.5 text-[11px] text-ink-2">
-            Circuit
-            <select
-              value={circuit}
-              onChange={(e) => setCircuit(e.target.value)}
-              className="rounded-md border border-line bg-surface px-1.5 py-1 text-xs text-ink focus:outline-none"
-            >
-              <option value="">All</option>
-              {CIRCUITS.map((c) => (
-                <option key={c} value={c}>
-                  {CIRCUIT_LABEL[c]}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label className="flex items-center gap-1.5 text-[11px] text-ink-2">
+          Circle
+          <select
+            value={filters.circle ?? ""}
+            onChange={(e) => setRegionCircle(e.target.value || null)}
+            className="rounded-md border border-line bg-surface px-1.5 py-1 text-xs text-ink focus:outline-none"
+          >
+            <option value="">All</option>
+            {data.meta.circles.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+        {tab === "line" && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-ink-2">Circuit</span>
+            {CIRCUITS.map((c) => (
+              <button
+                key={c}
+                onClick={() => toggleCircuit(c)}
+                aria-pressed={!!filters.circuits[c]}
+                className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+                  filters.circuits[c] ? "border-accent bg-accent/10 text-ink" : "border-line text-ink-2 line-through opacity-60 hover:text-ink"
+                }`}
+              >
+                {CIRCUIT_LABEL[c]}
+              </button>
+            ))}
+          </div>
+        )}
+        {filters.coastalBand != null && (
+          <span className="text-[11px] text-ink-2" title="Coastal-band filter (set in the layer panel)">
+            Coast: up to the {COASTAL_BAND_LABEL[filters.coastalBand]} band
+          </span>
         )}
         {filtersActive && (
           <button

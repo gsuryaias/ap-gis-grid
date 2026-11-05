@@ -1,7 +1,7 @@
 import maplibregl, { type ExpressionSpecification, type Map as MlMap, type MapGeoJSONFeature } from "maplibre-gl";
 import { useAppStore } from "../state/store.ts";
 import { DISCOM_COLOR, DISCOM_NAME, DISCOMS, fieldLabel, type DiscomId, type OverlayDef } from "./catalog.ts";
-import { useOverlayStore } from "./store.ts";
+import { overlayLayer, useOverlayStore } from "./store.ts";
 import { towerPopupHtml } from "./towers.ts";
 
 /** Overlays always sit BENEATH the transmission grid so the core network stays legible. */
@@ -156,7 +156,7 @@ function sync(map: MlMap): void {
   let order: string[] | null = null;
   for (const def of Object.values(s.defs)) {
     const on = !!s.enabled[def.id];
-    const fc = s.data[def.id];
+    const fc = overlayLayer.peek(def.id);
     let added = false;
     if (on && fc && !map.getSource(srcId(def.id))) {
       map.addSource(srcId(def.id), { type: "geojson", data: fc, tolerance: 0.5 });

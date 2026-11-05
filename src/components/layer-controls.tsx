@@ -2,6 +2,9 @@ import { useMemo } from "react";
 import { ENERGY_TYPES, VOLTAGES, type EnergyType, type GridData, type Voltage } from "../data/types.ts";
 import type { PgClass } from "../data/selectors.ts";
 import { useAppStore, type Basemap } from "../state/store.ts";
+import { generationRes, powerGridRes } from "../data/load.ts";
+import { useResource } from "../data/resources.ts";
+import { weatherRes } from "../data/weather.ts";
 import {
   BULKLOAD_COLOR,
   ENERGY_COLOR,
@@ -186,9 +189,7 @@ export function ShowSection() {
 
 export function GenerationSection() {
   const filters = useAppStore((s) => s.filters);
-  const genStatus = useAppStore((s) => s.genStatus);
-  const genError = useAppStore((s) => s.genError);
-  const generation = useAppStore((s) => s.generation);
+  const { status: genStatus, error: genError, data: generation } = useResource(generationRes, filters.showGeneration ? "" : null);
   const toggleGeneration = useAppStore((s) => s.toggleGeneration);
   const toggleGenType = useAppStore((s) => s.toggleGenType);
 
@@ -237,9 +238,7 @@ export function GenerationSection() {
 
 export function PowerGridSection() {
   const filters = useAppStore((s) => s.filters);
-  const pgStatus = useAppStore((s) => s.pgStatus);
-  const pgError = useAppStore((s) => s.pgError);
-  const powergrid = useAppStore((s) => s.powergrid);
+  const { status: pgStatus, error: pgError, data: powergrid } = useResource(powerGridRes, filters.showPowerGrid ? "" : null);
   const togglePowerGrid = useAppStore((s) => s.togglePowerGrid);
   const togglePgClass = useAppStore((s) => s.togglePgClass);
 
@@ -298,9 +297,7 @@ export function PowerGridSection() {
 
 export function WeatherSection() {
   const filters = useAppStore((s) => s.filters);
-  const wxStatus = useAppStore((s) => s.wxStatus);
-  const wxError = useAppStore((s) => s.wxError);
-  const weather = useAppStore((s) => s.weather);
+  const { status: wxStatus, error: wxError, data: weather } = useResource(weatherRes, filters.showWeather ? "" : null);
   const toggleWeather = useAppStore((s) => s.toggleWeather);
   const toggleWxLayer = useAppStore((s) => s.toggleWxLayer);
 

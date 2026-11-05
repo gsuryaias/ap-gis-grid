@@ -1,7 +1,7 @@
 // Network MIS thematic deep-dives: asset age, N-1 exposure, 33 kV downstream, conductors &
 // capacity, and interfaces (generation / railway / bulk-load / PGCIL). Every list row is a drill
 // (adds a scope filter) or a pick (opens the asset dossier + flies the map).
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { PagerBar, usePager } from "../../components/Pager.tsx";
 import { VoltageBadge } from "../../components/VoltageBadge.tsx";
 import { useLiveStatus } from "../../data/live-status.ts";
@@ -16,6 +16,8 @@ import {
 } from "../../lib/supply-security.ts";
 import { DISCOM_COLOR, type DiscomId } from "../../overlays/catalog.ts";
 import { useAppStore } from "../../state/store.ts";
+import { generationRes, powerGridRes } from "../../data/load.ts";
+import { useResource } from "../../data/resources.ts";
 import { BULKLOAD_COLOR, ENERGY_COLOR, ENERGY_LABEL, POWERGRID_COLOR, RAILWAY_COLOR } from "../../theme/palette.ts";
 import { BarList, StackedColumns, type StackedColumn } from "./charts.tsx";
 import {
@@ -934,14 +936,9 @@ function InterfaceSecurityCard({ model, scope, onFocus, focusKey }: TabProps) {
 
 export function InterfacesTab(props: TabProps) {
   const { scope, filters } = props;
-  const generation = useAppStore((s) => s.generation);
-  const genStatus = useAppStore((s) => s.genStatus);
-  const powergrid = useAppStore((s) => s.powergrid);
-  const pgStatus = useAppStore((s) => s.pgStatus);
-  useEffect(() => {
-    useAppStore.getState().ensureGeneration();
-    useAppStore.getState().ensurePowerGrid();
-  }, []);
+  // Overlay DATA for analysis, without switching the map layers on.
+  const { data: generation, status: genStatus } = useResource(generationRes);
+  const { data: powergrid, status: pgStatus } = useResource(powerGridRes);
 
   // Overlay assets carry circle (+ interconnection voltage for plants) — scope them by those only.
   const circleF = filters.find((f) => f.dim === "circle")?.values ?? null;

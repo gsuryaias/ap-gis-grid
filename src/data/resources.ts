@@ -15,7 +15,7 @@
 // - refreshMs: while anything is subscribed, the resource re-loads on that cadence (only while the
 //   tab is visible); a refresh keeps the old data on screen and keeps it on failure.
 // The loaded data lives here, outside React/Zustand — stores hold only what they derive from it.
-import { useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { isAbort, isTransient } from "./fetch.ts";
 
 export { dataUrl, fetchJson, HttpError, isTransient } from "./fetch.ts";
@@ -41,7 +41,8 @@ export interface Resource<T> {
   ensure(param?: string, opts?: { signal?: AbortSignal }): Promise<T>;
   peek(param?: string): T | undefined;
   snapshot(param?: string): ResSnapshot<T>;
-  subscribe(param: string, fn: () => void): () => void;
+  /** `passive` listeners observe only: they don't keep the `refreshMs` timer alive. */
+  subscribe(param: string, fn: () => void, opts?: { passive?: boolean }): () => void;
   /** Re-load now, keeping current data visible (used by refresh timers and "Refresh" buttons). */
   refresh(param?: string): Promise<T | undefined>;
 }
@@ -73,6 +74,8 @@ interface Entry<T> {
   /** An un-signalled caller is waiting — the load must not be aborted. */
   pinned: boolean;
   listeners: Set<() => void>;
+  /** Listeners that keep the refresh timer alive (non-passive). */
+  active: number;
   timer: ReturnType<typeof setInterval> | null;
 }
 
@@ -86,7 +89,7 @@ export function defineResource<T>(name: string, opts: ResourceOptions<T>): Resou
   const entry = (param: string): Entry<T> => {
     let e = entries.get(param);
     if (!e) {
-      e = { snap: { status: "idle", data: undefined, error: null }, promise: null, controller: null, refs: 0, pinned: false, listeners: new Set(), timer: null };
+      e = { snap: { status: "idle", data: undefined, error: null }, promise: null, controller: null, refs: 0, pinned: false, listeners: new Set(), active: 0, timer: null };
       entries.set(param, e);
     }
     return e;
@@ -176,17 +179,22 @@ export function defineResource<T>(name: string, opts: ResourceOptions<T>): Resou
     },
     peek: (param = "") => entries.get(param)?.snap.data,
     snapshot: (param = "") => entry(param).snap,
-    subscribe(param, fn) {
+    subscribe(param, fn, o) {
       const e = entry(param);
-      e.listeners.add(fn);
-      if (opts.refreshMs && !e.timer && typeof window !== "undefined") {
+      // Wrap so the same fn can be subscribed twice (passive + active) without clobbering.
+      const l = () => fn();
+      e.listeners.add(l);
+      const active = !o?.passive;
+      if (active) e.active++;
+      if (active && opts.refreshMs && !e.timer && typeof window !== "undefined") {
         e.timer = setInterval(() => {
           if (typeof document === "undefined" || document.visibilityState === "visible") void res.refresh(param).catch(() => undefined);
         }, opts.refreshMs);
       }
       return () => {
-        e.listeners.delete(fn);
-        if (!e.listeners.size && e.timer) {
+        e.listeners.delete(l);
+        if (active) e.active--;
+        if (!e.active && e.timer) {
           clearInterval(e.timer);
           e.timer = null;
         }
@@ -212,10 +220,9 @@ const noop = () => () => undefined;
  * (no fetch, idle snapshot). Unmounting before the load finishes aborts it if nobody else waits.
  */
 export function useResource<T>(res: Resource<T>, param: string | null = ""): ResSnapshot<T> {
-  const snap = useSyncExternalStore(
-    param === null ? noop : (fn) => res.subscribe(param, fn),
-    () => (param === null ? (IDLE as ResSnapshot<T>) : res.snapshot(param)),
-  );
+  // Stable subscribe: an inline arrow would re-subscribe on every render (and restart the refresh timer).
+  const subscribe = useCallback((fn: () => void) => (param === null ? noop() : res.subscribe(param, fn)), [res, param]);
+  const snap = useSyncExternalStore(subscribe, () => (param === null ? (IDLE as ResSnapshot<T>) : res.snapshot(param)));
   useEffect(() => {
     if (param === null) return;
     const ac = new AbortController();
@@ -223,4 +230,16 @@ export function useResource<T>(res: Resource<T>, param: string | null = ""): Res
     return () => ac.abort();
   }, [res, param]);
   return snap;
+}
+
+/**
+ * Observe a resource without loading it (and without keeping its refresh timer alive): for
+ * consumers that use the data opportunistically once something else has loaded it.
+ */
+export function useResourceSnapshot<T>(res: Resource<T>, param: string | null = ""): ResSnapshot<T> {
+  const subscribe = useCallback(
+    (fn: () => void) => (param === null ? noop() : res.subscribe(param, fn, { passive: true })),
+    [res, param],
+  );
+  return useSyncExternalStore(subscribe, () => (param === null ? (IDLE as ResSnapshot<T>) : res.snapshot(param)));
 }
