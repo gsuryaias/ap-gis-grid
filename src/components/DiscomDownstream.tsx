@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Feature, FeatureCollection } from "geojson";
-import {
-  CONNECTIVITY_CSV_URL,
-  LINK_METHOD_LABEL,
-  loadConnectivity,
-  loadDiscomGeometry,
-  type ConnectivityIndex,
-  type FeederTuple,
-} from "../data/connectivity.ts";
+import { connectivity, CONNECTIVITY_CSV_URL, LINK_METHOD_LABEL, type FeederTuple } from "../data/connectivity.ts";
+import { useResource } from "../data/resources.ts";
 import type { SubstationProps } from "../data/types.ts";
 import { downloadText, toCsv } from "../lib/export.ts";
 import { DISCOM_COLOR, type DiscomId } from "../overlays/catalog.ts";
-import { useOverlayStore } from "../overlays/store.ts";
+import { overlayLayer, useOverlayStore } from "../overlays/store.ts";
 
 const SHOW = 10;
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -21,8 +15,9 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
  * originate there and the 33/11 kV substations they serve — highlighted on the map, downloadable.
  */
 export function DiscomDownstream({ ss }: { ss: SubstationProps }) {
-  const [idx, setIdx] = useState<ConnectivityIndex | null>(null);
-  const [error, setError] = useState(false);
+  const conn = useResource(connectivity);
+  const idx = conn.data ?? null;
+  const error = conn.status === "error";
   const [open, setOpen] = useState<string | null>(null);
   const [all, setAll] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -30,16 +25,6 @@ export function DiscomDownstream({ ss }: { ss: SubstationProps }) {
   const setFocus = useOverlayStore((s) => s.setFocus);
   const fitTo = useOverlayStore((s) => s.fitTo);
   const overlayOn = useOverlayStore((s) => !!s.enabled["discom-lines"]);
-
-  useEffect(() => {
-    let live = true;
-    loadConnectivity()
-      .then((i) => live && setIdx(i))
-      .catch(() => live && setError(true));
-    return () => {
-      live = false;
-    };
-  }, []);
 
   const feeders: FeederTuple[] = useMemo(() => idx?.bySs[ss.id] ?? [], [idx, ss.id]);
   const ssIds = useMemo(() => [...new Set(feeders.flatMap((f) => f[5]))], [feeders]);
@@ -98,7 +83,8 @@ export function DiscomDownstream({ ss }: { ss: SubstationProps }) {
   const downloadGeo = async () => {
     setBusy(true);
     try {
-      const g = await loadDiscomGeometry();
+      const [lines, ssFc] = await Promise.all([overlayLayer.ensure("discom-lines"), overlayLayer.ensure("discom-ss")]);
+      const g = { lines, ss: ssFc };
       const lineIds = new Set(feeders.map((f) => f[0]));
       const sIds = new Set(ssIds);
       const pick = (fc: FeatureCollection, ids: Set<string>) => fc.features.filter((f) => ids.has(String(f.properties?.id)));

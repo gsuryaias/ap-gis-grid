@@ -1,4 +1,4 @@
-import type { FeatureCollection } from "geojson";
+import { dataUrl, defineResource, fetchJson } from "./resources.ts";
 
 /** [id, name, discom, km, method, servedSsIds] — see build-data.mts `transco-33kv.json`. */
 export type FeederTuple = [string, string | null, string, number, "name" | "proximity" | "feeder-group", string[]];
@@ -12,30 +12,12 @@ export interface ConnectivityIndex {
   ss: Record<string, DiscomSsTuple>;
 }
 
-const url = (f: string) => `${import.meta.env.BASE_URL}data/${f}`;
-export const CONNECTIVITY_CSV_URL = url("transco-33kv-connectivity.csv");
+export const CONNECTIVITY_CSV_URL = dataUrl("transco-33kv-connectivity.csv");
 
-let idx: Promise<ConnectivityIndex> | null = null;
-/** TRANSCO SS → 33 kV feeders → 33/11 kV SS index (fetched once, on first need). */
-export function loadConnectivity(): Promise<ConnectivityIndex> {
-  idx ??= fetch(url("transco-33kv.json")).then((r) => {
-    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-    return r.json() as Promise<ConnectivityIndex>;
-  });
-  idx.catch(() => (idx = null)); // allow a retry after a failure
-  return idx;
-}
-
-let geo: Promise<{ lines: FeatureCollection; ss: FeatureCollection }> | null = null;
-/** Full DISCOM geometry (only for GeoJSON downloads). */
-export function loadDiscomGeometry(): Promise<{ lines: FeatureCollection; ss: FeatureCollection }> {
-  geo ??= Promise.all([
-    fetch(url("discom-lines.geojson")).then((r) => r.json() as Promise<FeatureCollection>),
-    fetch(url("discom-ss.geojson")).then((r) => r.json() as Promise<FeatureCollection>),
-  ]).then(([lines, ss]) => ({ lines, ss }));
-  geo.catch(() => (geo = null));
-  return geo;
-}
+/** TRANSCO SS → 33 kV feeders → 33/11 kV SS index (~460 KB, fetched once, on first need). */
+export const connectivity = defineResource<ConnectivityIndex>("connectivity", {
+  load: (_p, signal) => fetchJson<ConnectivityIndex>(dataUrl("transco-33kv.json"), signal),
+});
 
 export const LINK_METHOD_LABEL: Record<string, string> = {
   name: "recorded source",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { dataUrl, defineResource, fetchJson, useResource } from "./resources.ts";
 
 /** public/data/live-status.json — emitted by build-data from the live-sync manifest + changelog. */
 export interface LiveLayerStatus {
@@ -83,48 +83,16 @@ export function timeAgo(iso: string | null, now = Date.now()): string {
   return d < 60 ? `${d} days ago` : new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// ---- module-level cache + background poll ------------------------------------------------------
-let cached: LiveStatus | null = null;
-let inflight: Promise<LiveStatus | null> | null = null;
-const listeners = new Set<() => void>();
-const POLL_MS = 15 * 60 * 1000;
-let timer: ReturnType<typeof setInterval> | null = null;
-
-async function fetchStatus(): Promise<LiveStatus | null> {
-  try {
-    const res = await fetch(`${import.meta.env.BASE_URL}data/live-status.json`, { cache: "no-cache" });
-    if (!res.ok) return cached;
-    const s = (await res.json()) as LiveStatus;
-    cached = s;
-    listeners.forEach((l) => l());
-    return s;
-  } catch {
-    return cached;
-  }
-}
-
-function ensure(): void {
-  if (!cached && !inflight) inflight = fetchStatus().finally(() => (inflight = null));
-  if (!timer && typeof window !== "undefined") {
-    timer = setInterval(() => {
-      if (document.visibilityState === "visible") void fetchStatus();
-    }, POLL_MS);
-  }
-}
+// ---- one resource, re-polled every 15 min while subscribed + visible -------------------------
+/** `no-cache` → revalidate with the server every time (the SW also serves it network-first). */
+export const liveStatus = defineResource<LiveStatus>("live-status", {
+  load: (_p, signal) => fetchJson<LiveStatus>(dataUrl("live-status.json"), signal, { cache: "no-cache" }),
+  refreshMs: 15 * 60 * 1000,
+});
 
 /** Live-sync status (fetched once, re-polled every 15 min while the tab is visible). */
 export function useLiveStatus(): LiveStatus | null {
-  const [s, set] = useState<LiveStatus | null>(cached);
-  useEffect(() => {
-    const l = () => set(cached);
-    listeners.add(l);
-    ensure();
-    l();
-    return () => {
-      listeners.delete(l);
-    };
-  }, []);
-  return s;
+  return useResource(liveStatus).data ?? null;
 }
 
 /**

@@ -21,6 +21,50 @@ test("search → select a substation → detail + deep link", async ({ page }) =
   await expect(page).toHaveURL(/sel=/);
 });
 
+test("places + transformer search answer from the search worker, each file fetched once", async ({ page }) => {
+  const data: string[] = [];
+  page.on("request", (r) => {
+    const m = /\/data\/([^?]+)/.exec(r.url());
+    if (m) data.push(m[1]);
+  });
+  await openApp(page);
+  const search = page.getByRole("textbox", { name: /Search substations/ });
+  await search.click();
+  await search.fill("Tirupati");
+  const list = page.getByRole("listbox");
+  await expect(list.getByText("Places")).toBeVisible();
+  await expect(list.getByRole("option").filter({ hasText: /city/ }).first()).toBeVisible();
+  expect(page.workers().length).toBeGreaterThan(0); // the tiers live in the worker
+
+  // A DTR code fetches only its shard; picking it opens the trace card.
+  await search.fill("034400109033");
+  const dtr = list.getByRole("option").filter({ hasText: "034400109033" });
+  await expect(dtr).toBeVisible();
+  await dtr.getByRole("button").click();
+  await expect(page.getByRole("heading", { name: "034400109033" })).toBeVisible();
+
+  const counts = data.reduce<Record<string, number>>((a, f) => ((a[f] = (a[f] ?? 0) + 1), a), {});
+  expect(counts["places.json"]).toBe(1);
+  expect(counts["search-network.json"]).toBe(1);
+  expect(Object.keys(counts).filter((f) => f.startsWith("net-dtr-"))).toEqual(["net-dtr-ep-0344.json"]);
+});
+
+test("33 kV overlay + downstream GeoJSON share one DISCOM download", async ({ page }) => {
+  const data: string[] = [];
+  page.on("request", (r) => {
+    const m = /\/data\/([^?]+)/.exec(r.url());
+    if (m) data.push(m[1]);
+  });
+  await openApp(page, "#v=1&sel=s-ss-132kv-chnd");
+  await page.getByRole("switch", { name: "Toggle 33 kV lines" }).click();
+  await expect.poll(() => data.filter((f) => f === "discom-lines.geojson").length).toBe(1);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "GeoJSON", exact: true }).first().click();
+  await download;
+  expect(data.filter((f) => f === "discom-lines.geojson")).toHaveLength(1);
+  expect(data.filter((f) => f === "discom-ss.geojson")).toHaveLength(1);
+});
+
 test("generation overlay lazy-loads and survives a basemap switch", async ({ page }) => {
   await openApp(page);
   await page.getByRole("switch", { name: "Toggle generation plants" }).click();

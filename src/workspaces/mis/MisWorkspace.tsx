@@ -11,7 +11,8 @@
 // reconcile to the figure, light up on the map, export to CSV and can become the page filter.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { graphAnalysis } from "../../data/graph-data.ts";
-import { loadConnectivity, type ConnectivityIndex } from "../../data/connectivity.ts";
+import { connectivity } from "../../data/connectivity.ts";
+import { useResource } from "../../data/resources.ts";
 import { timeAgo, useLiveStatus } from "../../data/live-status.ts";
 import { isMisTheme, MIS_THEME_LABEL, MIS_THEMES, themeLegend, type MisMapState, type MisTheme } from "../../map/mis-layers.ts";
 import { useAppStore } from "../../state/store.ts";
@@ -77,17 +78,9 @@ export default function MisWorkspace() {
   const basemap = useAppStore((s) => s.basemap);
   const live = useLiveStatus();
 
-  const [conn, setConn] = useState<ConnectivityIndex | null>(null);
-  const [connError, setConnError] = useState(false);
-  useEffect(() => {
-    let on = true;
-    loadConnectivity()
-      .then((c) => on && setConn(c))
-      .catch(() => on && setConnError(true));
-    return () => {
-      on = false;
-    };
-  }, []);
+  const connRes = useResource(connectivity);
+  const conn = connRes.data ?? null;
+  const connError = connRes.status === "error";
 
   const model = useMemo(
     () => buildModel(data, graphAnalysis(data), conn, new Date().getFullYear()),

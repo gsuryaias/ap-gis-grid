@@ -1,38 +1,17 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import {
-  dtrShardsFor,
-  loadDtrShard,
-  loadNetworkIndex,
-  looksLikeDtrCode,
-  NET_KIND_LABEL,
-  useNetworkIndex,
-  type NetItem,
-} from "../data/network-search.ts";
+import { NET_KIND_LABEL, type NetItem } from "../data/network-search.ts";
+import { useResource } from "../data/resources.ts";
+import { rank } from "../data/search-core.ts";
+import { networkTier, placesTier, searchTiers } from "../data/search-client.ts";
 import { useOverlayStore } from "../overlays/store.ts";
 import type { GridData, PlaceItem, SearchItem } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { SearchIcon, CloseIcon, SubstationIcon, LineIcon, PinIcon } from "./icons.tsx";
 import { VoltageDot } from "./VoltageBadge.tsx";
 
-function rank(item: { name: string }, q: string): number {
-  const name = item.name.toLowerCase();
-  if (name === q) return 0;
-  if (name.startsWith(q)) return 1;
-  const wordStart = name.split(/[\s-]+/).some((w) => w.startsWith(q));
-  if (wordStart) return 2;
-  if (name.includes(q)) return 3;
-  return 99;
-}
-
-/** Gazetteer hits shown below the grid assets (which stay first-class). */
-const PLACE_LIMIT = 8;
 /** Map-jump zoom per place type — districts are wide, villages/landmarks are tight. */
 const PLACE_ZOOM: Record<string, number> = { state: 7, district: 9, mandal: 11, city: 12 };
 const PLACE_ZOOM_DEFAULT = 13;
-
-/** Distribution-network hits (33/11 kV SS, 33 / 11 kV feeders, sections) and transformers. */
-const NET_LIMIT = 8;
-const DTR_LIMIT = 6;
 
 type Row =
   | { kind: "feature"; item: SearchItem }
@@ -51,70 +30,43 @@ export function SearchBar({ data }: { data: GridData }) {
   const [active, setActive] = useState(0);
   const deferred = useDeferredValue(query);
   const select = useAppStore((s) => s.select);
-  const places = useAppStore((s) => s.places);
-  const placesStatus = useAppStore((s) => s.placesStatus);
-  const ensurePlaces = useAppStore((s) => s.ensurePlaces);
   const setNearbyOrigin = useAppStore((s) => s.setNearbyOrigin);
   const inputRef = useRef<HTMLInputElement>(null);
-  const netIndex = useNetworkIndex();
+  // The big tiers (places, distribution network, DTR shards) live in the search worker; they're
+  // loaded on first focus and only the top hits come back per query.
+  const [warm, setWarm] = useState(false);
+  const placesStatus = useResource(placesTier, warm ? "" : null).status;
+  const netStatus = useResource(networkTier, warm ? "" : null).status;
   const focusNetwork = useOverlayStore((s) => s.focusNetwork);
 
-  const netMatches = useMemo(() => {
-    const q = deferred.trim().toLowerCase();
-    if (q.length < 2 || !netIndex) return [];
-    return netIndex.items
-      .map((it) => ({ it, r: rank({ name: it.label }, q) }))
-      .filter((x) => x.r < 99)
-      .sort((a, b) => a.r - b.r || a.it.label.localeCompare(b.it.label))
-      .slice(0, NET_LIMIT)
-      .map((x) => x.it);
-  }, [deferred, netIndex]);
-
-  // Transformers: only for code-like queries, and only the shard(s) that code can live in.
-  const [dtrMatches, setDtrMatches] = useState<NetItem[]>([]);
+  const [hits, setHits] = useState<{ q: string; places: PlaceItem[]; net: NetItem[]; dtr: NetItem[] }>({ q: "", places: [], net: [], dtr: [] });
   useEffect(() => {
     const q = deferred.trim();
-    if (!netIndex || !looksLikeDtrCode(q)) {
-      setDtrMatches([]);
-      return;
-    }
+    if (q.length < 2 || !warm) return;
     let live = true;
-    const lq = q.toLowerCase();
-    Promise.all(dtrShardsFor(q, netIndex.shards).map((k) => loadDtrShard(k, netIndex.chains).catch(() => [])))
-      .then((all) => {
-        if (!live) return;
-        const hits = all.flat().filter((d) => d.label.toLowerCase().startsWith(lq));
-        hits.sort((a, b) => a.label.length - b.label.length || a.label.localeCompare(b.label));
-        setDtrMatches(hits.slice(0, DTR_LIMIT));
-      });
+    searchTiers(q)
+      .then((h) => live && setHits({ q, ...h }))
+      .catch(() => undefined);
     return () => {
       live = false;
     };
-  }, [deferred, netIndex]);
+    // Re-query when a tier finishes loading so its hits appear without another keystroke.
+  }, [deferred, warm, placesStatus, netStatus]);
+  const fresh = hits.q === deferred.trim();
+  const placeMatches = fresh ? hits.places : [];
+  const netMatches = fresh ? hits.net : [];
+  const dtrMatches = fresh ? hits.dtr : [];
 
   const matches = useMemo(() => {
     const q = deferred.trim().toLowerCase();
     if (q.length < 2) return [];
     return data.searchIndex
-      .map((item) => ({ item, r: rank(item, q) }))
+      .map((item) => ({ item, r: rank(item.name, q) }))
       .filter((x) => x.r < 99)
       .sort((a, b) => a.r - b.r || b.item.voltage - a.item.voltage || a.item.name.localeCompare(b.item.name))
       .slice(0, 40)
       .map((x) => x.item);
   }, [deferred, data.searchIndex]);
-
-  // Gazetteer matches (lazy data — empty until places.json arrives). Ranked like the grid
-  // assets, with population as the tie-break so "Tirupati" the city beats its namesake villages.
-  const placeMatches = useMemo(() => {
-    const q = deferred.trim().toLowerCase();
-    if (q.length < 2 || !places) return [];
-    return places
-      .map((p) => ({ p, r: rank(p, q) }))
-      .filter((x) => x.r < 99)
-      .sort((a, b) => a.r - b.r || b.p.pop - a.p.pop || a.p.name.localeCompare(b.p.name))
-      .slice(0, PLACE_LIMIT)
-      .map((x) => x.p);
-  }, [deferred, places]);
 
   const rows = useMemo<Row[]>(
     () => [
@@ -185,8 +137,7 @@ export function SearchBar({ data }: { data: GridData }) {
             setActive(0);
           }}
           onFocus={() => {
-            ensurePlaces(); // first focus kicks off the lazy gazetteer fetch
-            void loadNetworkIndex().catch(() => undefined); // …and the distribution-network tier
+            setWarm(true); // first focus loads the gazetteer + distribution-network tiers (in the worker)
             setOpen(true);
           }}
           onBlur={() => setTimeout(() => setOpen(false), 150)}

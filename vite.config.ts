@@ -10,6 +10,8 @@ const base = process.env.BASE_PATH ?? "/ap-gis-grid/";
 export default defineConfig({
   base,
   plugins: [react(), tailwindcss()],
+  // Module workers (workers/search.worker.ts) — supported by every browser that runs MapLibre v5.
+  worker: { format: "es" },
   build: {
     target: "es2022",
     sourcemap: false,

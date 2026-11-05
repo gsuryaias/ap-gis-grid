@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { loadGeneration, loadGridData, loadPlaces, loadPowerGrid } from "../data/load.ts";
+import { loadGeneration, loadGridData, loadPowerGrid } from "../data/load.ts";
 import { PG_CLASSES, WX_LAYERS, type FilterState, type PgClass, type WxLayer } from "../data/selectors.ts";
 import { loadWeather, type WeatherData } from "../data/weather.ts";
 import { circlePoints } from "../lib/weather.ts";
@@ -13,7 +13,6 @@ import {
   type EnergyType,
   type GenerationData,
   type GridData,
-  type PlaceItem,
   type PowerGridData,
   type Voltage,
 } from "../data/types.ts";
@@ -115,10 +114,6 @@ interface AppState {
   wxError: string | null;
   weatherOpen: boolean;
 
-  // Place-search gazetteer (lazy-loaded on first use of the search box)
-  places: PlaceItem[] | null;
-  placesStatus: GenStatus;
-
   init: () => Promise<void>;
   setWorkspace: (w: WorkspaceId) => void;
   setMapLayout: (layout: MapLayout) => void;
@@ -155,7 +150,6 @@ interface AppState {
   toggleNearbyMode: (on?: boolean) => void;
   setNearbyOrigin: (o: NearbyOrigin | null) => void;
   clearNearby: () => void;
-  ensurePlaces: () => void;
   applyHash: (h: Partial<HashState>) => void;
   hashState: () => HashState;
 }
@@ -235,8 +229,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   nearbyMode: false,
   nearbyOrigin: null,
 
-  places: null,
-  placesStatus: "idle",
 
   init: async () => {
     try {
@@ -404,16 +396,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
   setNearbyOrigin: (nearbyOrigin) => set({ nearbyOrigin }),
   clearNearby: () => set({ nearbyMode: false, nearbyOrigin: null }),
-
-  // Lazy-fetch the search gazetteer on first focus of the search box; cache thereafter.
-  // A failed fetch resets to idle so the next focus retries (search degrades gracefully meanwhile).
-  ensurePlaces: () => {
-    if (get().placesStatus !== "idle") return;
-    set({ placesStatus: "loading" });
-    loadPlaces()
-      .then((places) => set({ places, placesStatus: "ready" }))
-      .catch(() => set({ placesStatus: "idle" }));
-  },
 
   applyHash: (h) =>
     set((s) => {
