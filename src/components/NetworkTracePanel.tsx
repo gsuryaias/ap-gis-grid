@@ -1,4 +1,5 @@
-import { useNetworkIndex, NET_KIND_LABEL } from "../data/network-search.ts";
+import { NET_KIND_LABEL } from "../data/network-search.ts";
+import { lookupNetRef } from "../data/search-client.ts";
 import { fieldLabel } from "../overlays/catalog.ts";
 import { useOverlayStore } from "../overlays/store.ts";
 import { useAppStore } from "../state/store.ts";
@@ -24,7 +25,6 @@ export function NetworkTracePanel() {
   const item = useOverlayStore((s) => s.netFocus);
   const focusNetwork = useOverlayStore((s) => s.focusNetwork);
   const data = useOverlayStore((s) => s.data);
-  const index = useNetworkIndex();
   const select = useAppStore((s) => s.select);
   if (!item) return null;
 
@@ -40,8 +40,10 @@ export function NetworkTracePanel() {
     }
 
   const go = (ref: string | null) => {
-    const it = ref ? index?.byRef.get(ref) : undefined;
-    if (it) focusNetwork(it);
+    if (!ref) return;
+    void lookupNetRef(ref)
+      .then((it) => it && focusNetwork(it))
+      .catch(() => undefined);
   };
   const c = item.chain;
   const levels: Array<{ label: string; name: string | null; onClick?: () => void; here?: boolean }> = [

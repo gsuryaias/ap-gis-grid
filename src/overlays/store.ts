@@ -3,6 +3,7 @@ import type { FeatureCollection } from "geojson";
 import { DISCOM11_DEF, DISCOM_DEFS, DISCOMS, refDef, TOWER_DEFS, type DiscomId, type OverlayDef, type RefCatalogEntry } from "./catalog.ts";
 import { decodeTowers, type WebTowersFile } from "./towers.ts";
 import type { NetItem } from "../data/network-search.ts";
+import { dataUrl, defineResource, fetchJson } from "../data/resources.ts";
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -31,7 +32,6 @@ function writePersisted(p: Persisted): void {
   }
 }
 
-const dataUrl = (file: string) => `${import.meta.env.BASE_URL}data/${file}`;
 
 export interface OverlayFocus {
   lines: string[];
@@ -82,12 +82,8 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
     const def = get().defs[id];
     if (!def || get().status[id] === "loading" || get().status[id] === "ready") return;
     set((s) => ({ status: { ...s.status, [id]: "loading" }, version: s.version + 1 }));
-    fetch(dataUrl(def.file))
-      .then((r) => {
-        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return r.json() as Promise<FeatureCollection | WebTowersFile>;
-      })
-      .then((json) => (def.format === "towers" ? decodeTowers(id, json as WebTowersFile) : (json as FeatureCollection)))
+    overlayLayer
+      .ensure(id)
       .then((fc) =>
         set((s) => ({
           data: { ...s.data, [id]: fc },
@@ -149,11 +145,8 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
     loadCatalog: () => {
       if (get().catalogStatus !== "idle") return;
       set({ catalogStatus: "loading" });
-      fetch(dataUrl("ref/catalog.json"))
-        .then((r) => {
-          if (!r.ok) throw new Error(String(r.status));
-          return r.json() as Promise<RefCatalogEntry[]>;
-        })
+      refCatalog
+        .ensure()
         .then((entries) => {
           set((s) => ({
             defs: { ...s.defs, ...Object.fromEntries(entries.map((e) => [e.id, refDef(e)])) },
@@ -191,4 +184,27 @@ export const useOverlayStore = create<OverlayState>((set, get) => {
       if (p.enabled.some((id) => !get().defs[id])) get().loadCatalog();
     },
   };
+});
+
+/** RTGS reference-layer catalogue (public/data/ref/catalog.json). */
+export const refCatalog = defineResource<RefCatalogEntry[]>("ref-catalog", {
+  load: (_p, signal) => fetchJson<RefCatalogEntry[]>(dataUrl("ref/catalog.json"), signal),
+});
+
+/**
+ * One overlay layer's features, by overlay id — the single fetch for both the map layer and any
+ * other consumer (e.g. the DISCOM GeoJSON download), so a file is never downloaded twice.
+ * Towers ship grouped by line and are decoded to GeoJSON here.
+ */
+export const overlayLayer = defineResource<FeatureCollection>("overlay", {
+  load: async (id, signal) => {
+    let def = useOverlayStore.getState().defs[id];
+    if (!def) {
+      await refCatalog.ensure();
+      def = useOverlayStore.getState().defs[id];
+      if (!def) throw new Error(`unknown overlay "${id}"`);
+    }
+    const json = await fetchJson<FeatureCollection | WebTowersFile>(dataUrl(def.file), signal);
+    return def.format === "towers" ? decodeTowers(id, json as WebTowersFile) : (json as FeatureCollection);
+  },
 });

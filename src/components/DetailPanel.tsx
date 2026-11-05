@@ -1,8 +1,9 @@
 import { LineTowers } from "./LineTowers.tsx";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { graphAnalysis } from "../data/graph-data.ts";
 import { connectedLines, connectedSubstations } from "../data/selectors.ts";
-import { loadSpotWeather, type SpotWeather } from "../data/weather.ts";
+import { spotCell, spotWeather } from "../data/weather.ts";
+import { useResource } from "../data/resources.ts";
 import { compass8, haversineMeters } from "../lib/geo.ts";
 import { wmoLabel } from "../lib/weather.ts";
 import {
@@ -111,18 +112,7 @@ function ConnectionRow({
  */
 function SpotConditions({ lng, lat }: { lng: number; lat: number }) {
   const showWeather = useAppStore((s) => s.filters.showWeather);
-  const [spot, setSpot] = useState<SpotWeather | null>(null);
-  useEffect(() => {
-    if (!showWeather) return;
-    let stale = false;
-    setSpot(null);
-    loadSpotWeather(lng, lat).then((w) => {
-      if (!stale) setSpot(w);
-    }).catch(() => {});
-    return () => {
-      stale = true;
-    };
-  }, [showWeather, lng, lat]);
+  const spot = useResource(spotWeather, showWeather ? spotCell(lng, lat) : null).data;
   if (!showWeather || !spot) return null;
   return (
     <Field

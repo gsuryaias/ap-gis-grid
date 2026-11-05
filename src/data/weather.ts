@@ -6,6 +6,7 @@
 // Everything degrades per-source: one failed API never blanks the others.
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import { AP_COAST_POINTS, cycloneInBasin, type CirclePoint } from "../lib/weather.ts";
+import { defineResource, fetchJson } from "./resources.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -336,25 +337,24 @@ export interface SpotWeather {
   windDirDeg: number;
 }
 
-const spotCache = new Map<string, Promise<SpotWeather>>();
-
-/** Current conditions at one point, deduped per ~1 km cell so repeat selections don't refetch. */
-export function loadSpotWeather(lng: number, lat: number): Promise<SpotWeather> {
-  const key = `${lng.toFixed(2)},${lat.toFixed(2)}`;
-  let p = spotCache.get(key);
-  if (!p) {
+/**
+ * Current conditions at one point, keyed per ~1 km cell (`spotCell`) so repeat selections don't
+ * refetch. Param = "lng,lat" at 2 dp.
+ */
+export const spotWeather = defineResource<SpotWeather>("spot-weather", {
+  load: (cell, signal) => {
+    const [lng, lat] = cell.split(",");
     const url =
       "https://api.open-meteo.com/v1/forecast" +
-      `?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}` +
+      `?latitude=${lat}&longitude=${lng}` +
       "&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m&timezone=Asia%2FKolkata";
-    p = getJson<OmForecastRow>(url).then((r) => ({
+    return fetchJson<OmForecastRow>(url, signal).then((r) => ({
       tempC: r.current.temperature_2m,
       code: r.current.weather_code,
       windKmh: r.current.wind_speed_10m,
       windDirDeg: r.current.wind_direction_10m,
     }));
-    p.catch(() => spotCache.delete(key)); // failed fetches retry on the next selection
-    spotCache.set(key, p);
-  }
-  return p;
-}
+  },
+});
+
+export const spotCell = (lng: number, lat: number) => `${lng.toFixed(2)},${lat.toFixed(2)}`;

@@ -7,8 +7,8 @@
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Groundwork & hygiene (retire dormant code, e2e safety net, v1 hash contract, docs truth-up, baseline) | in progress — `feat/atlas2-phase0` |
-| 1 | Platform core (resource loader, store slices, pure layer specs, sync engine) | planned |
+| 0 | Groundwork & hygiene (retire dormant code, e2e safety net, v1 hash contract, docs truth-up, baseline) | done — PR #14 |
+| 1 | Platform core (resource loader, store slices, pure layer specs, sync engine) | in progress — PR 1 (resource loader + search worker) `feat/atlas2-resources` |
 | 2 | Inspector adapters + URL v2 | planned |
 | 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | planned |
 | 4 | Vector-tile directories, service-worker rework, Field offline pack, ETL split | planned |

@@ -75,7 +75,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Layer | Path | Notes |
 |-------|------|-------|
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
-| Data | `src/data/` | `types.ts` (canonical types), `load.ts` (fetch via `import.meta.env.BASE_URL`), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR search tier), `live-status.ts` |
+| Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
 | State | `src/state/store.ts` (Zustand) + `src/url/` | versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
 | Map | `src/map/` | `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `mis-layers.ts` (MIS thematic layer), `map-helpers.ts` (shared map utils) |
 | Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, `NetworkTracePanel`, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
@@ -170,6 +170,19 @@ conductor, pole count, km). **Never import its HT-consumer services, AB switches
 does not refresh these — re-run the import when APCPDCL supplies a newer export; the UI footnote shows the export
 date (`live-status.json → discom.APCPDCL.linesFrom`).
 
+## Resource loader (`src/data/resources.ts`, Atlas 2.0 phase 1)
+
+Every lazy asset goes through **one loader**: `defineResource<T>(name, {load(param, signal), refreshMs?})`
+→ `res.ensure(param?)`, `res.peek()`, `res.refresh()`, and the hook `useResource(res, param | null)`
+(`null` = disabled) → `{status, data, error}`. It de-dupes in-flight loads per key, retries transient
+failures (network / 5xx / 429) twice with backoff, aborts a load once every signalled (hook) caller has
+gone (un-signalled `ensure()` pins it), never makes errors sticky, and re-polls `refreshMs` resources while
+subscribed and the tab is visible (keeping stale data on failure). Current resources: `connectivity`
+(`transco-33kv.json`), `liveStatus` (15-min poll), `spotWeather` (per cell), `refCatalog` + `overlayLayer`
+(per overlay id — the map layer and the DISCOM GeoJSON download share one fetch), `placesTier` /
+`networkTier` (search worker). **Add new lazy data as a resource** — don't hand-roll a module promise.
+The core grid, generation, power-grid and weather loads move over in phase 1 PR 2 (store slices).
+
 ## TRANSCO → 33 kV connectivity (`scripts/etl-connectivity.ts`, inferred)
 
 `buildDiscom()` links the DISCOM network to the TRANSCO grid (pure helpers, `scripts/connectivity.test.ts`):
@@ -207,8 +220,10 @@ feeders/lines, distribution transformers (DTRs) and APEPDCL AB switches → `dat
   linked to its 33/11 kV SS (APEPDCL: recorded `sub_station_id`; APSPDCL: name within 5 km, else a run end
   ≤ 500 m), which the 33 kV connectivity already ties to a TRANSCO SS — giving the **inferred** trace
   TRANSCO SS → 33 kV feeder → 33/11 kV SS → 11 kV feeder → DTR.
-- **UI**: `data/network-search.ts` — `search-network.json` fetched on first search focus; a query that
-  `looksLikeDtrCode` (≥ 4 chars, has a digit, no spaces) fetches only the matching DTR shard(s). Picking a
+- **UI**: the search worker (`data/search-core.ts` `SearchEngine`, hosted by `workers/search.worker.ts`,
+  driven from `data/search-client.ts`) loads `search-network.json` on first search focus; a query that
+  `looksLikeDtrCode` (≥ 4 chars, has a digit, no spaces) fetches only the matching DTR shard(s) — all parsed
+  and ranked off the main thread, only the top hits cross back. Picking a
   result sets the overlay store `netFocus` → `components/NetworkTracePanel.tsx` (attributes + clickable trace,
   coverage caveat) and turns on/zooms the overlay. Coverage is partial (APSPDCL sparse; APCPDCL has no open
   11 kV data) — the UI says so.
@@ -333,7 +348,7 @@ in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
   cards (GDACS level colours + "N substations inside the forecast envelope" via `assetsInCone`),
   13-circle conditions grid, coastal sea state, 3-day outlook table, last-updated + manual refresh.
 - **DetailPanel** shows a "Weather now" line for a selected substation **only while the overlay is
-  on** (`loadSpotWeather`, deduped per ~1 km cell in a module cache).
+  on** (`spotWeather` resource keyed by `spotCell` — one fetch per ~1 km cell).
 - Palette: cyclone swaths use GDACS's semantic green/orange/red (`WX_ALERT_COLOR`), track is
   rose-900 `WX_TRACK_COLOR`, risk halo amber `WX_RISK_COLOR` — all outside the voltage palette.
   Everything is labelled **indicative** (model output, not IMD advisories) per the honesty convention.
@@ -394,9 +409,9 @@ extract** (`data/raw/geonames-ap.tsv` — the `IN` dump filtered to admin1 = `02
   town/village split is by population (the source has no such distinction — Vijayawada is a plain
   `PPL`). Emits `public/data/places.json` as compact tuples `[name, type, district, lng, lat, pop]`
   (~2 MB raw / ~450 KB gz). Validation gate: > 25k rows.
-- **Lazy contract**: fetched by the store's `ensurePlaces()` on first **focus** of the search box
-  (`placesStatus`; a failed fetch resets to `idle` so the next focus retries). Never part of the
-  initial payload.
+- **Lazy contract**: loaded into the **search worker** (`placesTier` resource in `data/search-client.ts`)
+  on first **focus** of the search box; parsing and ranking happen in the worker and only the top 8 hits
+  come back. A failed load is retried by the next focus. Never part of the initial payload.
 - **Search-only — places are NOT map features**: no layer, no `byId`, no selection, no hash key.
   `SearchBar` appends up to 8 gazetteer hits under a "Places" divider (grid assets always rank
   first; rank ties break by population so Tirupati-the-city beats its namesake villages, and

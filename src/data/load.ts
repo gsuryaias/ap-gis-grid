@@ -1,4 +1,5 @@
 import type { FeatureCollection } from "geojson";
+import { dataUrl, fetchJson } from "./fetch.ts";
 import type {
   BulkLoadSubstationProps,
   DataQuality,
@@ -8,8 +9,6 @@ import type {
   GridData,
   LineProps,
   Meta,
-  PlaceItem,
-  PlacesFile,
   PowerGridData,
   PowerGridLineProps,
   PowerGridProps,
@@ -19,16 +18,7 @@ import type {
   SubstationProps,
 } from "./types.ts";
 
-/** Resolve a /data asset against the Vite base path (works on GitHub Pages project sites). */
-function dataUrl(file: string): string {
-  return `${import.meta.env.BASE_URL}data/${file}`;
-}
-
-async function getJson<T>(file: string): Promise<T> {
-  const res = await fetch(dataUrl(file));
-  if (!res.ok) throw new Error(`Failed to load ${file}: ${res.status} ${res.statusText}`);
-  return (await res.json()) as T;
-}
+const getJson = <T,>(file: string): Promise<T> => fetchJson<T>(dataUrl(file));
 
 export async function loadGridData(): Promise<GridData> {
   const [substationsFc, linesFc, meta, quality, searchIndex] = await Promise.all([
@@ -83,20 +73,4 @@ export async function loadPowerGrid(): Promise<PowerGridData> {
   for (const s of railway) byId.set(s.id, s);
   for (const s of bulkload) byId.set(s.id, s);
   return { lines, substations, railway, bulkload, linesFc, substationsFc, railwayFc, bulkloadFc, byId };
-}
-
-/**
- * Fetch the place-search gazetteer (~33k AP villages / towns / mandals / landmarks; GeoNames
- * CC BY 4.0). Called lazily — on first use of the search box — so the initial payload stays lean.
- */
-export async function loadPlaces(): Promise<PlaceItem[]> {
-  const file = await getJson<PlacesFile>("places.json");
-  return file.places.map(([name, type, district, lng, lat, pop]) => ({
-    name,
-    type,
-    district: district || null,
-    lng,
-    lat,
-    pop,
-  }));
 }
