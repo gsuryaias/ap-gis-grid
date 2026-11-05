@@ -60,13 +60,31 @@ export interface FilterState {
   wxLayers: Record<WxLayer, boolean>;
 }
 
-export function passesFilter(f: FeatureProps, filters: FilterState): boolean {
-  if (isGeneration(f)) return filters.showGeneration && filters.genTypes[f.energy];
+/**
+ * The shared slicing filters (voltage, circuit, circle, coastal band) — what the map's `applyFilters`
+ * draws, independent of layer visibility. The data table lists exactly these rows.
+ */
+export function passesSlice(f: SubstationProps | LineProps, filters: FilterState): boolean {
   if (!filters.voltages[f.voltage]) return false;
   if (filters.circle && f.circle !== filters.circle) return false;
   // Cumulative ≤ semantics; features missing the band (shouldn't happen) are excluded.
   if (filters.coastalBand != null && !(f.coastalBand != null && f.coastalBand <= filters.coastalBand))
     return false;
-  if (isSubstation(f)) return filters.showSubstations;
-  return filters.showLines && filters.circuits[f.circuit];
+  return isSubstation(f) || !!filters.circuits[f.circuit];
+}
+
+/** True when any slicing filter narrows the network. */
+export function sliceActive(filters: FilterState): boolean {
+  return (
+    Object.values(filters.voltages).some((on) => !on) ||
+    Object.values(filters.circuits).some((on) => !on) ||
+    !!filters.circle ||
+    filters.coastalBand != null
+  );
+}
+
+export function passesFilter(f: FeatureProps, filters: FilterState): boolean {
+  if (isGeneration(f)) return filters.showGeneration && filters.genTypes[f.energy];
+  if (!passesSlice(f, filters)) return false;
+  return isSubstation(f) ? filters.showSubstations : filters.showLines;
 }

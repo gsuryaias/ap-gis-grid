@@ -2,8 +2,9 @@ import { LineTowers } from "./LineTowers.tsx";
 import { useMemo } from "react";
 import { graphAnalysis } from "../data/graph-data.ts";
 import { connectedLines, connectedSubstations } from "../data/selectors.ts";
-import { spotCell, spotWeather } from "../data/weather.ts";
-import { useResource } from "../data/resources.ts";
+import { spotCell, spotWeather, weatherRes } from "../data/weather.ts";
+import { useResource, useResourceSnapshot } from "../data/resources.ts";
+import { generationRes, powerGridRes } from "../data/load.ts";
 import { compass8, haversineMeters } from "../lib/geo.ts";
 import { wmoLabel } from "../lib/weather.ts";
 import {
@@ -228,7 +229,8 @@ function SubstationDetail({ ss, data }: { ss: SubstationProps; data: GridData })
 
 function LineDetail({ line, data }: { line: LineProps; data: GridData }) {
   const select = useAppStore((s) => s.select);
-  const weather = useAppStore((s) => s.weather);
+  // Observe only: DLR appears once something (overlay / monitor) has loaded weather.
+  const weather = useResourceSnapshot(weatherRes).data;
   const subs = connectedSubstations(line, data);
   const [from, to] = line.endpointLabels ?? [null, null];
   const capacity = lineCapacityFor(line);
@@ -472,8 +474,8 @@ export function DetailPanel({ data }: { data: GridData }) {
   const flyTo = useAppStore((s) => s.select);
   const spotlight = useAppStore((s) => s.spotlight);
   const toggleSpotlight = useAppStore((s) => s.toggleSpotlight);
-  const generation = useAppStore((s) => s.generation);
-  const powergrid = useAppStore((s) => s.powergrid);
+  const generation = useResourceSnapshot(generationRes).data;
+  const powergrid = useResourceSnapshot(powerGridRes).data;
   // Overlay features (generation, PowerGrid) live in their own lazily-loaded byId maps,
   // not the transmission byId map.
   const lookup = (id: string) =>

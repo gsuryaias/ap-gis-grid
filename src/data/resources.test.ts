@@ -136,6 +136,33 @@ describe("resource loader", () => {
     off();
   });
 
+  it("re-polls only while an active (non-passive) subscriber is attached", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("window", {});
+    try {
+      let v = 0;
+      const load = vi.fn(async () => ++v);
+      const r = defineResource(uniq("poll"), { load, refreshMs: 1000 });
+      await r.ensure();
+      // A passive observer alone never starts the timer.
+      const offPassive = r.subscribe("", () => undefined, { passive: true });
+      await vi.advanceTimersByTimeAsync(3500);
+      expect(load).toHaveBeenCalledTimes(1);
+      // An active one does…
+      const offActive = r.subscribe("", () => undefined);
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(load).toHaveBeenCalledTimes(3);
+      // …and the timer stops with the last active subscriber, even if passive ones remain.
+      offActive();
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(load).toHaveBeenCalledTimes(3);
+      offPassive();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   it("refuses duplicate names", () => {
     const name = uniq("dup");
     defineResource(name, { load: async () => 1 });

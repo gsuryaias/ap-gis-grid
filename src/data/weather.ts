@@ -5,7 +5,8 @@
 //   - GDACS (UN/EC JRC) — tropical-cyclone events + track/cone geometry (indicative)
 // Everything degrades per-source: one failed API never blanks the others.
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
-import { AP_COAST_POINTS, cycloneInBasin, type CirclePoint } from "../lib/weather.ts";
+import { AP_COAST_POINTS, circlePoints, cycloneInBasin, type CirclePoint } from "../lib/weather.ts";
+import { gridRes } from "./load.ts";
 import { defineResource, fetchJson } from "./resources.ts";
 
 // ---------------------------------------------------------------------------
@@ -355,6 +356,20 @@ export const spotWeather = defineResource<SpotWeather>("spot-weather", {
       windDirDeg: r.current.wind_direction_10m,
     }));
   },
+});
+
+/**
+ * All live-weather sources at the 13 circle centroids (derived from the core grid, so a `wx=1`
+ * deep link simply waits for it). Re-polled every 10 min while a non-passive consumer (the map
+ * overlay or the Weather monitor) is mounted and the tab is visible; a failed refresh keeps the
+ * stale-but-useful data on screen.
+ */
+export const weatherRes = defineResource<WeatherData>("weather", {
+  load: async () => {
+    const grid = await gridRes.ensure();
+    return loadWeather(circlePoints(grid.substations));
+  },
+  refreshMs: 10 * 60 * 1000,
 });
 
 export const spotCell = (lng: number, lat: number) => `${lng.toFixed(2)},${lat.toFixed(2)}`;

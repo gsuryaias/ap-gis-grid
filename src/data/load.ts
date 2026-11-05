@@ -1,5 +1,6 @@
 import type { FeatureCollection } from "geojson";
 import { dataUrl, fetchJson } from "./fetch.ts";
+import { defineResource } from "./resources.ts";
 import type {
   BulkLoadSubstationProps,
   DataQuality,
@@ -18,15 +19,15 @@ import type {
   SubstationProps,
 } from "./types.ts";
 
-const getJson = <T,>(file: string): Promise<T> => fetchJson<T>(dataUrl(file));
+const getJson = <T,>(file: string, signal?: AbortSignal): Promise<T> => fetchJson<T>(dataUrl(file), signal);
 
-export async function loadGridData(): Promise<GridData> {
+export async function loadGridData(signal?: AbortSignal): Promise<GridData> {
   const [substationsFc, linesFc, meta, quality, searchIndex] = await Promise.all([
-    getJson<FeatureCollection>("substations.geojson"),
-    getJson<FeatureCollection>("lines.geojson"),
-    getJson<Meta>("meta.json"),
-    getJson<DataQuality>("data-quality.json"),
-    getJson<SearchItem[]>("search-index.json"),
+    getJson<FeatureCollection>("substations.geojson", signal),
+    getJson<FeatureCollection>("lines.geojson", signal),
+    getJson<Meta>("meta.json", signal),
+    getJson<DataQuality>("data-quality.json", signal),
+    getJson<SearchItem[]>("search-index.json", signal),
   ]);
 
   const substations = substationsFc.features.map((f) => f.properties as unknown as SubstationProps);
@@ -43,8 +44,8 @@ export async function loadGridData(): Promise<GridData> {
  * Fetch the generation-plant overlay. Called lazily — only when the user first enables the
  * layer — so the initial transmission payload stays lean.
  */
-export async function loadGeneration(): Promise<GenerationData> {
-  const fc = await getJson<FeatureCollection>("generation.geojson");
+export async function loadGeneration(signal?: AbortSignal): Promise<GenerationData> {
+  const fc = await getJson<FeatureCollection>("generation.geojson", signal);
   const plants = fc.features.map((f) => f.properties as unknown as GenerationProps);
   const byId = new Map<string, GenerationProps>();
   for (const p of plants) byId.set(p.id, p);
@@ -56,12 +57,12 @@ export async function loadGeneration(): Promise<GenerationData> {
  * substations, railway-traction substations, and bulk-load / HT-consumer substations. Fetched
  * only when the user first enables the group, so the initial transmission payload stays lean.
  */
-export async function loadPowerGrid(): Promise<PowerGridData> {
+export async function loadPowerGrid(signal?: AbortSignal): Promise<PowerGridData> {
   const [linesFc, substationsFc, railwayFc, bulkloadFc] = await Promise.all([
-    getJson<FeatureCollection>("powergrid-lines.geojson"),
-    getJson<FeatureCollection>("powergrid-ss.geojson"),
-    getJson<FeatureCollection>("railway-ss.geojson"),
-    getJson<FeatureCollection>("bulkload-ss.geojson"),
+    getJson<FeatureCollection>("powergrid-lines.geojson", signal),
+    getJson<FeatureCollection>("powergrid-ss.geojson", signal),
+    getJson<FeatureCollection>("railway-ss.geojson", signal),
+    getJson<FeatureCollection>("bulkload-ss.geojson", signal),
   ]);
   const lines = linesFc.features.map((f) => f.properties as unknown as PowerGridLineProps);
   const substations = substationsFc.features.map((f) => f.properties as unknown as PowerGridSubstationProps);
@@ -74,3 +75,15 @@ export async function loadPowerGrid(): Promise<PowerGridData> {
   for (const s of bulkload) byId.set(s.id, s);
   return { lines, substations, railway, bulkload, linesFc, substationsFc, railwayFc, bulkloadFc, byId };
 }
+
+// --- Resources (Atlas 2.0 phase 1): the store keeps no copy of these; read them with
+// useResource (loads while mounted) or useResourceSnapshot / .peek() (observe only). ---
+
+/** The core transmission grid (initial payload). The store mirrors it as `data` for sync access. */
+export const gridRes = defineResource<GridData>("grid", { load: (_p, signal) => loadGridData(signal) });
+
+/** Generation-plant overlay — loaded only while something needs it (the layer is on, MIS interfaces). */
+export const generationRes = defineResource<GenerationData>("generation", { load: (_p, signal) => loadGeneration(signal) });
+
+/** "Power grid" overlay group (PGCIL + railway traction + bulk-load HT) — one load for all four files. */
+export const powerGridRes = defineResource<PowerGridData>("powergrid", { load: (_p, signal) => loadPowerGrid(signal) });

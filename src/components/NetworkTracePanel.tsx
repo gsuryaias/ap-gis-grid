@@ -1,7 +1,8 @@
 import { NET_KIND_LABEL } from "../data/network-search.ts";
 import { lookupNetRef } from "../data/search-client.ts";
 import { fieldLabel } from "../overlays/catalog.ts";
-import { useOverlayStore } from "../overlays/store.ts";
+import { overlayLayer, useOverlayStore } from "../overlays/store.ts";
+import { useResourceSnapshot } from "../data/resources.ts";
 import { useAppStore } from "../state/store.ts";
 import { CloseIcon } from "./icons.tsx";
 
@@ -24,12 +25,12 @@ const LINK: Record<string, string> = {
 export function NetworkTracePanel() {
   const item = useOverlayStore((s) => s.netFocus);
   const focusNetwork = useOverlayStore((s) => s.focusNetwork);
-  const data = useOverlayStore((s) => s.data);
   const select = useAppStore((s) => s.select);
+  const layer = !item ? null : item.kind === "f11" ? "discom-11kv-lines" : item.kind === "ss33" ? "discom-ss" : item.kind === "f33" ? "discom-lines" : null;
+  const fc = useResourceSnapshot(overlayLayer, layer).data;
   if (!item) return null;
 
-  const layer = item.kind === "f11" ? "discom-11kv-lines" : item.kind === "ss33" ? "discom-ss" : item.kind === "f33" ? "discom-lines" : null;
-  const props = layer ? (data[layer]?.features.find((f) => f.properties?.id === item.ref)?.properties ?? null) : null;
+  const props = fc?.features.find((f) => f.properties?.id === item.ref)?.properties ?? null;
   const rows: Array<[string, string]> = [];
   if (item.dtr) for (const [k, v] of Object.entries(item.dtr.attrs)) rows.push([k, String(v)]);
   if (props)

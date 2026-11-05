@@ -4,8 +4,8 @@ import { SRC } from "./layers.ts";
 
 export function sourceForId(
   data: GridData,
-  gen: GenerationData | null,
-  pg: PowerGridData | null,
+  gen: GenerationData | null | undefined,
+  pg: PowerGridData | null | undefined,
   id: string,
 ): string | null {
   if (gen?.byId.has(id)) return SRC.generation;
@@ -30,8 +30,8 @@ export function sourceForId(
 export function setFeatState(
   map: MlMap,
   data: GridData,
-  gen: GenerationData | null,
-  pg: PowerGridData | null,
+  gen: GenerationData | null | undefined,
+  pg: PowerGridData | null | undefined,
   id: string | null,
   key: string,
   value: boolean,
@@ -49,8 +49,8 @@ export function setFeatState(
 export function flyToFeature(
   map: MlMap,
   data: GridData,
-  gen: GenerationData | null,
-  pg: PowerGridData | null,
+  gen: GenerationData | null | undefined,
+  pg: PowerGridData | null | undefined,
   id: string,
 ): void {
   const plant = gen?.byId.get(id);
