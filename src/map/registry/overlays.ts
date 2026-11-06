@@ -6,7 +6,7 @@ import type { FeatureCollection } from "geojson";
 import { DISCOM_COLOR, DISCOMS, type DiscomId, type OverlayDef } from "../../overlays/catalog.ts";
 import { refFeatureRef, towerRef } from "../../inspector/refs.ts";
 import type { Basemap, OverlayFocus } from "../../state/types.ts";
-import type { MapSpec } from "../spec.ts";
+import { mergeSpecs, type MapSpec } from "../spec.ts";
 import { memo, type Interaction, type LayerDef } from "./types.ts";
 
 /** The state the overlay defs read (the map state, whose `app` is the store, satisfies it). */
@@ -18,6 +18,8 @@ export interface OverlayRegistryState {
       enabled: Record<string, boolean>;
       discoms: Record<DiscomId, boolean>;
       focus: OverlayFocus | null;
+      /** Per-layer opacity multiplier (absent = 1). */
+      opacity: Record<string, number>;
     };
   };
 }
@@ -101,6 +103,7 @@ export function overlayLayers(def: OverlayDef, s: S): LayerSpecification[] {
           : dark ? "#0e1622" : "#ffffff",
         "circle-stroke-width": isTower ? e(["case", ["==", ["get", "cp"], "CP"], 1.6, 1]) : 1,
         "circle-opacity": 0.95,
+        "circle-stroke-opacity": 1,
       },
       ...filter,
     });
@@ -128,10 +131,31 @@ export function overlayLayers(def: OverlayDef, s: S): LayerSpecification[] {
         "text-color": dark ? "#e2e8f0" : def.group === "Boundaries" ? "#1e293b" : "#334155",
         "text-halo-color": dark ? "rgba(14,22,34,0.9)" : "rgba(255,255,255,0.92)",
         "text-halo-width": 1.4,
+        "text-opacity": 1,
       },
       ...filter,
     } as LayerSpecification);
   }
+  return out;
+}
+
+/** Base opacities of an overlay's style layers (what `overlayLayers` draws at opacity 1). */
+const BASE_OPACITY = { fill: (def: OverlayDef) => def.style.fillOpacity ?? 0, line: (def: OverlayDef) => (def.geometry === "line" ? 0.92 : 0.9), circle: 0.95 };
+const r2 = (n: number) => Math.round(n * 1000) / 1000;
+
+/** The opacity slider as paint: every style layer of the overlay scaled by `k` (0–1). */
+export function overlayOpacitySpec(def: OverlayDef, k: number): MapSpec {
+  const L = overlayLayerIds(def.id);
+  const out: MapSpec = {};
+  if (def.geometry === "polygon") {
+    if (def.style.fillOpacity) out[L.fill] = { paint: { "fill-opacity": r2(BASE_OPACITY.fill(def) * k) } };
+    out[L.line] = { paint: { "line-opacity": r2(BASE_OPACITY.line(def) * k) } };
+  } else if (def.geometry === "line") {
+    out[L.line] = { paint: { "line-opacity": r2(BASE_OPACITY.line(def) * k) } };
+  } else {
+    out[L.circle] = { paint: { "circle-opacity": r2(BASE_OPACITY.circle * k), "circle-stroke-opacity": r2(k) } };
+  }
+  if (def.labelField && def.style.labelMinzoom != null) out[L.label] = { paint: { "text-opacity": r2(k) } };
   return out;
 }
 
@@ -186,6 +210,8 @@ function overlayInteraction(def: OverlayDef): Interaction | undefined {
 
 function catalogDef(def: OverlayDef, data: (id: string) => FeatureCollection | undefined): LayerDef<S> {
   const isDiscom = def.style.color === "discom";
+  const opacitySpec = memo((k: number) => overlayOpacitySpec(def, k));
+  const both = memo((a: MapSpec | undefined, b: MapSpec): MapSpec => (a ? mergeSpecs(a, b) : b));
   return {
     id: def.id,
     band: def.style.aboveGrid ? "above-grid" : "beneath",
@@ -197,8 +223,8 @@ function catalogDef(def: OverlayDef, data: (id: string) => FeatureCollection | u
     },
     layers: (s) => overlayLayers(def, s),
     visible: (s) => !!s.app.layers.enabled[def.id],
-    // The DISCOM sub-filter (fills are never DISCOM-coloured).
-    spec: isDiscom ? (s) => discomSpec(def.id, s.app.layers.discoms) : undefined,
+    // The DISCOM sub-filter (fills are never DISCOM-coloured) + the opacity slider.
+    spec: (s) => both(isDiscom ? discomSpec(def.id, s.app.layers.discoms) : undefined, opacitySpec(s.app.layers.opacity[def.id] ?? 1)),
     interaction: overlayInteraction(def),
   };
 }

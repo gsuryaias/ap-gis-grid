@@ -29,6 +29,7 @@ import {
   cycloneLineLayers,
   RADAR_SOURCE_OPTIONS,
   radarLayers,
+  radarOpacitySpec,
   riskSubstationLayers,
   weatherOn,
   WX_SRC,
@@ -222,6 +223,7 @@ const BULKLOAD: Def = {
 // ---- live weather (lazy) -----------------------------------------------------------------------
 const wxOn = (s: S, layer: "radar" | "cyclone") => s.preset.weather && weatherOn(s.app.filters, layer);
 const cycloneFcOf = memo((wx: WeatherData) => cycloneFc(wx));
+const radarSpecOf = memo((k: number) => radarOpacitySpec(k));
 const riskSpecOf = memo((wx: WeatherData | undefined, data: GridData) => wxRiskSpec(wx ? wxRiskIds(wx, data.substations) : []));
 
 const WX_RADAR: Def = {
@@ -235,6 +237,7 @@ const WX_RADAR: Def = {
   },
   layers: radarLayers,
   visible: (s) => wxOn(s, "radar"),
+  spec: (s) => radarSpecOf(s.app.layers.opacity.wx ?? 1),
 };
 const WX_CYCLONE_FILLS: Def = {
   id: "wx-cyclone-fills",

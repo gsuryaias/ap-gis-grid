@@ -78,7 +78,8 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
 | State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices" and "URL v2"; selection history (`back()`), lens + workspaceContext |
 | Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in the map lenses, embedded/hidden in Plan; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
-| Shell / UI | `src/App.tsx` + `src/shell/` + `src/components/` | see "Lenses (the shell)": `Header`, `LensTabs`, `MoreMenu`, `BottomSheet`, `MapLensChrome`, `PlanChrome`; components `MapLayerPanel`, SearchBar, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
+| Shell / UI | `src/App.tsx` + `src/shell/` + `src/components/` | see "Lenses (the shell)": `Header`, `LensTabs`, `MoreMenu`, `BottomSheet`, `MapLensChrome`, `PlanChrome`, `MapToolbar`; components SearchBar, DataTableSheet, Summary/DataQuality/Weather views, Measure/Nearby controls |
+| Layers UI | `src/layers/` | see "Layer catalogue (the Layers drawer)" |
 | Lenses | `src/lenses/` (`registry.ts` pure, `panels.tsx`, per-lens panels) + `src/workspaces/mis/` (the Plan lens body) | See "Lenses (the shell)" |
 | Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `risk.ts`, `weather.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
@@ -148,7 +149,7 @@ also has ~24 structural/insulator fields that are currently empty (the Inspector
   `LineProps.towers` `{n, cp, sp, types}`; counts in `live-status.json → towers`.
 - **UI**: overlay defs `TOWER_DEFS` (`overlays/catalog.ts`, `format: "towers"`, `aboveGrid` — drawn between
   the grid lines and the SS dots, unlike every other overlay), decoded by `overlays/towers.ts`; per-voltage
-  toggles in the layer panel ("Transmission · towers"), minzoom 9 (400 kV 8), CP towers larger + ringed,
+  toggles in the Layers drawer (Transmission group), minzoom 9 (400 kV 8), CP towers larger + ringed,
   labels (tower no.) from z14. A tower tap wins over the line beneath (listed under "Also here") and opens the Inspector with every
   attribute + a link to the line. `components/LineTowers.tsx` (a section of the line Inspector): count,
   CP/SP split, top types, "Show towers on map".
@@ -276,6 +277,24 @@ Plan; `lyr` present ⇒ authoritative layer set (wins over the remembered overla
 - **v1 links** (`#v=1&…`) decode through `url/hash.ts` (`parseHash`, pinned by `hash.test.ts`) → `fromV1`, then the
   app rewrites them to v2 in place. Header **Copy link** (`components/CopyLink.tsx`) copies the full view.
 
+## Layer catalogue (the Layers drawer, Atlas 2.0 phase 3 PR 9)
+
+`src/layers/catalogue.ts` (pure, `catalogue.test.ts`) = ONE list of every layer switch: `CatEntry {id, group, label,
+swatch, minzoom, bytes, count, source, vintage, note, keywords, opacity}`, `id` = the layer token (`ss` / `ln` / `gen` /
+`pg` / `wx` / overlay id — same as lens defaults + URL `lyr`). Built from `BUILTIN_ENTRIES` + the overlay defs (RTGS
+join once `catalog.json` loads); 8 groups (Transmission, Distribution, Generation & interfaces, Weather & hazards,
+Boundaries, Transport, Environment, Water); `withLiveCounts` fills counts from `live-status.json`; hand-entered file
+sizes are checked against `public/data` (±25 %).
+- **Store** (`slices/catalogue.ts`): `setLayer(token, on?)` (any layer, loads what it needs), `soloLayer(token)` (only
+  that layer; again → restore the saved `LayerOn`; any other layer change ends solo), `layersOpen`. Opacity:
+  `layers.opacity[id]` (0–1, transient) → `overlayOpacitySpec` / `radarOpacitySpec` (conditional paint writes; base
+  opacities are declared on the layers so an untouched slider makes no write).
+- **UI**: `MapToolbar` (top-left of the map: Layers · `FilterChips` voltage / circle / coast · Measure · Nearby;
+  a scrolling strip on phones), `LayerDrawer` (tabs "On now" — legend keys + sub-switches from `details.tsx`, solo,
+  remove, opacity, out-of-zoom hint — and "All layers" — grouped, searchable, Alt-click = solo; basemap footer;
+  full-screen on phones; Escape closes), `MapLegend` (desktop, bottom-left: only layers on AND inside their zoom
+  range). Plan's map shows the Layers button + drawer only (the MIS slicer scopes the analysis).
+
 ## Inspector (`src/inspector/`, Atlas 2.0 phase 2)
 
 ONE detail view for every selectable thing (it replaced DetailPanel, the MIS Dossier, NetworkTracePanel and the
@@ -301,8 +320,7 @@ DISCOM + RTGS overlays live in a **self-contained module** rather than the per-o
 (facade over the app store's `layers` slice: enabled/status, DISCOM sub-filter, per-device persistence in
 localStorage `apgg-overlays-v1`; a URL `lyr=` list wins over it). Their map
 layers are registry defs (`map/registry/overlays.ts`: polygons < lines < points, then the amber focus highlight;
-towers in the `above-grid` band) — see "Map engine". UI: `components/OverlaySections.tsx` (`DistributionSection`,
-`ReferenceSection`).
+towers in the `above-grid` band) — see "Map engine". UI: the Layers drawer (`src/layers/`, see "Layer catalogue").
 
 ## Map engine (`src/map/`, Atlas 2.0 phase 1)
 
@@ -352,7 +370,7 @@ none of its code path runs until the user enables it.
   IDs are synthetic `g-<slug(name)>`. Validation gate: **57 plants**. Counts (current data):
   Solar 21, Thermal 11, Wind 10, Gas 9, Hydro 5, Other 1.
 - **Lazy contract**: the initial grid load does NOT fetch `generation.geojson`. It is the
-  `generationRes` resource: `MapPane` (and the layer panel) `useResource` it while `filters.showGeneration`
+  `generationRes` resource: `MapPane` (and the Layers drawer / legend) `useResource` it while `filters.showGeneration`
   is on — so a manual toggle and a `gen=1` deep link behave the same; the MIS Interfaces tab loads it
   without switching the layer on. The map
   source/layers are mounted by the engine (`GENERATION` def in `map/registry/core.ts`) only once data arrives
@@ -412,7 +430,7 @@ unit-tested; fetch clients in `src/data/weather.ts` (`loadWeather()` = one `Prom
 in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
 
 - **Lazy contract**: same as generation/powergrid — `weatherRes` loads only while the overlay is on
-  (`MapPane` / layer panel) or the Weather monitor is open (`WeatherView`). URL **`lyr=wx`**
+  (`MapPane` / Layers drawer / legend) or the Weather monitor is open (`WeatherView`). URL **`lyr=wx`**
   (master only; `wxLayers` radar/cyclone sub-toggles are NOT in the hash, like `genTypes`). The load awaits
   `gridRes` for circle points, so a wx=1 deep link needs no special casing.
 - **Auto-refresh**: `weatherRes.refreshMs` = 10 min, alive only while an active consumer is mounted
@@ -460,8 +478,8 @@ deps, no backend.
   export the *currently-shown* rows of the active tab (respecting the text filter); the Inspector has a
   per-feature **GeoJSON** download (substation Point / line geometry from `linesFc`). `downloadText()`
   is the only impure helper (Blob + anchor; no-op outside a browser, so the builders stay testable).
-- **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The layer panel's
-  **Region → Circle** `<select>` (13 canonical circles from `meta.circles`) filters the **core** lines +
+- **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The map toolbar's
+  circle chip (`layers/FilterChips.tsx`, a `<select>`) (13 canonical circles from `meta.circles`) filters the **core** lines +
   substations (`gridSpec` ANDs `["==",["get","circle"],…]`) and `fitToCircle` (`useMapCamera`) zooms to the
   circle's SS bounds (back to `meta.bounds` when cleared). Deep-linkable: URL key **`circle`** (changing it pushes a history entry).
   **Circle-only** because `zone`/`division` exist on substations but are **absent on all lines** — circle
@@ -702,7 +720,7 @@ left in the repo but is **no longer a source** (generation still uses `generatio
   `@custom-variant dark` in `index.css`), latest **@tanstack/react-table v8**.
 - **Tailwind v4 toggle switches**: don't position a thumb with arbitrary `translate-x-[…]` — v4 maps
   it to the `translate` CSS prop and it collided with `left`. Use an inline `style={{transform}}`
-  (see `layer-controls.tsx` `Switch`).
+  (see `layers/ui.tsx` `Switch`).
 - **Basemaps**: light/dark are CARTO vector style URLs; **satellite is an inline raster style object**
   (Esri World Imagery) that must include a `glyphs` URL (we reuse CARTO's) or the substation label
   symbol layer fails. Label font is `Open Sans Bold` (served by CARTO's glyph CDN). Satellite + dark

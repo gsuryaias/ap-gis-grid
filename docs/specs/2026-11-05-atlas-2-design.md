@@ -10,7 +10,7 @@
 | 0 | Groundwork & hygiene (retire dormant code, e2e safety net, v1 hash contract, docs truth-up, baseline) | done — PR #14 |
 | 1 | Platform core (resource loader, store slices, pure layer specs, sync engine) | done — PR 1 (resource loader + search worker) done, PR #15 · PR 2 (store slices) done, PR #16 · PR 3 (pure layer specs) PR #17 · PR 4 (engine for overlays) PR #18 · PR 5 (engine for everything + one interaction handler; MapPane 586 → 164 lines) PR #19 — **done** |
 | 2 | Inspector adapters + URL v2 | **done** — PR 6 (Inspector adapters + What's here; DetailPanel / Dossier / NetworkTracePanel / popups deleted) PR #20 · PR 7 (URL v2: push/replace history, camera, `lyr=`, Copy link; v1 links rewritten) PR #21 |
-| 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | in progress — PR 8 (lens registry + shell: 4 lenses, header + ⋯ menu, docked lens panel, phone bottom sheet, Plan phone stack; `lyr` relative to lens defaults) `feat/atlas2-lens-shell` · PR 9–11 planned |
+| 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | in progress — PR 8 (lens registry + shell: 4 lenses, header + ⋯ menu, docked lens panel, phone bottom sheet, Plan phone stack; `lyr` relative to lens defaults) PR #22 · PR 9 (layer catalogue drawer, zoom-aware legend, filter chips, solo, opacity) `feat/atlas2-layer-catalogue` · PR 10–11 planned |
 | 4 | Vector-tile directories, service-worker rework, Field offline pack, ETL split | planned |
 | 5 | Storm / Field / Plan mission depth | planned |
 
@@ -375,6 +375,11 @@ explicit step.
      defaults (Explore / Plan preset only the core grid, so every phase-2 link keeps its meaning), and lens presets
      are not persisted as the viewer's overlay choice. Search stays `SearchBar` (in the header on desktop) until
      PR 10, and the lens panels reuse the current layer list until PR 9.
+   - *As built (PR 9):* `src/layers/` — pure `catalogue.ts` + `LayerDrawer` / `MapLegend` / `FilterChips`; the map
+     toolbar holds Layers, the filter chips and Measure / Nearby (which moved off the top-centre). Opacity is offered for
+     the catalog overlays and the radar (the core grid's opacity already carries the spotlight / scope dimming). The
+     Plan pivot keeps its own voltage slicer for now (it scopes the analysis, not just the map); unifying it with the
+     global chips is left to the Plan mission (phase 5).
 9. **Layer catalogue drawer and active-layers legend.**
    - It replaces `MapLayerPanel`, `layer-controls.tsx` and `OverlaySections.tsx`, and is rendered from the
      registry: groups, search, size, zoom and vintage, solo with Alt-click, and opacity.

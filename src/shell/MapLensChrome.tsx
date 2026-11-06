@@ -1,11 +1,12 @@
 // Chrome of the map lenses (Explore / Field / Storm): the docked lens panel on desktop, and what
-// floats over the map — map tools, the Inspector / nearby list, the data-table pill — or, on a phone,
-// the search + tools stack on top and ONE bottom sheet holding the Inspector, the nearby list or the
-// lens panel.
+// floats over the map — the toolbar (Layers · filter chips · Measure · Nearby) + Layers drawer, the
+// legend, the Inspector / nearby list, the data-table pill — or, on a phone, the search + toolbar on
+// top and ONE bottom sheet holding the Inspector, the nearby list or the lens panel.
 import { useEffect, useState } from "react";
-import { MeasureControl } from "../components/MeasureControl.tsx";
-import { NearbyControl } from "../components/NearbyControl.tsx";
 import { NearbyPanel } from "../components/NearbyPanel.tsx";
+import { LayerDrawer } from "../layers/LayerDrawer.tsx";
+import { MapLegend } from "../layers/Legend.tsx";
+import { MapToolbar } from "./MapToolbar.tsx";
 import { SearchBar } from "../components/SearchBar.tsx";
 import { ChevronDown, PanelLeftIcon, TableIcon } from "../components/icons.tsx";
 import type { GridData } from "../data/types.ts";
@@ -96,12 +97,15 @@ export function MapLensOverlays({ data }: { data: GridData }) {
   const tableOpen = useAppStore((s) => s.tableOpen);
   const toggleTable = useAppStore((s) => s.toggleTable);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
+  // Keep the toolbar clear of the Inspector / nearby card while one is open on the right.
+  const rightCard = useAppStore((s) => !!(s.selectedId || s.here?.length || s.nearbyOrigin));
   return (
     <>
-      <div className="pointer-events-none absolute left-1/2 top-3 z-30 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-start justify-center gap-2">
-        <MeasureControl />
-        <NearbyControl />
+      <div className={`pointer-events-none absolute left-3 top-3 z-30 ${rightCard ? "right-[364px]" : "right-3"}`}>
+        <MapToolbar data={data} />
       </div>
+      <LayerDrawer />
+      <MapLegend />
       <div className="pointer-events-none absolute right-3 top-3 z-20 flex max-h-[calc(100%-1.5rem)] max-w-[calc(100%-1.5rem)] flex-col">
         {nearbyOrigin ? <NearbyPanel data={data} /> : <Inspector />}
       </div>
@@ -136,11 +140,9 @@ export function MapLensPhone({ lens, data }: { lens: LensId; data: GridData }) {
         <div className="pointer-events-auto">
           <SearchBar data={data} />
         </div>
-        <div className="mobile-tools pointer-events-auto grid grid-cols-2 items-start gap-2">
-          <MeasureControl />
-          <NearbyControl />
-        </div>
+        <MapToolbar data={data} phone />
       </div>
+      <LayerDrawer phone />
       {content === "lens" ? (
         <BottomSheet
           snap={snap}

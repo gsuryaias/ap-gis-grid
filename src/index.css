@@ -102,8 +102,4 @@ body {
 @media (max-width: 639px) {
   .maplibregl-ctrl-bottom-left { margin-bottom: 2.4rem; }
 }
-/* Phones: Measure + Nearby share one row — tighten their buttons so both labels fit. */
-.mobile-tools > * { min-width: 0; }
-.mobile-tools button { padding-inline: 5px; gap: 4px; font-size: 11.5px; white-space: nowrap; min-width: 0; }
-@media (max-width: 370px) { .mobile-tools button svg { display: none; } }
 .ov-popup .ov-link { color: var(--color-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; text-align: left; cursor: pointer; }

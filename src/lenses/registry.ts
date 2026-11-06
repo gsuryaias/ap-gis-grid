@@ -64,7 +64,7 @@ export const LENSES: LensDef[] = [
       tips: [
         "Near me lists the closest substations with distance and compass bearing.",
         "Search a DTR code or 11 kV feeder to trace it up to its TRANSCO substation.",
-        "Towers appear from zoom 9 — tap one for its type and line. Satellite is under Basemap.",
+        "Towers appear from zoom 9 — tap one for its type and line. Satellite is in the Layers drawer.",
       ],
     },
   },

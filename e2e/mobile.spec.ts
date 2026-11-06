@@ -36,3 +36,14 @@ test("phone: a selection opens the Inspector in the sheet; lens tabs switch lens
   await expect(page).toHaveURL(/lens=plan/);
   await expect(page.getByText(/Radial feeds/).first()).toBeVisible();
 });
+
+test("phone: the Layers drawer opens full-screen from the toolbar and closes", async ({ page }) => {
+  await openApp(page);
+  await page.getByRole("button", { name: /^Layers \(/ }).click();
+  const drawer = page.getByRole("region", { name: "Layers", exact: true });
+  await expect(drawer).toBeVisible();
+  const box = (await drawer.boundingBox())!;
+  expect(box.width).toBeGreaterThan(page.viewportSize()!.width - 2);
+  await drawer.getByRole("button", { name: "Close layers" }).click();
+  await expect(drawer).toBeHidden();
+});

@@ -4,16 +4,20 @@
 import type { LayerOn } from "../lenses/registry.ts";
 import type { AppState } from "./types.ts";
 
-export function layerOnOf(s: AppState): LayerOn {
-  const f = s.filters;
+export function layerOnOf(s: Pick<AppState, "filters" | "layers">): LayerOn {
+  return layerOnFrom(s.filters, s.layers.enabled);
+}
+
+/** The same, from the two parts (lets a component memoise on exactly what it reads). */
+export function layerOnFrom(f: AppState["filters"], enabled: Record<string, boolean>): LayerOn {
   return {
     showSubstations: f.showSubstations,
     showLines: f.showLines,
     showGeneration: f.showGeneration,
     showPowerGrid: f.showPowerGrid,
     showWeather: f.showWeather,
-    overlays: Object.keys(s.layers.enabled)
-      .filter((id) => s.layers.enabled[id])
+    overlays: Object.keys(enabled)
+      .filter((id) => enabled[id])
       .sort(),
   };
 }

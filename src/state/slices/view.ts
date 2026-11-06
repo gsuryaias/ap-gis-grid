@@ -20,6 +20,7 @@ export const createViewSlice: SliceCreator<ViewSlice> = (set, get) => ({
       lens,
       mapLayout: LENS_BY_ID[lens].layout === "map" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout,
       workspaceContext: {},
+      solo: null,
       ...withLayerOn(s, switchLensLayers(layerOnOf(s), s.lens, lens)),
     }));
     get().layers.restore(); // fetch the overlays the lens switched on
