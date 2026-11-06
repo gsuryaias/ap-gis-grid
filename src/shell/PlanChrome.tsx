@@ -6,6 +6,8 @@ import { MapIcon } from "../components/icons.tsx";
 import { LENS_ICON } from "../lenses/panels.tsx";
 import { LENS_BY_ID } from "../lenses/registry.ts";
 import { StartHere } from "../lenses/StartHere.tsx";
+import type { GridData } from "../data/types.ts";
+import { Omnibox } from "../search/Omnibox.tsx";
 import { useAppStore } from "../state/store.ts";
 
 export const MIN_MAP_PANE = 320;
@@ -13,8 +15,8 @@ const MIN_ANALYSIS_PANE = 380;
 const MAP_PANE_STORAGE_KEY = "dss-map-pane-w";
 export const DEFAULT_MAP_PANE = "min(42%, 520px)";
 
-/** Title strip of the Plan column: what this lens is + Show / Hide map. */
-export function PlanHeader() {
+/** Title strip of the Plan column: what this lens is + Show / Hide map (+ the search box on a phone). */
+export function PlanHeader({ data, withSearch = false }: { data: GridData; withSearch?: boolean }) {
   const mapLayout = useAppStore((s) => s.mapLayout);
   const setMapLayout = useAppStore((s) => s.setMapLayout);
   const def = LENS_BY_ID.plan;
@@ -40,6 +42,11 @@ export function PlanHeader() {
           {mapOpen ? "Hide map" : "Show map"}
         </button>
       </div>
+      {withSearch && (
+        <div className="mt-2">
+          <Omnibox data={data} size="sm" />
+        </div>
+      )}
       <div className="mt-2 empty:hidden">
         <StartHere lens="plan" />
       </div>

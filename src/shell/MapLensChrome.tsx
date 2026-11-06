@@ -7,7 +7,7 @@ import { NearbyPanel } from "../components/NearbyPanel.tsx";
 import { LayerDrawer } from "../layers/LayerDrawer.tsx";
 import { MapLegend } from "../layers/Legend.tsx";
 import { MapToolbar } from "./MapToolbar.tsx";
-import { SearchBar } from "../components/SearchBar.tsx";
+import { Omnibox } from "../search/Omnibox.tsx";
 import { ChevronDown, PanelLeftIcon, TableIcon } from "../components/icons.tsx";
 import type { GridData } from "../data/types.ts";
 import { Inspector } from "../inspector/Inspector.tsx";
@@ -138,7 +138,7 @@ export function MapLensPhone({ lens, data }: { lens: LensId; data: GridData }) {
     <>
       <div className="pointer-events-none absolute inset-x-2 top-2 z-20 flex flex-col gap-2">
         <div className="pointer-events-auto">
-          <SearchBar data={data} />
+          <Omnibox data={data} />
         </div>
         <MapToolbar data={data} phone />
       </div>

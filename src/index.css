@@ -90,6 +90,8 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+/* The search box draws its focus ring on its wrapper (focus-within), not on the bare input. */
+#app-search:focus-visible { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   * {

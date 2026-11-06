@@ -11,6 +11,7 @@ import { LENS_LAYER_PRESETS } from "./map/layer-presets.ts";
 import { LENS_BY_ID } from "./lenses/registry.ts";
 import { PanelLoading, PlanWorkspace } from "./lenses/panels.tsx";
 import { Header } from "./shell/Header.tsx";
+import { About } from "./shell/MoreMenu.tsx";
 import { LensSidePanel, MapLensOverlays, MapLensPhone } from "./shell/MapLensChrome.tsx";
 import { DEFAULT_MAP_PANE, MapResizeHandle, MIN_MAP_PANE, PaneSplitter, PlanHeader, useMapPaneWidth } from "./shell/PlanChrome.tsx";
 import { LayerDrawer } from "./layers/LayerDrawer.tsx";
@@ -124,7 +125,7 @@ export function App() {
 
           {split ? (
             <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-surface-2">
-              <PlanHeader />
+              <PlanHeader data={data} withSearch={isMobile} />
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <Suspense fallback={<PanelLoading />}>
                   <PlanWorkspace />
@@ -138,6 +139,7 @@ export function App() {
         <SummaryView data={data} />
         <DataQualityView data={data} />
         <WeatherView data={data} />
+        <About data={data} />
         <NewDataToast />
       </div>
     </ErrorBoundary>

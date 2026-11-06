@@ -142,6 +142,7 @@ export interface UiSlice {
   qualityOpen: boolean;
   summaryOpen: boolean;
   weatherOpen: boolean;
+  aboutOpen: boolean;
   measureMode: MeasureMode | null;
   measureStats: MeasureStats | null;
   measureClearNonce: number;
@@ -151,6 +152,7 @@ export interface UiSlice {
   toggleQuality: (open?: boolean) => void;
   toggleSummary: (open?: boolean) => void;
   toggleWeatherView: (open?: boolean) => void;
+  toggleAbout: (open?: boolean) => void;
   setMeasureMode: (m: MeasureMode | null) => void;
   clearMeasure: () => void;
   setMeasureStats: (s: MeasureStats | null) => void;

@@ -3,7 +3,7 @@ import { openApp } from "./helpers.ts";
 
 test("phone: map + search usable, the lens panel peeks in a bottom sheet", async ({ page }) => {
   await openApp(page);
-  await expect(page.getByRole("textbox", { name: /Search substations/ })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: /Search substations/ })).toBeVisible();
   const sheet = page.getByRole("region", { name: "Explore panel" });
   await expect(sheet).toHaveAttribute("data-snap", "peek");
   // At peek only the title row shows — the panel body is inert.

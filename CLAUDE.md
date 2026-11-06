@@ -78,8 +78,9 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
 | State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices" and "URL v2"; selection history (`back()`), lens + workspaceContext |
 | Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in the map lenses, embedded/hidden in Plan; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
-| Shell / UI | `src/App.tsx` + `src/shell/` + `src/components/` | see "Lenses (the shell)": `Header`, `LensTabs`, `MoreMenu`, `BottomSheet`, `MapLensChrome`, `PlanChrome`, `MapToolbar`; components SearchBar, DataTableSheet, Summary/DataQuality/Weather views, Measure/Nearby controls |
+| Shell / UI | `src/App.tsx` + `src/shell/` + `src/components/` | see "Lenses (the shell)": `Header`, `LensTabs`, `MoreMenu`, `BottomSheet`, `MapLensChrome`, `PlanChrome`, `MapToolbar`; components DataTableSheet, Summary/DataQuality/Weather views, Measure/Nearby controls |
 | Layers UI | `src/layers/` | see "Layer catalogue (the Layers drawer)" |
+| Search | `src/search/` | see "Omnisearch (⌘K)" |
 | Lenses | `src/lenses/` (`registry.ts` pure, `panels.tsx`, per-lens panels) + `src/workspaces/mis/` (the Plan lens body) | See "Lenses (the shell)" |
 | Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `risk.ts`, `weather.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
@@ -509,8 +510,7 @@ extract** (`data/raw/geonames-ap.tsv` — the `IN` dump filtered to admin1 = `02
   on first **focus** of the search box; parsing and ranking happen in the worker and only the top 8 hits
   come back. A failed load is retried by the next focus. Never part of the initial payload.
 - **Search-only — places are NOT map features**: no layer, no `byId`, no selection, no hash key.
-  `SearchBar` appends up to 8 gazetteer hits under a "Places" divider (grid assets always rank
-  first; rank ties break by population so Tirupati-the-city beats its namesake villages, and
+  The omnisearch shows up to 6 gazetteer hits in its "Places" group (rank ties break by population so Tirupati-the-city beats its namesake villages, and
   same-name villages disambiguate by district). Choosing one calls `setNearbyOrigin` with a
   type-based zoom (state 7 / district 9 / mandal 11 / city 12 / default 13) — `useMapCamera`'s
   `NearbyOrigin.zoom` branch **flies** there (may zoom OUT, unlike the GPS `easeTo`), drops the
@@ -573,6 +573,20 @@ engine were retired (see the intro notes).
   uprate capped 1.15 — no wind/solar data). `deratingFactor` / `deratedCapacityMva` / `formatDerating`.
 - **`src/lib/risk.ts`** — single-axis **vulnerability** index `substationRisk()` (coastal band, redundancy
   via feed degree, age, voltage → 0–100 + factor list) + `riskTier()`.
+## Omnisearch (⌘K, Atlas 2.0 phase 3 PR 10)
+
+ONE search box (`search/Omnibox.tsx`, an ARIA combobox, `id="app-search"`) in the header on desktop (every lens), on
+the map on phones (in the Plan column on a phone in Plan). ⌘K / Ctrl-K or `/` focuses it; empty = the command palette
+(actions + other lenses). Engine `search/omni.ts` (pure, `omni.test.ts` on the real data): `buildIndex` (TRANSCO SS +
+lines from `search-index.json` + SS codes, plants and POWERGRID / railway / HT once `generationRes` / `powerGridRes`
+load on first focus, circles / zones / divisions from the substations) + `searchStatic` (also layers from the
+catalogue, `ACTIONS`, lenses) + `workerHits` (distribution network, DTR codes, places — the search worker) →
+`groupHits` (groups: Assets, Distribution, Areas, Places, Layers, Actions, Lenses; ordered by their best rank; capped;
+whole-word hits on short labels count as prefix hits). A hit's `target` is data; `search/run.ts` `runTarget` executes
+it (select + fly / net prime / place → nearby origin / area → Plan drill / `setLayer` / action / `setLens`).
+`GROUP_NOTE` carries the coverage caveats (distribution partial, places, areas → Plan). `aboutOpen` is in the ui slice
+so an action can open About.
+
 ## Lenses (the shell, Atlas 2.0 phase 3)
 
 `LensId` = `explore | field | plan | storm` (store `lens`, `setLens`; URL `lens=`). **`src/lenses/registry.ts`** is
@@ -583,7 +597,7 @@ token helpers (`switchLensLayers`, `encodeLayerDiff` / `decodeLayerDiff`, `lensO
 never a filter**: switching keeps the selection and filters, turns the old lens's own defaults off and the new
 one's on, and keeps anything switched on by hand (`state/layer-on.ts` maps the `filters.show*` + `layers.enabled`
 switches to one `LayerOn`). Lens presets are not persisted as the viewer's overlay choice (`partializeLayers`).
-- **Shell** (`App.tsx` + `src/shell/`): `Header` (brand · `LensTabs` · SearchBar in map lenses · Live badge · Copy link
+- **Shell** (`App.tsx` + `src/shell/`): `Header` (brand · `LensTabs` · `Omnibox` · Live badge · Copy link
   · `MoreMenu` — an ARIA menu with Network summary, Weather monitor, Data table, Data quality, About & sources).
   Map lenses: desktop docks the lens panel left of the map (`LensSidePanel`, collapsible, `apgg-lens-panel`) with map
   tools / Inspector / table pill floating over the map (`MapLensOverlays`); phone = search + tools on top and ONE
@@ -624,9 +638,8 @@ switches to one `LayerOn`). Lens presets are not persisted as the viewer's overl
     (`feedPathFocus` / `pocketFocus` / `cutFocus`). The **Radial feeds** tab (default) + **Radial feeds** map
     theme (red = single-circuit, orange = single-corridor). A `MapFocus` is transient workspace state that
     overrides the scope dimming + fit (chip in the scope bar clears it; re-scoping clears it).
-  - **Search** (`MisSearch.tsx`, `/` to focus): circles/zones/divisions (→ drill), TRANSCO SS + lines
-    (→ dossier + fly), DISCOM 33/11 kV SS (→ the TRANSCO SS that feeds it, via `transco-33kv.json`).
-    Picking a core asset scrolls the dossier into view.
+  - **Search** is the app-wide omnisearch (the MIS search box was folded into it): an Area hit drills the MIS
+    (`mf=<dim>:<value>`, keeping the voltage slicer), an asset opens the Inspector + flies (the dossier scrolls into view).
   - UI: `MisWorkspace.tsx` (sticky search + map-theme switch, drill breadcrumb, KPI tiles, breakdown, thematic tabs,
     register, provenance footer), `tables.tsx` (`Breakdown` pivot — click row = drill + auto-regroup via
     `nextDim`; `Register` — paginated SS/line lists, hover = map hover, click = dossier + fly), `themes.tsx`

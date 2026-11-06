@@ -5,6 +5,7 @@ export const createUiSlice: SliceCreator<UiSlice> = (set) => ({
   qualityOpen: false,
   summaryOpen: false,
   weatherOpen: false,
+  aboutOpen: false,
   measureMode: null,
   measureStats: null,
   measureClearNonce: 0,
@@ -16,6 +17,7 @@ export const createUiSlice: SliceCreator<UiSlice> = (set) => ({
   toggleSummary: (open) => set((s) => ({ summaryOpen: open ?? !s.summaryOpen })),
   // The dashboard loads weather itself while mounted (useResource) — no fetch plumbing here.
   toggleWeatherView: (open) => set((s) => ({ weatherOpen: open ?? !s.weatherOpen })),
+  toggleAbout: (open) => set((s) => ({ aboutOpen: open ?? !s.aboutOpen })),
 
   // Passing the active mode again toggles the tool off; clears any prior readout on every change.
   // Measure and the nearest-substation tool both hijack map clicks, so enabling one disables the other.
