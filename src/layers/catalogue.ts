@@ -44,6 +44,8 @@ export interface CatEntry {
   minzoom?: number;
   /** File size (raw bytes, like the RTGS catalogue); 0 = not shown. */
   bytes: number;
+  /** Drawn from vector tiles in this build — only what's on screen downloads (size not shown). */
+  tiled?: boolean;
   /** Feature count when known (0 = unknown / not shown). */
   count: number;
   source: string;
@@ -204,6 +206,12 @@ export function withLiveCounts(entries: CatEntry[], live: LiveStatus | null | un
   return entries.map((e) => (counts[e.id] ? { ...e, count: counts[e.id] } : e));
 }
 
+/** Mark the entries this build draws from vector tiles (`public/tiles/index.json`). */
+export function withTiles(entries: CatEntry[], tiled: Record<string, unknown> | null | undefined): CatEntry[] {
+  if (!tiled || !Object.keys(tiled).length) return entries;
+  return entries.map((e) => (tiled[e.id] ? { ...e, tiled: true } : e));
+}
+
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9/]+/g, " ").trim();
 
 /** Every query word must appear in the label, group, keywords or source. */
@@ -222,7 +230,7 @@ export const inZoom = (e: Pick<CatEntry, "minzoom">, zoom: number | null | undef
 export function entryMeta(e: CatEntry): string {
   return [
     e.count ? e.count.toLocaleString("en-IN") : null,
-    formatBytes(e.bytes),
+    e.tiled ? "tiled" : formatBytes(e.bytes),
     e.minzoom != null && e.minzoom > 6 ? `from zoom ${e.minzoom}` : null,
     e.vintage && e.vintage !== "live" ? e.vintage : null,
   ]

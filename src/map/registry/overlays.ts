@@ -1,9 +1,10 @@
 // Registry defs for the catalog overlays — DISCOM 33 / 11 kV, transmission towers, RTGS reference
 // layers — plus the amber DISCOM focus highlight. Pure: built from the `layers` slice + basemap and
-// a data getter (the `overlayLayer` resource), so it is unit-testable without a map or a store.
-import type { ExpressionSpecification, LayerSpecification, MapGeoJSONFeature } from "maplibre-gl";
-import type { FeatureCollection } from "geojson";
+// a view getter (the `overlayView` resource: vector tiles when built, else the GeoJSON), so it is
+// unit-testable without a map or a store.
+import type { ExpressionSpecification, LayerSpecification, MapGeoJSONFeature, SourceSpecification } from "maplibre-gl";
 import { DISCOM_COLOR, DISCOMS, type DiscomId, type OverlayDef } from "../../overlays/catalog.ts";
+import type { OverlayView } from "../../overlays/resources.ts";
 import { refFeatureRef, towerRef } from "../../inspector/refs.ts";
 import type { Basemap, OverlayFocus } from "../../state/types.ts";
 import { mergeSpecs, type MapSpec } from "../spec.ts";
@@ -37,6 +38,26 @@ export const overlayLayerIds = (id: string) => ({
 function colorExpr(def: OverlayDef): string | ExpressionSpecification {
   if (def.style.color !== "discom") return def.style.color;
   return e(["match", ["get", "discom"], ...DISCOMS.flatMap((d) => [d, DISCOM_COLOR[d]]), "#64748b"]);
+}
+
+/** What an overlay is drawn from, by overlay id (undefined until loaded). */
+export type ViewOf = (id: string) => OverlayView | undefined;
+
+/** Tiled style layers read the source-layer named after the overlay (`scripts/build-tiles.mts`). */
+function onView(layers: LayerSpecification[], view: OverlayView | undefined, sourceLayer: string): LayerSpecification[] {
+  if (view?.kind !== "tiles") return layers;
+  return layers.map((l) => ("source" in l ? ({ ...l, "source-layer": sourceLayer } as LayerSpecification) : l));
+}
+
+/** The MapLibre source of an overlay: its vector tiles, or its whole GeoJSON (the fallback). */
+export function overlaySourceSpec(def: OverlayDef, view: OverlayView | undefined): SourceSpecification | undefined {
+  if (!view) return undefined;
+  if (view.kind === "tiles") {
+    const { minzoom, maxzoom, bounds } = view.info;
+    return { type: "vector", tiles: [view.url], minzoom, maxzoom, bounds };
+  }
+  // RTGS features have no ids of their own — MapLibre numbers them by index, as the tiles do.
+  return { type: "geojson", data: view.fc, tolerance: 0.5, ...(isRefLayer(def) ? { generateId: true } : {}) };
 }
 
 export function discomFilter(discoms: Record<DiscomId, boolean>): ExpressionSpecification {
@@ -208,20 +229,15 @@ function overlayInteraction(def: OverlayDef): Interaction | undefined {
   return def.style.fillOpacity ? { priority: 60, kind, layers: [L.fill], pad: 0, pick } : undefined;
 }
 
-function catalogDef(def: OverlayDef, data: (id: string) => FeatureCollection | undefined): LayerDef<S> {
+function catalogDef(def: OverlayDef, view: ViewOf): LayerDef<S> {
   const isDiscom = def.style.color === "discom";
   const opacitySpec = memo((k: number) => overlayOpacitySpec(def, k));
   const both = memo((a: MapSpec | undefined, b: MapSpec): MapSpec => (a ? mergeSpecs(a, b) : b));
   return {
     id: def.id,
     band: def.style.aboveGrid ? "above-grid" : "beneath",
-    source: {
-      kind: "geojson",
-      id: overlaySourceId(def.id),
-      data: () => data(def.id),
-      options: isRefLayer(def) ? { tolerance: 0.5, generateId: true } : { tolerance: 0.5 },
-    },
-    layers: (s) => overlayLayers(def, s),
+    source: { kind: "spec", id: overlaySourceId(def.id), spec: () => overlaySourceSpec(def, view(def.id)) },
+    layers: (s) => onView(overlayLayers(def, s), view(def.id), def.id),
     visible: (s) => !!s.app.layers.enabled[def.id],
     // The DISCOM sub-filter (fills are never DISCOM-coloured) + the opacity slider.
     spec: (s) => both(isDiscom ? discomSpec(def.id, s.app.layers.discoms) : undefined, opacitySpec(s.app.layers.opacity[def.id] ?? 1)),
@@ -240,20 +256,29 @@ export const FOCUS_LAYER = {
 const FOCUS_PT_SRC = "ov-focus-point-src";
 const idsIn = (ids: string[] | undefined) => e(["in", ["get", "id"], ["literal", ids ?? []]]);
 
-function focusRide(id: string, on: string, layer: (filter: ExpressionSpecification) => LayerSpecification, pick: (f: OverlayFocus | null) => string[] | undefined): LayerDef<S> {
+function focusRide(
+  view: ViewOf,
+  id: string,
+  on: string,
+  layer: (filter: ExpressionSpecification) => LayerSpecification,
+  pick: (f: OverlayFocus | null) => string[] | undefined,
+): LayerDef<S> {
   const spec = memo((focus: OverlayFocus | null): MapSpec => ({ [id]: { filter: idsIn(pick(focus)) } }));
   return {
     id,
     band: "beneath",
     source: { kind: "ride", on: overlaySourceId(on) },
-    layers: (s) => [layer(idsIn(pick(s.app.layers.focus)))],
-    visible: () => true,
+    layers: (s) => onView([layer(idsIn(pick(s.app.layers.focus)))], view(on), on),
+    // Hidden when there's nothing to highlight and the layer is off — a visible layer keeps a tiled
+    // source fetching tiles as the map pans.
+    visible: (s) => !!s.app.layers.enabled[on] || !!pick(s.app.layers.focus)?.length,
     spec: (s) => spec(s.app.layers.focus),
   };
 }
 
-const FOCUS_DEFS: LayerDef<S>[] = [
+const focusDefs = (view: ViewOf): LayerDef<S>[] => [
   focusRide(
+    view,
     FOCUS_LAYER.lines,
     "discom-lines",
     (filter) => ({
@@ -271,6 +296,7 @@ const FOCUS_DEFS: LayerDef<S>[] = [
     (f) => f?.lines,
   ),
   focusRide(
+    view,
     FOCUS_LAYER.ss,
     "discom-ss",
     (filter) => ({
@@ -288,6 +314,7 @@ const FOCUS_DEFS: LayerDef<S>[] = [
     (f) => f?.ss,
   ),
   focusRide(
+    view,
     FOCUS_LAYER.lines11,
     "discom-11kv-lines",
     (filter) => ({
@@ -343,13 +370,14 @@ const GEOMETRY_RANK = { polygon: 0, line: 1, point: 2 } as const;
  * order within each), then the focus highlight above them all — still beneath the grid; the
  * focus pin tops everything.
  */
-export function overlayRegistry(data: (id: string) => FeatureCollection | undefined): (s: S) => LayerDef<S>[] {
+export function overlayRegistry(view: ViewOf): (s: S) => LayerDef<S>[] {
+  const FOCUS_DEFS = focusDefs(view);
   // Rebuilt only when the catalogue changes (not on every reconcile).
   const build = memo((defs: Record<string, OverlayDef>): LayerDef<S>[] => {
     const catalog = Object.values(defs)
       .map((def, i) => ({ def, i }))
       .sort((a, b) => GEOMETRY_RANK[a.def.geometry] - GEOMETRY_RANK[b.def.geometry] || a.i - b.i)
-      .map(({ def }) => catalogDef(def, data));
+      .map(({ def }) => catalogDef(def, view));
     return [...catalog, ...FOCUS_DEFS, FOCUS_POINT_DEF];
   });
   return (s) => build(s.app.layers.defs);

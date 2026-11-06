@@ -18,7 +18,7 @@ export interface TowerEntity {
 
 export const towerAdapter: Adapter<TowerEntity> = {
   kind: "tower",
-  needs: (ref) => ({ overlay: parseTowerRef(ref)?.layer ?? null }),
+  needs: (ref) => ({ layer: parseTowerRef(ref)?.layer ?? null, overlay: true }),
   resolve: (ref, ctx) => {
     const t = parseTowerRef(ref);
     const fc = t ? ctx.overlay(t.layer) : undefined; // loaded ⇒ decoded
@@ -56,7 +56,7 @@ export interface RefEntity {
 
 export const refAdapter: Adapter<RefEntity> = {
   kind: "ref",
-  needs: (ref) => ({ overlay: parseRefFeature(ref)?.layer ?? null }),
+  needs: (ref) => ({ layer: parseRefFeature(ref)?.layer ?? null, overlay: true }),
   resolve: (ref, ctx) => {
     const r = parseRefFeature(ref);
     const def = r ? ctx.overlayDef(r.layer) : undefined;

@@ -31,6 +31,11 @@ jobs:
       # Regenerate the static data from data/raw (live pulls + snapshots) — keeps deploy reproducible.
       - run: npm run build:data
 
+      # Static vector tiles for the heavy overlays (public/tiles — never committed). tippecanoe comes
+      # from Ubuntu's apt; --require fails the deploy rather than silently shipping GeoJSON-only.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends tippecanoe
+      - run: npm run build:tiles -- --require
+
       - run: npm test
 
       # BASE_PATH must match the repo name for a project site (username.github.io/<repo>/).
@@ -63,6 +68,10 @@ jobs:
       - run: npm ci
 
       - run: npx playwright install --with-deps chromium
+
+      # Same tiles as the deploy, so the smoke suite exercises the tiled path.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends tippecanoe
+      - run: npm run build:tiles -- --require
 
       - run: npm run build
         env:

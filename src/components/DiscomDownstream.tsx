@@ -5,7 +5,8 @@ import { useResource } from "../data/resources.ts";
 import type { SubstationProps } from "../data/types.ts";
 import { downloadText, toCsv } from "../lib/export.ts";
 import { DISCOM_COLOR, type DiscomId } from "../overlays/catalog.ts";
-import { overlayLayer, useOverlayStore } from "../overlays/store.ts";
+import { featureRows } from "../overlays/resources.ts";
+import { useOverlayStore } from "../overlays/store.ts";
 
 const SHOW = 10;
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -83,17 +84,14 @@ export function DiscomDownstream({ ss }: { ss: SubstationProps }) {
   const downloadGeo = async () => {
     setBusy(true);
     try {
-      const [lines, ssFc] = await Promise.all([overlayLayer.ensure("discom-lines"), overlayLayer.ensure("discom-ss")]);
-      const g = { lines, ss: ssFc };
-      const lineIds = new Set(feeders.map((f) => f[0]));
-      const sIds = new Set(ssIds);
-      const pick = (fc: FeatureCollection, ids: Set<string>) => fc.features.filter((f) => ids.has(String(f.properties?.id)));
+      // Only the sidecar shards these features live in when the layers are tiled (else the GeoJSON).
+      const [lineFeats, ssFeats] = await Promise.all([featureRows("discom-lines", feeders.map((f) => f[0])), featureRows("discom-ss", ssIds)]);
       const transcoPoint: Feature = {
         type: "Feature",
         geometry: { type: "Point", coordinates: [ss.lng, ss.lat] },
         properties: { id: ss.id, kind: "transco-substation", name: ss.name, voltage: ss.voltage, ssCode: ss.ssCode },
       };
-      const fc: FeatureCollection = { type: "FeatureCollection", features: [transcoPoint, ...pick(g.lines, lineIds), ...pick(g.ss, sIds)] };
+      const fc: FeatureCollection = { type: "FeatureCollection", features: [transcoPoint, ...lineFeats, ...ssFeats] };
       downloadText(`${fileBase}.geojson`, "application/geo+json", JSON.stringify(fc));
     } finally {
       setBusy(false);

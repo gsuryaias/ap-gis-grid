@@ -5,6 +5,8 @@ import type { EngineMap } from "../engine.ts";
 import type { SpecMap } from "../spec.ts";
 
 interface FakeLayer {
+  /** The vector source-layer the layer reads (tiled overlays). */
+  sourceLayer?: string;
   filter?: unknown;
   visibility?: string;
   paint: Record<string, unknown>;
@@ -13,16 +15,16 @@ interface FakeLayer {
 export class FakeMap {
   layers = new Map<string, FakeLayer>();
   order: string[] = [];
-  sources = new Map<string, { data?: unknown; tiles?: unknown; setData: (d: unknown) => void; setTiles: (t: unknown) => void }>();
+  sources = new Map<string, { type?: string; data?: unknown; tiles?: unknown; setData: (d: unknown) => void; setTiles: (t: unknown) => void }>();
   featureState = new Map<string, Record<string, unknown>>();
   writes: string[] = [];
   styleLoaded = true;
 
   addLayer(spec: LayerSpecification, before?: string): void {
-    const s = spec as { id: string; filter?: unknown; layout?: { visibility?: string }; paint?: Record<string, unknown> };
+    const s = spec as { id: string; "source-layer"?: string; filter?: unknown; layout?: { visibility?: string }; paint?: Record<string, unknown> };
     if (this.layers.has(s.id)) throw new Error(`layer ${s.id} already exists`);
     this.writes.push(`add-layer:${s.id}`);
-    this.layers.set(s.id, { filter: s.filter, visibility: s.layout?.visibility, paint: { ...(s.paint ?? {}) } });
+    this.layers.set(s.id, { sourceLayer: s["source-layer"], filter: s.filter, visibility: s.layout?.visibility, paint: { ...(s.paint ?? {}) } });
     this.insert(s.id, before);
   }
   moveLayer(id: string, before?: string): void {
@@ -38,10 +40,11 @@ export class FakeMap {
   getLayersOrder(): string[] {
     return [...this.order];
   }
-  addSource(id: string, spec?: { data?: unknown; tiles?: unknown }): void {
+  addSource(id: string, spec?: { type?: string; data?: unknown; tiles?: unknown }): void {
     if (this.sources.has(id)) throw new Error(`source ${id} already exists`);
     this.writes.push(`add-source:${id}`);
     const src = {
+      type: spec?.type,
       data: spec?.data,
       tiles: spec?.tiles,
       setData: (d: unknown) => {

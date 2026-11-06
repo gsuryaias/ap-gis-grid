@@ -3,6 +3,7 @@ import type { FeatureCollection } from "geojson";
 import type { GenerationData, GridData } from "../data/types.ts";
 import type { WeatherData } from "../data/weather.ts";
 import { DISCOM_DEFS, refDef, TOWER_DEFS, type OverlayDef } from "../overlays/catalog.ts";
+import type { OverlayView } from "../overlays/resources.ts";
 import { freshFilters } from "../state/slices/filters.ts";
 import type { AppState } from "../state/types.ts";
 import { attachEngine, SENTINEL } from "./engine.ts";
@@ -19,6 +20,12 @@ vi.stubGlobal("requestAnimationFrame", () => 1);
 afterAll(() => vi.unstubAllGlobals());
 
 const FC: FeatureCollection = { type: "FeatureCollection", features: [] };
+const GEO: OverlayView = { kind: "geojson", fc: FC };
+const TILES: OverlayView = {
+  kind: "tiles",
+  url: "https://x/tiles/l/{z}/{x}/{y}.pbf?v=1",
+  info: { minzoom: 5, maxzoom: 11, bounds: [76, 12, 85, 20], count: 3, v: "1", shards: 4 },
+};
 const FOREST = refDef({
   id: "forest", group: "Environment", label: "Forest", geometry: "polygon", file: "ref/forest.geojson",
   count: 1, bytes: 1, labelField: "name", fields: [], source: "RTGS", vintage: "2023", note: null,
@@ -44,7 +51,7 @@ const GEN = { fc: FC, byId: new Map([["g-1", { id: "g-1" }]]) } as unknown as Ge
 const wxAt = (fetchedAt: number, tileUrl = "https://tiles/a/{z}/{x}/{y}.png") =>
   ({ cyclones: [], radar: { tileUrl }, fetchedAt }) as unknown as WeatherData;
 
-function setup(opts: { enabled?: string[]; loaded?: string[] } = {}) {
+function setup(opts: { enabled?: string[]; loaded?: string[]; tiled?: string[] } = {}) {
   const map = new FakeMap();
   const defs: Record<string, OverlayDef> = Object.fromEntries([DLINES, DSS, TOWERS, NH, FOREST].map((d) => [d.id, d]));
   const app = {
@@ -66,13 +73,14 @@ function setup(opts: { enabled?: string[]; loaded?: string[] } = {}) {
   const ctl = {
     map,
     loaded: new Set(opts.loaded ?? Object.keys(defs)),
+    tiled: new Set(opts.tiled ?? []),
     state: { app, data: DATA, gen: undefined, pg: undefined, wx: undefined, preset: LENS_LAYER_PRESETS.explore } as MapState,
     reloads: 0,
   };
   const engine = attachEngine(map.api, {
     getState: () => ctl.state,
     subscribe: () => () => {},
-    defs: mapRegistry((id) => (ctl.loaded.has(id) ? FC : undefined)),
+    defs: mapRegistry((id) => (ctl.loaded.has(id) ? (ctl.tiled.has(id) ? TILES : GEO) : undefined)),
     onStyleReload: () => ctl.reloads++,
   });
   const set = (fn: (s: MapState) => Partial<MapState>) => (ctl.state = { ...ctl.state, ...fn(ctl.state) });
@@ -110,6 +118,34 @@ describe("map engine", () => {
     expect(map.getLayer(LAYER.generation)).toBeUndefined();
     expect(map.getLayer(WX_LAYER.radar)).toBeUndefined();
     expect(map.getLayer(FOCUS_LAYER.lines11)).toBeUndefined();
+  });
+
+  it("a tiled overlay mounts a vector source; its layers (and the focus ride) read its source-layer", () => {
+    const { map, engine } = setup({ tiled: ["discom-lines", "towers-400kv"] });
+    settle(engine);
+    expect(map.getSource(overlaySourceId("discom-lines"))!.type).toBe("vector");
+    expect(map.getSource(overlaySourceId("discom-lines"))!.tiles).toEqual([TILES.kind === "tiles" ? TILES.url : ""]);
+    expect(map.getLayer(L("discom-lines").line)!.sourceLayer).toBe("discom-lines");
+    expect(map.getLayer(FOCUS_LAYER.lines)!.sourceLayer).toBe("discom-lines");
+    expect(map.getLayer(L(TOWERS.id).circle)!.sourceLayer).toBe(TOWERS.id);
+    // GeoJSON fallbacks are untouched.
+    expect(map.getSource(overlaySourceId("discom-ss"))!.type).toBe("geojson");
+    expect(map.getLayer(L("discom-ss").circle)!.sourceLayer).toBeUndefined();
+    expect(map.getLayer(FOCUS_LAYER.ss)!.sourceLayer).toBeUndefined();
+    map.writes = [];
+    expect(engine.reconcile()).toBe(0);
+  });
+
+  it("the focus highlight hides with its layer unless it has something to show", () => {
+    const { map, engine, setApp, ctl } = setup();
+    settle(engine);
+    const layers = ctl.state.app.layers;
+    setApp({ layers: { ...layers, enabled: { ...layers.enabled, "discom-lines": false } } });
+    settle(engine);
+    expect(map.getLayoutProperty(FOCUS_LAYER.lines, "visibility")).toBe("none");
+    setApp({ layers: { ...ctl.state.app.layers, focus: { lines: ["dl-1"], ss: [], point: null } } });
+    settle(engine);
+    expect(map.getLayoutProperty(FOCUS_LAYER.lines, "visibility")).toBe("visible");
   });
 
   it("a second reconcile makes zero writes", () => {
@@ -183,7 +219,8 @@ describe("map engine", () => {
     setApp({ layers: { ...ctl.state.app.layers, enabled: {} } });
     map.writes = [];
     engine.reconcile();
-    expect(map.writes).toEqual([`vis:${L("discom-lines").line}`]);
+    // The empty focus highlight riding the source hides with it.
+    expect(map.writes).toEqual([`vis:${L("discom-lines").line}`, `vis:${FOCUS_LAYER.lines}`]);
     expect(map.getSource(overlaySourceId("discom-lines"))).toBeDefined();
   });
 
@@ -278,7 +315,7 @@ describe("map engine", () => {
 
 describe("map registry invariants", () => {
   const { ctl } = setup();
-  const defs = mapRegistry(() => FC)(ctl.state);
+  const defs = mapRegistry(() => GEO)(ctl.state);
 
   it("def ids and style-layer ids are unique", () => {
     expect(new Set(defs.map((d) => d.id)).size).toBe(defs.length);
@@ -308,7 +345,7 @@ describe("map registry invariants", () => {
     const outline = refDef({ ...FOREST, id: "districts", group: "Boundaries" });
     expect(outline.style.fillOpacity).toBeUndefined();
     const st = { ...ctl.state, app: { ...ctl.state.app, layers: { ...ctl.state.app.layers, defs: { districts: outline } } } as AppState };
-    expect(mapRegistry(() => FC)(st).find((d) => d.id === "districts")!.interaction).toBeUndefined();
+    expect(mapRegistry(() => GEO)(st).find((d) => d.id === "districts")!.interaction).toBeUndefined();
     const ss = defs.find((d) => d.id === "discom-ss")!;
     const dark = { ...ctl.state, app: { ...ctl.state.app, basemap: "dark" } as AppState };
     expect(JSON.stringify(ss.layers(dark))).not.toEqual(JSON.stringify(ss.layers(ctl.state)));

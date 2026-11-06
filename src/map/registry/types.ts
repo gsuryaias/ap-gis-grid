@@ -23,6 +23,11 @@ export type SourceSpec<S> =
   | { kind: "geojson"; id: string; data: (s: S) => FeatureCollection | undefined; options?: Partial<SourceSpecification> }
   /** GeoJSON derived from state; `setData` runs whenever `key(s)` changes. */
   | { kind: "computed"; id: string; data: (s: S) => FeatureCollection | undefined; key: (s: S) => string }
+  /**
+   * A source whose whole spec comes from a lazy resource (an overlay drawn from vector tiles, or its
+   * GeoJSON fallback). Added once it is there; never updated in place (a new spec = a new source id).
+   */
+  | { kind: "spec"; id: string; spec: (s: S) => SourceSpecification | undefined }
   /** Raster tiles; `setTiles` runs whenever the URL list changes. */
   | { kind: "raster"; id: string; tiles: (s: S) => string[] | undefined; options?: Record<string, unknown> }
   /** Reuse another def's source; the def mounts once that source exists. */
