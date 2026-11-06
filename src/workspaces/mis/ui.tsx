@@ -1,5 +1,7 @@
 // Network MIS — small presentational primitives (cards, stat tiles, segmented bars, legends,
 // tabs). Colour comes only from data marks; all text wears ink tokens (dataviz convention).
+import type { MethodId } from "../../content/methods.ts";
+import { Indicative } from "../../trust/Indicative.tsx";
 import { createContext, useContext, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { VOLTAGES, type Voltage } from "../../data/types.ts";
 import { VOLTAGE_COLOR } from "../../theme/palette.ts";
@@ -51,8 +53,11 @@ export function StatTile({
   metric,
   more,
   title,
+  method,
 }: {
   label: string;
+  /** A derived figure: an "Indicative" chip opens its method card. */
+  method?: MethodId;
   value: ReactNode;
   sub?: ReactNode;
   children?: ReactNode;
@@ -64,7 +69,10 @@ export function StatTile({
 }) {
   return (
     <div className="relative min-w-0 rounded-xl border border-line bg-surface px-3.5 py-3 text-left shadow-sm" title={title}>
-      <div className="pr-6 text-[11px] font-medium text-ink-2">{label}</div>
+      <div className="pr-6 text-[11px] font-medium text-ink-2">
+        {label}
+        {method && <Indicative method={method} />}
+      </div>
       {more && (
         <button
           type="button"
@@ -215,20 +223,34 @@ export function VoltageSegBar({
   const total = VOLTAGES.reduce((a, v) => a + byV[v], 0);
   const parts = VOLTAGES.filter((v) => byV[v] > 0);
   const label = parts.map((v) => `${v} kV ${nf0(byV[v])} ${unit}`).join(" · ");
+  const interactive = !!(partMetric && api);
+  if (!parts.length) return <div className="w-full" style={{ height }} aria-hidden />;
   return (
-    <div className="flex w-full" style={{ height }} role="img" aria-label={label} title={label}>
-      <div className="flex gap-[2px]" style={{ width: `${Math.max(0, Math.min(1, scale)) * 100}%` }}>
+    // Interactive: a group of 24 px-tall targets (WCAG 2.5.8) drawing a thin bar; else one image.
+    <div
+      className="flex w-full items-center"
+      style={{ height: interactive ? Math.max(24, height) : height }}
+      role={interactive ? "group" : "img"}
+      aria-label={interactive ? `By voltage: ${label}` : label}
+      title={label}
+    >
+      <div className="flex h-full items-center gap-[2px]" style={{ width: `${Math.max(0, Math.min(1, scale)) * 100}%` }}>
         {parts.map((v) =>
-          partMetric && api ? (
+          interactive ? (
             <button
               key={v}
               type="button"
-              onClick={() => api.open({ metric: partMetric(v) })}
+              onClick={() => api!.open({ metric: partMetric!(v) })}
               title={`${v} kV: ${nf0(byV[v])} ${unit} — list them`}
               aria-label={`List ${v} kV (${nf0(byV[v])} ${unit})`}
-              className="rounded-full hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-              style={{ width: `${(byV[v] / total) * 100}%`, minWidth: 2, backgroundColor: VOLTAGE_COLOR[v] }}
-            />
+              className="group flex h-full items-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              style={{ width: `${(byV[v] / total) * 100}%`, minWidth: 24 }}
+            >
+              <span
+                className="block w-full rounded-full group-hover:outline group-hover:outline-2 group-hover:outline-offset-1 group-hover:outline-accent"
+                style={{ height, backgroundColor: VOLTAGE_COLOR[v] }}
+              />
+            </button>
           ) : (
             <span
               key={v}

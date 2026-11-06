@@ -10,10 +10,11 @@ import { NET_KIND_LABEL, type NetItem } from "../data/network-search.ts";
 import type { SearchHits } from "../data/search-core.ts";
 import type { GenerationData, GridData, PlaceItem, PowerGridData, Voltage } from "../data/types.ts";
 import { matchesQuery, type CatEntry } from "../layers/catalogue.ts";
+import { GLOSSARY } from "../content/glossary.ts";
 import { LENSES, type LensId } from "../lenses/registry.ts";
 
-export type OmniGroup = "Assets" | "Distribution" | "Areas" | "Places" | "Layers" | "Actions" | "Lenses";
-export const GROUP_ORDER: OmniGroup[] = ["Assets", "Distribution", "Areas", "Places", "Layers", "Actions", "Lenses"];
+export type OmniGroup = "Assets" | "Distribution" | "Areas" | "Places" | "Layers" | "Glossary" | "Actions" | "Lenses";
+export const GROUP_ORDER: OmniGroup[] = ["Assets", "Distribution", "Areas", "Places", "Layers", "Glossary", "Actions", "Lenses"];
 
 export type ActionId =
   | "copy-link"
@@ -29,6 +30,8 @@ export type ActionId =
   | "layers"
   | "clear-filters"
   | "near-me"
+  | "glossary"
+  | "shortcuts"
   | "about";
 
 export type OmniTarget =
@@ -38,7 +41,8 @@ export type OmniTarget =
   | { t: "area"; dim: "circle" | "zone" | "division"; value: string }
   | { t: "layer"; id: string }
   | { t: "action"; id: ActionId }
-  | { t: "lens"; id: LensId };
+  | { t: "lens"; id: LensId }
+  | { t: "glossary"; id: string };
 
 export interface OmniHit {
   key: string;
@@ -83,6 +87,8 @@ export const ACTIONS: ActionDef[] = [
   { id: "layers", label: "Open the layers drawer", keywords: "legend overlays basemap opacity" },
   { id: "clear-filters", label: "Clear filters", keywords: "reset voltage circle coast all" },
   { id: "near-me", label: "Substations near me", keywords: "locate gps nearest closest location" },
+  { id: "glossary", label: "Glossary", keywords: "terms definitions meaning jargon help" },
+  { id: "shortcuts", label: "Keyboard shortcuts", keywords: "keys hotkeys help" },
   { id: "about", label: "About & sources", keywords: "attribution licence credits" },
 ];
 
@@ -171,7 +177,7 @@ export function buildIndex({ data, gen, pg }: StaticSources): IndexEntry[] {
   return out;
 }
 
-const LIMITS: Record<OmniGroup, number> = { Assets: 8, Distribution: 10, Areas: 5, Places: 6, Layers: 5, Actions: 5, Lenses: 4 };
+const LIMITS: Record<OmniGroup, number> = { Assets: 8, Distribution: 10, Areas: 5, Places: 6, Layers: 5, Glossary: 3, Actions: 5, Lenses: 4 };
 
 /** Static hits for a query (assets, areas, layers, actions, lenses), best first, capped per group. */
 export function searchStatic(
@@ -203,6 +209,12 @@ export function searchStatic(
           target: { t: "layer", id: l.id },
           rank,
         });
+    }
+  }
+  if (q.length >= 2) {
+    for (const g of GLOSSARY) {
+      const r = Math.min(rankLabel(g.term, q), ...(g.aka ?? []).map((a) => rankLabel(a, q)));
+      if (r < 99) out.push({ key: `gl:${g.id}`, group: "Glossary", label: g.term, sub: g.text, tag: "Term", target: { t: "glossary", id: g.id }, rank: r });
     }
   }
   const mapLens = LENSES.find((l) => l.id === opts.lens)?.layout === "map";

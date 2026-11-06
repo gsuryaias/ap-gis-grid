@@ -22,7 +22,7 @@ export function LensTabs({ fill = false }: { fill?: boolean }) {
             title={`${l.label} · ${l.audience} — ${l.description}`}
             aria-current={active ? "page" : undefined}
             className={`flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors ${
-              active ? "bg-accent text-white" : "text-ink-2 hover:bg-surface-3 hover:text-ink"
+              active ? "bg-accent text-on-accent" : "text-ink-2 hover:bg-surface-3 hover:text-ink"
             }`}
           >
             <Icon width={13} height={13} aria-hidden />

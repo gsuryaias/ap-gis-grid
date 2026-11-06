@@ -12,17 +12,18 @@ import { useAppStore } from "../state/store.ts";
 
 const btn = "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium shadow-sm transition-colors";
 const idle = "border-line bg-surface/95 text-ink hover:bg-surface-2";
-const pressed = "border-accent bg-accent text-white";
+const pressed = "border-accent bg-accent text-on-accent";
 
 export function LayersButton() {
   const open = useAppStore((s) => s.layersOpen);
   const toggle = useAppStore((s) => s.toggleLayersDrawer);
   const { on } = useCatalogue();
   return (
-    <button type="button" onClick={() => toggle()} aria-expanded={open} aria-label={`Layers (${on.size} on)`} className={`${btn} ${open ? pressed : idle}`}>
-      <LayersIcon width={14} height={14} />
+    <button type="button" onClick={() => toggle()} aria-expanded={open} className={`${btn} ${open ? pressed : idle}`}>
+      <LayersIcon width={14} height={14} aria-hidden />
       Layers
-      <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${open ? "bg-white/25" : "bg-surface-3 text-ink-2"}`}>{on.size}</span>
+      <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${open ? "bg-surface text-ink" : "bg-surface-3 text-ink-2"}`}>{on.size}</span>
+      <span className="sr-only"> on</span>
     </button>
   );
 }

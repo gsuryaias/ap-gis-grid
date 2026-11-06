@@ -22,7 +22,9 @@
   --color-ink: #0d1b2a;
   --color-ink-2: #44566c;
   --color-line: #d6deea;
-  --color-accent: #1a936f;
+  /* WCAG AA: ≥ 4.5:1 for accent text on every light surface and for on-accent text on it. */
+  --color-accent: #0f7353;
+  --color-on-accent: #ffffff;
   --color-brand: #0b3d5c;
 
   --radius-panel: 14px;
@@ -40,6 +42,8 @@
   --color-ink-2: #9bb0c4;
   --color-line: #294056;
   --color-brand: #6fb3d9;
+  --color-accent: #34c08f;
+  --color-on-accent: #062b1f;
 }
 
 html,
@@ -91,7 +95,11 @@ body {
   border-radius: 4px;
 }
 /* The search box draws its focus ring on its wrapper (focus-within), not on the bare input. */
-#app-search:focus-visible { outline: none; }
+#app-search:focus-visible,
+label:focus-within > input:focus-visible { outline: none; }
+label:has(> input:focus-visible) { box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 35%, transparent); }
+/* Containers that receive focus programmatically (dialogs, popovers: tabindex=-1) show no ring. */
+[tabindex="-1"]:focus-visible { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   * {

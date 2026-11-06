@@ -105,10 +105,20 @@ describe("core adapters (real network)", () => {
   it("a rated line shows its indicative capacity + method note; DLR only with live weather", () => {
     const line = lines.find((l) => l.conductor && /zebra/i.test(l.conductor))!;
     const ins = inspect(line.id, ctx())!;
-    const cap = ins.sections[0].kind === "fields" ? ins.sections[0].rows.find((r) => r.label === "Indicative capacity") : undefined;
+    const cap = ins.sections[0].kind === "fields" ? ins.sections[0].rows.find((r) => r.label === "Thermal capacity") : undefined;
     expect(cap?.value).toMatch(/MVA/);
+    expect(cap?.method).toBe("capacity"); // the "Indicative" chip opens the capacity method card
     expect(cap?.sub).toBeUndefined();
     expect(ins.sections.at(-1)).toMatchObject({ id: "provenance", kind: "note" });
+  });
+
+  it("derived figures carry a method card; every method id used exists", () => {
+    const ss = substations[0];
+    const sec = inspect(ss.id, ctx())!.sections;
+    const risk = sec.find((s) => s.id === "risk");
+    const methods = risk?.kind === "fields" ? risk.rows.map((r) => r.method).filter(Boolean) : [];
+    expect(methods).toContain("risk");
+    expect(sec.find((s) => s.id === "connectivity")?.method).toBe("connectivity");
   });
 
   it("unknown / not-yet-loaded refs don't resolve", () => {

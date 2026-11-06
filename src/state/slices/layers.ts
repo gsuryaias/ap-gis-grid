@@ -111,13 +111,14 @@ export const createLayersSlice: SliceCreator<LayersSlice> = (set, get) => {
           defs: { ...l.defs, [id]: { ...l.defs[id], count: l.defs[id].count || fc.features.length } },
         })),
       )
-      .catch((e: unknown) =>
+      .catch((e: unknown) => {
         setL((l) => ({
           status: { ...l.status, [id]: "error" },
           errors: { ...l.errors, [id]: e instanceof Error ? e.message : String(e) },
           enabled: { ...l.enabled, [id]: false },
-        })),
-      );
+        }));
+        get().toast({ key: `layer-${id}`, tone: "error", text: `Couldn’t load “${L().defs[id]?.label ?? id}” — it was switched off. Try again later.` });
+      });
   };
 
   return {
@@ -150,7 +151,10 @@ export const createLayersSlice: SliceCreator<LayersSlice> = (set, get) => {
             // Layers restored from a previous visit that were waiting for their definition.
             for (const [id, on] of Object.entries(L().enabled)) if (on) fetchLayer(id);
           })
-          .catch(() => setL(() => ({ catalogStatus: "error" })));
+          .catch(() => {
+            setL(() => ({ catalogStatus: "error" }));
+            get().toast({ key: "ref-catalog", tone: "error", text: "Couldn’t load the reference-layer catalogue." });
+          });
       },
 
       toggle: (id, on) => {

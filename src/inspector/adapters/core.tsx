@@ -54,16 +54,16 @@ export const coreSsAdapter: Adapter<SubstationProps> = {
         kind: "fields",
         rows: fields(
           [
-            "Vulnerability (indicative)",
+            "Vulnerability",
             `${risk.score} · ${tier}`,
-            { sub: risk.factors.join(" · "), tone: TIER_TONE[tier], hint: "Screening score from coastal exposure, inferred redundancy, age and voltage — not a hazard model" },
+            { sub: risk.factors.join(" · "), tone: TIER_TONE[tier], method: "risk" },
           ],
           [
             "Inferred feed",
             `Fed from ${deg} substation${deg === 1 ? "" : "s"}${singleFed ? " · single-fed" : ""}`,
-            { tone: singleFed ? "warn" : undefined, hint: "Distinct neighbouring substations, geometrically inferred — indicative only" },
+            { tone: singleFed ? "warn" : undefined, hint: "Distinct neighbouring substations the lines here lead to.", method: "connectivity" },
           ],
-          ["Criticality", ga.articulationIds.has(ss.id) ? "Articulation point (inferred)" : null, { hint: "Removing this SS would split the inferred network" }],
+          ["Criticality", ga.articulationIds.has(ss.id) ? "Articulation point (inferred)" : null, { hint: "Losing this substation would split the network into separate pieces.", method: "n1" }],
         ),
       },
       { id: "weather", kind: "custom", render: () => <SpotConditions lng={ss.lng} lat={ss.lat} /> },
@@ -71,7 +71,7 @@ export const coreSsAdapter: Adapter<SubstationProps> = {
         id: "connectivity",
         kind: "links",
         title: `Connected lines · ${lines.length}`,
-        aside: "(spatially inferred)",
+        method: "connectivity",
         empty: `No lines snapped within ${data.meta.snapThresholdM} m.`,
         items: lines.map(({ line }) => ({
           ref: line.id,
@@ -147,14 +147,14 @@ export const coreLineAdapter: Adapter<LineProps> = {
           ],
           ["Conductor", line.conductor],
           [
-            "Indicative capacity",
+            "Thermal capacity",
             capacity ? `${formatMva(capacity.totalMva)} (${line.circuit === "DC" ? `${formatMva(capacity.perCircuitMva)}/ckt` : "thermal"})` : null,
             {
-              hint: "Derived from conductor type at nominal conditions — not authoritative",
-              sub: dlr ? `Now ${formatMva(dlr.mva)} (${formatDerating(dlr.factor)} at ${Math.round(dlr.tempC)} °C) · indicative` : undefined,
+              method: "capacity",
+              sub: dlr ? `Now ${formatMva(dlr.mva)} (${formatDerating(dlr.factor)} at ${Math.round(dlr.tempC)} °C — ambient derating)` : undefined,
             },
           ],
-          ["Commissioned", line.commissioned ? `${line.commissioned}${age != null ? ` · ${formatAge(age)}` : ""}` : null],
+          ["Commissioned", line.commissioned ? `${line.commissioned}${age != null ? ` · ${formatAge(age)}` : ""}` : null, age != null ? { method: "age" } : undefined],
           ["Circle", line.circle],
           ["Coast", coast(line.coastalKm, line.coastalBand)],
           ["Route (from name)", from || to ? `${from ?? "?"} → ${to ?? "?"}` : null],
@@ -175,7 +175,7 @@ export const coreLineAdapter: Adapter<LineProps> = {
       id: "connectivity",
       kind: "links",
       title: `Connected substations · ${subs.length}`,
-      aside: "(spatially inferred)",
+      method: "connectivity",
       empty: `Endpoints are external (no substation within ${data.meta.snapThresholdM} m).`,
       items: subs.map((ss) => ({
         ref: ss.id,

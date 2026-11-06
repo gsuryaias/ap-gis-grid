@@ -401,7 +401,8 @@ export default function MisWorkspace() {
             <VoltageSegBar byV={total.ckmByV} unit="ckm" partMetric={(v) => `ckm${v}` as const} />
           </StatTile>
           <StatTile
-            label="Σ indicative rating"
+            label="Σ rating"
+            method="capacity"
             value={gva(total.mva).replace("≈ ", "")}
             metric="mva"
             sub={
@@ -420,6 +421,7 @@ export default function MisWorkspace() {
           />
           <StatTile
             label="Line fleet age"
+            method="age"
             value={total.meanAge == null ? "—" : `${total.meanAge.toFixed(1)} yrs`}
             metric={total.meanAge == null ? undefined : "age"}
             sub={
@@ -432,6 +434,7 @@ export default function MisWorkspace() {
           />
           <StatTile
             label="Radially fed SS"
+            method="supply"
             value={nf0(total.radialSc + total.radialDc)}
             metric="radial"
             sub={
@@ -450,6 +453,7 @@ export default function MisWorkspace() {
           />
           <StatTile
             label="N-1 exposure"
+            method="n1"
             value={nf0(total.bridges)}
             metric="bridges"
             sub={
@@ -462,6 +466,7 @@ export default function MisWorkspace() {
           />
           <StatTile
             label="33/11 kV SS fed"
+            method="trace"
             value={conn ? nf0(total.discomSs) : connError ? "—" : "…"}
             metric={conn ? "discomSs" : undefined}
             sub={
@@ -479,6 +484,7 @@ export default function MisWorkspace() {
           />
           <StatTile
             label="Single-circuit interfaces"
+            method="supply"
             value={nf0(weakIfaces.total)}
             metric="ifaceWeak"
             sub={

@@ -136,6 +136,16 @@ export interface FiltersSlice {
   toggleWxLayer: (l: WxLayer) => void;
 }
 
+/** One notice in the toast stack (`shell/Toaster.tsx`). */
+export interface Toast {
+  id: string;
+  text: string;
+  tone: "info" | "success" | "error";
+  action?: { label: string; run: () => void };
+  /** Auto-dismiss after ms (default 4 s); null = stays until dismissed. */
+  ttl: number | null;
+}
+
 /** Panels and map tools — all transient (never in the URL hash) except `tableOpen`. */
 export interface UiSlice {
   tableOpen: boolean;
@@ -143,6 +153,10 @@ export interface UiSlice {
   summaryOpen: boolean;
   weatherOpen: boolean;
   aboutOpen: boolean;
+  /** Glossary dialog: null = closed, "" = open at the top, else the entry id to show. */
+  glossary: string | null;
+  shortcutsOpen: boolean;
+  toasts: Toast[];
   measureMode: MeasureMode | null;
   measureStats: MeasureStats | null;
   measureClearNonce: number;
@@ -153,6 +167,11 @@ export interface UiSlice {
   toggleSummary: (open?: boolean) => void;
   toggleWeatherView: (open?: boolean) => void;
   toggleAbout: (open?: boolean) => void;
+  openGlossary: (id?: string | null) => void;
+  toggleShortcuts: (open?: boolean) => void;
+  /** Show a notice; a toast with the same `key` replaces the previous one. Returns its id. */
+  toast: (t: { text: string; tone?: Toast["tone"]; action?: Toast["action"]; ttl?: number | null; key?: string }) => string;
+  dismissToast: (id: string) => void;
   setMeasureMode: (m: MeasureMode | null) => void;
   clearMeasure: () => void;
   setMeasureStats: (s: MeasureStats | null) => void;

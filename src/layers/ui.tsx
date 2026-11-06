@@ -53,6 +53,4 @@ export function Key({ swatch, label, sub, children }: { swatch: Swatch; label: s
   );
 }
 
-export function Spinner() {
-  return <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-line border-t-accent" aria-label="Loading" />;
-}
+export { Spinner } from "../components/states.tsx";

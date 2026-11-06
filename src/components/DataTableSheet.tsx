@@ -118,9 +118,20 @@ function Table<T extends { id: string }>({
                 key={row.id}
                 data-row-id={row.original.id}
                 onClick={() => select(row.original.id, { fly: true })}
+                // Keyboard: rows are focusable; Enter / Space opens the row (same as a click).
+                tabIndex={0}
+                aria-selected={row.original.id === selectedId}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    select(row.original.id, { fly: true });
+                  }
+                }}
+                onFocus={() => useAppStore.getState().setHover(row.original.id)}
+                onBlur={() => useAppStore.getState().setHover(null)}
                 onMouseEnter={() => useAppStore.getState().setHover(row.original.id)}
                 onMouseLeave={() => useAppStore.getState().setHover(null)}
-                className={`cursor-pointer border-b border-line/60 ${
+                className={`cursor-pointer border-b border-line/60 focus-visible:bg-accent/10 ${
                   row.original.id === selectedId ? "bg-accent/12" : "hover:bg-surface-2"
                 }`}
               >

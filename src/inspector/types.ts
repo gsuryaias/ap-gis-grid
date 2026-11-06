@@ -6,6 +6,7 @@
 // network, tower summary, spot weather, MIS supply box).
 import type { ReactNode } from "react";
 import type { FeatureCollection } from "geojson";
+import type { MethodId } from "../content/methods.ts";
 import type { NetItem } from "../data/network-search.ts";
 import type { GenerationData, GridData, PowerGridData, Voltage } from "../data/types.ts";
 import type { WeatherData } from "../data/weather.ts";
@@ -32,8 +33,10 @@ export interface FieldRow {
   value: string;
   /** Second line under the value (muted). */
   sub?: string;
-  /** Touch-friendly explanation (shown as a tooltip today; a popover in phase 3). */
+  /** Explanation behind an ⓘ popover (works on touch). */
   hint?: string;
+  /** A derived figure: an "Indicative" chip opens its method card. */
+  method?: MethodId;
   tone?: Tone;
   /** Makes the value a link that selects this ref. */
   ref?: string;
@@ -66,6 +69,8 @@ interface Base {
   title?: string;
   /** Muted aside after the title, e.g. "(spatially inferred)". */
   aside?: string;
+  /** The section is derived: an "Indicative" chip by its title opens the method card. */
+  method?: MethodId;
 }
 
 export type Section =

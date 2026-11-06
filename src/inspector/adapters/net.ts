@@ -109,7 +109,7 @@ export const netAdapter: Adapter<NetEntity> = {
     const levels = traceLevels(e);
     return [
       { id: "overview", kind: "fields", rows },
-      ...(levels.length ? [{ id: "trace", kind: "trace" as const, title: "Supply path", aside: "(inferred)", levels }] : []),
+      ...(levels.length ? [{ id: "trace", kind: "trace" as const, title: "Supply path", method: "trace" as const, levels }] : []),
       {
         id: "provenance",
         kind: "note",

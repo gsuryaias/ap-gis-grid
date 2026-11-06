@@ -57,6 +57,11 @@ describe("omnisearch", () => {
     expect(search("data table", "plan").flatMap((s) => s.hits).some((h) => h.key === "action:table")).toBe(false);
   });
 
+  it("glossary terms (and their other names) are searchable", () => {
+    expect(search("articulation").find((s) => s.group === "Glossary")!.hits[0].target).toEqual({ t: "glossary", id: "cut-point" });
+    expect(first("ckm").target).toEqual({ t: "glossary", id: "ckm" });
+  });
+
   it("an empty box is the command palette: actions + the other lenses", () => {
     const res = search("");
     expect(res.map((s) => s.group).sort()).toEqual(["Actions", "Lenses"]);

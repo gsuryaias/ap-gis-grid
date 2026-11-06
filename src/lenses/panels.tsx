@@ -2,6 +2,7 @@
 // are inline (the default + the phone-first lens); Storm and Plan (the Network MIS) are lazy chunks.
 import { lazy, Suspense, type ComponentType, type SVGProps } from "react";
 import { ChartIcon, CompassIcon, CycloneIcon, WrenchIcon } from "../components/icons.tsx";
+import { LoadingState } from "../components/states.tsx";
 import type { GridData } from "../data/types.ts";
 import ExplorePanel from "./ExplorePanel.tsx";
 import FieldPanel from "./FieldPanel.tsx";
@@ -20,12 +21,7 @@ const StormPanel = lazy(() => import("./StormPanel.tsx"));
 export const PlanWorkspace = lazy(() => import("../workspaces/mis/MisWorkspace.tsx"));
 
 export function PanelLoading() {
-  return (
-    <div className="flex items-center gap-2 px-1 py-6 text-sm text-ink-2">
-      <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden />
-      Loading…
-    </div>
-  );
+  return <LoadingState label="Loading…" />;
 }
 
 /** The side panel of a map lens (Plan has its own split layout). */

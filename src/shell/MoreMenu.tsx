@@ -1,10 +1,8 @@
 // Header overflow menu (⋯): the dashboards and sheets that used to be header buttons, plus About.
 // An ARIA menu button: arrow keys move, Escape / outside click close, focus returns to the button.
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { copyText } from "../components/CopyLink.tsx";
-import { CloseIcon, DotsIcon } from "../components/icons.tsx";
-import type { GridData } from "../data/types.ts";
+import { copyViewLink } from "../components/CopyLink.tsx";
+import { DotsIcon } from "../components/icons.tsx";
 import { LENS_BY_ID } from "../lenses/registry.ts";
 import { useAppStore } from "../state/store.ts";
 
@@ -16,7 +14,6 @@ interface Item {
 
 export function MoreMenu({ withCopyLink = false }: { withCopyLink?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const lens = useAppStore((s) => s.lens);
@@ -30,8 +27,10 @@ export function MoreMenu({ withCopyLink = false }: { withCopyLink?: boolean }) {
       : []),
     { label: "Data quality", hint: "Coverage and how the data was built", run: () => s().toggleQuality(true) },
     ...(withCopyLink
-      ? [{ label: "Copy link to this view", run: () => void copyText(window.location.href).then((ok) => setNote(ok ? "Link copied" : "Copy failed")) }]
+      ? [{ label: "Copy link to this view", run: copyViewLink }]
       : []),
+    { label: "Glossary", hint: "N-1, ckm, radial feeds, DTR… in plain words", run: () => s().openGlossary("") },
+    { label: "Keyboard shortcuts", hint: "Press ? anywhere", run: () => s().toggleShortcuts(true) },
     { label: "About & sources", run: () => s().toggleAbout(true) },
   ];
 
@@ -49,12 +48,6 @@ export function MoreMenu({ withCopyLink = false }: { withCopyLink?: boolean }) {
     document.addEventListener("pointerdown", onDown);
     return () => document.removeEventListener("pointerdown", onDown);
   }, [open]);
-
-  useEffect(() => {
-    if (!note) return;
-    const t = window.setTimeout(() => setNote(null), 2000);
-    return () => window.clearTimeout(t);
-  }, [note]);
 
   const onKey = (e: React.KeyboardEvent) => {
     const els = [...(menu.current?.querySelectorAll<HTMLElement>("[role=menuitem]") ?? [])];
@@ -86,11 +79,6 @@ export function MoreMenu({ withCopyLink = false }: { withCopyLink?: boolean }) {
       >
         <DotsIcon width={16} height={16} />
       </button>
-      {note && (
-        <span role="status" className="absolute right-0 top-9 z-50 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] text-surface">
-          {note}
-        </span>
-      )}
       {open && (
         <div
           ref={menu}
@@ -117,62 +105,6 @@ export function MoreMenu({ withCopyLink = false }: { withCopyLink?: boolean }) {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/** About & sources — opened from the ⋯ menu or ⌘K (store `aboutOpen`). */
-export function About({ data }: { data: GridData }) {
-  const open = useAppStore((s) => s.aboutOpen);
-  const toggle = useAppStore((s) => s.toggleAbout);
-  return open ? createPortal(<AboutDialog data={data} onClose={() => toggle(false)} />, document.body) : null;
-}
-
-function AboutDialog({ data, onClose }: { data: GridData; onClose: () => void }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      prev?.focus();
-    };
-  }, [onClose]);
-  const built = new Date(data.meta.generatedAt);
-  return (
-    <div className="fixed inset-0 z-[70] grid place-items-center bg-black/40 p-4" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="about-title"
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-full w-[480px] max-w-full overflow-y-auto rounded-[var(--radius-panel)] border border-line bg-surface p-5 shadow-[var(--shadow-panel)]"
-      >
-        <div className="flex items-start gap-2">
-          <h2 id="about-title" className="flex-1 text-lg font-semibold text-ink">
-            About the Grid Atlas
-          </h2>
-          <button ref={closeRef} type="button" onClick={onClose} aria-label="Close" className="rounded-md p-1 text-ink-2 hover:bg-surface-2 hover:text-ink">
-            <CloseIcon width={16} height={16} />
-          </button>
-        </div>
-        <p className="mt-2 text-sm text-ink-2">
-          A public, static map and lookup of the AP-TRANSCO transmission network (400 / 220 / 132 kV) with the DISCOM 33 / 11 kV
-          networks, generation, the inter-state grid, reference layers and live weather. Connections, capacities and risk
-          screens are <strong className="text-ink">inferred and indicative</strong> — not operational data.
-        </p>
-        <h3 className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-2">Sources</h3>
-        <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink-2">
-          <li>Network: AP-TRANSCO enterprise GIS (open layers) and the DISCOMs' open GIS services</li>
-          <li>Reference layers: AP Real-Time Governance Society (RTGS) shapefile library</li>
-          <li>Places: GeoNames (CC BY 4.0)</li>
-          <li>Weather: Open-Meteo · Radar: RainViewer · Cyclones: GDACS (UN / EC JRC)</li>
-          <li>Basemaps: © CARTO, © OpenStreetMap contributors · Satellite: Esri World Imagery</li>
-        </ul>
-        <p className="mt-4 text-xs text-ink-2">Data built {built.toLocaleString("en-IN")}.</p>
-      </div>
     </div>
   );
 }

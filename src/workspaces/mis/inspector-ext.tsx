@@ -118,7 +118,7 @@ function ssSections(model: MisModel, row: SsRow, onFocus: FocusFn): Section[] {
       id: "connectivity",
       kind: "links",
       title: `Connected circuits · ${lines.length}`,
-      aside: "(spatially inferred)",
+      method: "connectivity",
       empty: "No line snapped to this substation.",
       items: lines.map((l) => {
         const other = l.line.connectsSS.find((id) => id !== row.id);

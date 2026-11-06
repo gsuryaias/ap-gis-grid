@@ -12,6 +12,7 @@ import { riskTier, substationRisk, type RiskTier } from "../lib/risk.ts";
 import { assetsInCone, wmoGroup, wmoLabel, type WmoGroup } from "../lib/weather.ts";
 import { useAppStore } from "../state/store.ts";
 import { WX_ALERT_COLOR } from "../theme/palette.ts";
+import { Dialog } from "./Dialog.tsx";
 import {
   CloudIcon,
   CloudRainIcon,
@@ -262,7 +263,7 @@ export function WeatherBody({ weather, data, compact }: { weather: WeatherData; 
       {weather.circles.length > 0 && weather.circles[0].daily.dates.length > 0 && (
         <>
           <SectionTitle>3-day outlook · max temp / max gust / rain</SectionTitle>
-          <div className="overflow-x-auto rounded-xl border border-line">
+          <div tabIndex={0} className="overflow-x-auto rounded-xl border border-line">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line bg-surface-2 text-left text-[11px] font-semibold uppercase tracking-wide text-ink-2">
@@ -323,17 +324,7 @@ export function WeatherView({ data }: { data: GridData }) {
   if (!open) return null;
 
   return (
-    <div
-      className="absolute inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => toggle(false)}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Weather monitor"
-    >
-      <div
-        className="flex max-h-full w-[860px] max-w-full flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface shadow-[var(--shadow-panel)]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog label="Weather monitor" onClose={() => toggle(false)} className="flex max-h-full w-[860px] max-w-full flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface shadow-[var(--shadow-panel)]">
         <header className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <div>
             <h2 className="text-lg font-semibold text-ink">Weather monitor</h2>
@@ -371,7 +362,7 @@ export function WeatherView({ data }: { data: GridData }) {
               <p className="text-sm text-ink-2">Couldn’t load weather data. {wxError}</p>
               <button
                 onClick={refresh}
-                className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
               >
                 Retry
               </button>
@@ -383,7 +374,6 @@ export function WeatherView({ data }: { data: GridData }) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

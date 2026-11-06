@@ -227,7 +227,7 @@ export function RadialTab({ model, scope, onDrill, onFocus, focusKey }: TabProps
         subtitle="Each pocket hangs off the meshed grid through ONE corridor. Click a row to highlight it on the map."
         actions={<SmallButton onClick={exportPockets}>CSV</SmallButton>}
       >
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
@@ -347,7 +347,7 @@ export function RadialTab({ model, scope, onDrill, onFocus, focusKey }: TabProps
             </Chip>
           ))}
         </div>
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
@@ -418,7 +418,7 @@ export function RadialTab({ model, scope, onDrill, onFocus, focusKey }: TabProps
         title="Cut-point substations — consequence of a bus outage"
         subtitle="A bus-bar fault or total station outage here islands the substations beyond it. Click to highlight."
       >
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
@@ -602,7 +602,7 @@ export function N1Tab({ model, scope, onDrill }: TabProps) {
         title="Bridge lines ranked by consequence"
         subtitle="If this single line trips, these TRANSCO substations lose every inferred path to the rest of the grid."
       >
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
@@ -860,7 +860,7 @@ function InterfaceSecurityCard({ model, scope, onFocus, focusKey }: TabProps) {
       title="Connection security of interfaces"
       subtitle="How generation evacuation, traction supply and EHT consumers are tied to the TRANSCO grid (line rows in scope)"
     >
-      <div className="overflow-x-auto">
+      <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-line text-left text-[11px] text-ink-2">

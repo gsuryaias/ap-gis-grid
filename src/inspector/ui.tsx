@@ -2,7 +2,9 @@
 import type { ReactNode } from "react";
 import { WarnIcon, LineIcon, SubstationIcon } from "../components/icons.tsx";
 import { VoltageDot } from "../components/VoltageBadge.tsx";
+import type { MethodId } from "../content/methods.ts";
 import { useAppStore } from "../state/store.ts";
+import { Hint, Indicative } from "../trust/Indicative.tsx";
 import type { FieldRow, LinkRow, Section, Tone, TraceLevel } from "./types.ts";
 
 const TONE_TEXT: Record<Tone, string> = {
@@ -23,8 +25,12 @@ export function FieldView({ row }: { row: FieldRow }) {
   );
   return (
     <div className="flex justify-between gap-4 py-1 text-sm">
-      <span className="shrink-0 text-ink-2">{row.label}</span>
-      <span className="min-w-0 break-words text-right font-medium text-ink" title={row.hint}>
+      <span className="shrink-0 text-ink-2">
+        {row.label}
+        {row.hint && <Hint text={row.hint} label={row.label} />}
+        {row.method && <Indicative method={row.method} />}
+      </span>
+      <span className="min-w-0 break-words text-right font-medium text-ink">
         {value}
         {row.sub && <span className="block text-xs font-normal text-ink-2">{row.sub}</span>}
       </span>
@@ -32,11 +38,12 @@ export function FieldView({ row }: { row: FieldRow }) {
   );
 }
 
-export function SectionTitle({ title, aside }: { title: string; aside?: string }) {
+export function SectionTitle({ title, aside, method }: { title: string; aside?: string; method?: MethodId }) {
   return (
     <div className="mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-2">
       {title}
       {aside && <span className="ml-1 font-normal normal-case text-ink-2">{aside}</span>}
+      {method && <Indicative method={method} />}
     </div>
   );
 }
@@ -91,7 +98,7 @@ const CALLOUT: Record<Tone, string> = {
 };
 
 export function SectionView({ section: s }: { section: Section }): ReactNode {
-  const title = s.title ? <SectionTitle title={s.title} aside={s.aside} /> : null;
+  const title = s.title ? <SectionTitle title={s.title} aside={s.aside} method={s.method} /> : null;
   switch (s.kind) {
     case "fields":
       return (
