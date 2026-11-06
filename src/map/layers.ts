@@ -11,6 +11,7 @@ import {
   VOLTAGE_COLOR,
 } from "../theme/palette.ts";
 import { BASEMAPS, SELECT_HALO } from "./basemaps.ts";
+import { applySpec, type MapSpec, type Visibility } from "./spec.ts";
 import type { Basemap } from "../state/store.ts";
 
 export const SRC = {
@@ -471,6 +472,8 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
           1.1,
         ]),
         "circle-opacity": SS_OPACITY,
+        // Explicit default (1) so the spotlight's "restore" spec matches the built layer exactly.
+        "circle-stroke-opacity": 1,
       },
     },
     {
@@ -492,6 +495,7 @@ export function buildLayers(basemap: Basemap): LayerSpecification[] {
         "text-color": def.labelColor,
         "text-halo-color": def.labelHalo,
         "text-halo-width": 1.4,
+        "text-opacity": 1,
       },
     },
   ] as LayerSpecification[];
@@ -509,11 +513,16 @@ export function addGridLayers(map: MlMap, data: GridData, basemap: Basemap): voi
   }
 }
 
-export function applyFilters(map: MlMap, filters: FilterState): void {
+/**
+ * Pure: the dynamic state the shared slicing filters put on the core grid + the generation and
+ * power-grid overlay layers (filters + visibility). Layers that aren't on the map yet are skipped
+ * by the applier, so this can always describe every layer.
+ */
+export function gridSpec(filters: FilterState): MapSpec {
   const enabledV = VOLTAGES.filter((v) => filters.voltages[v]);
-  const voltFilter = e(["in", ["get", "voltage"], ["literal", enabledV]]);
+  const voltFilter = ["in", ["get", "voltage"], ["literal", enabledV]];
   const enabledCircuits = (["SC", "DC"] as const).filter((c) => filters.circuits[c]);
-  const circuitFilter = e(["in", ["get", "circuit"], ["literal", enabledCircuits]]);
+  const circuitFilter = ["in", ["get", "circuit"], ["literal", enabledCircuits]];
   // Regional slice (core network): both lines and substations carry `circle`.
   const circleParts: unknown[] = filters.circle ? [["==", ["get", "circle"], filters.circle]] : [];
   // Coastal slice (core network, cumulative ≤ band). The has-guard excludes features missing
@@ -522,47 +531,48 @@ export function applyFilters(map: MlMap, filters: FilterState): void {
     filters.coastalBand != null
       ? [["all", ["has", "coastalBand"], ["<=", ["get", "coastalBand"], filters.coastalBand]]]
       : [];
+  const ssFilter = ["all", voltFilter, ...circleParts, ...coastParts];
+  const vis = (on: boolean): Visibility => (on ? "visible" : "none");
 
-  if (map.getLayer(LAYER.linesCasing))
-    map.setFilter(LAYER.linesCasing, e(["all", voltFilter, circuitFilter, ...circleParts, ...coastParts]));
-  if (map.getLayer(LAYER.linesSC))
-    map.setFilter(LAYER.linesSC, e(["all", ["==", ["get", "circuit"], "SC"], voltFilter, ...circleParts, ...coastParts]));
-  if (map.getLayer(LAYER.linesDC))
-    map.setFilter(LAYER.linesDC, e(["all", ["==", ["get", "circuit"], "DC"], voltFilter, ...circleParts, ...coastParts]));
-  if (map.getLayer(LAYER.substations))
-    map.setFilter(LAYER.substations, e(["all", voltFilter, ...circleParts, ...coastParts]));
-  if (map.getLayer(LAYER.ssLabels))
-    map.setFilter(LAYER.ssLabels, e(["all", voltFilter, ...circleParts, ...coastParts]));
-
-  const vis = (on: boolean) => (on ? "visible" : "none");
-  const set = (id: string, on: boolean) => {
-    if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis(on));
-  };
-  set(LAYER.linesCasing, filters.showLines);
-  set(LAYER.linesSC, filters.showLines && filters.circuits.SC);
-  set(LAYER.linesDC, filters.showLines && filters.circuits.DC);
-  set(LAYER.substations, filters.showSubstations);
-  set(LAYER.ssLabels, filters.showSubstations);
-
-  // Generation overlay (only present once lazily added).
-  if (map.getLayer(LAYER.generation)) {
-    const enabledTypes = ENERGY_TYPES.filter((t) => filters.genTypes[t]);
-    const genFilter = e(["in", ["get", "energy"], ["literal", enabledTypes]]);
-    map.setFilter(LAYER.generation, genFilter);
-    map.setFilter(LAYER.genLabels, genFilter);
-    set(LAYER.generation, filters.showGeneration);
-    set(LAYER.genLabels, filters.showGeneration);
-  }
-
+  const enabledTypes = ENERGY_TYPES.filter((t) => filters.genTypes[t]);
+  const genFilter = ["in", ["get", "energy"], ["literal", enabledTypes]];
+  const gen = vis(filters.showGeneration);
   // "Power grid" overlay group: master gate × per-class sub-toggle (independent of voltage/circuit).
   const pgOn = filters.showPowerGrid;
-  set(LAYER.pgLines, pgOn && filters.pgClasses.powergrid);
-  set(LAYER.pgSubstations, pgOn && filters.pgClasses.powergrid);
-  set(LAYER.pgLabels, pgOn && filters.pgClasses.powergrid);
-  set(LAYER.railwaySubstations, pgOn && filters.pgClasses.railway);
-  set(LAYER.railwayLabels, pgOn && filters.pgClasses.railway);
-  set(LAYER.bulkloadSubstations, pgOn && filters.pgClasses.bulkload);
-  set(LAYER.bulkloadLabels, pgOn && filters.pgClasses.bulkload);
+  const pg = vis(pgOn && filters.pgClasses.powergrid);
+  const rail = vis(pgOn && filters.pgClasses.railway);
+  const bulk = vis(pgOn && filters.pgClasses.bulkload);
+
+  return {
+    [LAYER.linesCasing]: {
+      filter: ["all", voltFilter, circuitFilter, ...circleParts, ...coastParts],
+      visibility: vis(filters.showLines),
+    },
+    [LAYER.linesSC]: {
+      filter: ["all", ["==", ["get", "circuit"], "SC"], voltFilter, ...circleParts, ...coastParts],
+      visibility: vis(filters.showLines && filters.circuits.SC),
+    },
+    [LAYER.linesDC]: {
+      filter: ["all", ["==", ["get", "circuit"], "DC"], voltFilter, ...circleParts, ...coastParts],
+      visibility: vis(filters.showLines && filters.circuits.DC),
+    },
+    [LAYER.substations]: { filter: ssFilter, visibility: vis(filters.showSubstations) },
+    [LAYER.ssLabels]: { filter: ssFilter, visibility: vis(filters.showSubstations) },
+    // Generation overlay (only present once lazily added).
+    [LAYER.generation]: { filter: genFilter, visibility: gen },
+    [LAYER.genLabels]: { filter: genFilter, visibility: gen },
+    [LAYER.pgLines]: { visibility: pg },
+    [LAYER.pgSubstations]: { visibility: pg },
+    [LAYER.pgLabels]: { visibility: pg },
+    [LAYER.railwaySubstations]: { visibility: rail },
+    [LAYER.railwayLabels]: { visibility: rail },
+    [LAYER.bulkloadSubstations]: { visibility: bulk },
+    [LAYER.bulkloadLabels]: { visibility: bulk },
+  };
+}
+
+export function applyFilters(map: MlMap, filters: FilterState): void {
+  applySpec(map, gridSpec(filters));
 }
 
 // Spotlight dim levels for core features outside the selection's inferred neighborhood.
@@ -570,31 +580,38 @@ const SPOT_DIM_LINE = 0.12;
 const SPOT_DIM_SS = 0.15;
 
 /**
- * Connection spotlight: dim every CORE line/substation/label whose id is outside the selection's
- * inferred neighborhood (overlays are untouched — core grid only). Pass null to restore the
- * default opacities. Uses the same id-membership pattern as the wx-risk-substations filter, but
- * via paint opacity so the dimmed features stay visible (and clickable) as context. Must be
- * re-applied after `styledata` — setStyle re-adds the layers with their default paint.
+ * Pure: the connection spotlight — dim every CORE line/substation/label whose id is outside the
+ * selection's inferred neighborhood (overlays are untouched — core grid only). `null` restores the
+ * default opacities. Uses the same id-membership pattern as the wx-risk-substations filter, but via
+ * paint opacity so the dimmed features stay visible (and clickable) as context.
  */
-export function applySpotlight(map: MlMap, spot: { ssIds: Set<string>; lineIds: Set<string> } | null): void {
-  const setP = (id: string, prop: string, value: unknown) => {
-    if (map.getLayer(id)) map.setPaintProperty(id, prop, value);
-  };
+export function spotlightSpec(spot: { ssIds: Set<string>; lineIds: Set<string> } | null): MapSpec {
   if (!spot) {
-    setP(LAYER.linesCasing, "line-opacity", CASING_OPACITY);
-    setP(LAYER.linesSC, "line-opacity", LINE_OPACITY);
-    setP(LAYER.linesDC, "line-opacity", LINE_OPACITY);
-    setP(LAYER.substations, "circle-opacity", SS_OPACITY);
-    setP(LAYER.substations, "circle-stroke-opacity", 1);
-    setP(LAYER.ssLabels, "text-opacity", 1);
-    return;
+    return {
+      [LAYER.linesCasing]: { paint: { "line-opacity": CASING_OPACITY } },
+      [LAYER.linesSC]: { paint: { "line-opacity": LINE_OPACITY } },
+      [LAYER.linesDC]: { paint: { "line-opacity": LINE_OPACITY } },
+      [LAYER.substations]: { paint: { "circle-opacity": SS_OPACITY, "circle-stroke-opacity": 1 } },
+      [LAYER.ssLabels]: { paint: { "text-opacity": 1 } },
+    };
   }
-  const inLine = ["in", ["get", "id"], ["literal", [...spot.lineIds]]];
-  const inSs = ["in", ["get", "id"], ["literal", [...spot.ssIds]]];
-  setP(LAYER.linesCasing, "line-opacity", e(["case", inLine, CASING_OPACITY, SPOT_DIM_LINE]));
-  setP(LAYER.linesSC, "line-opacity", e(["case", inLine, LINE_OPACITY, SPOT_DIM_LINE]));
-  setP(LAYER.linesDC, "line-opacity", e(["case", inLine, LINE_OPACITY, SPOT_DIM_LINE]));
-  setP(LAYER.substations, "circle-opacity", e(["case", inSs, SS_OPACITY, SPOT_DIM_SS]));
-  setP(LAYER.substations, "circle-stroke-opacity", e(["case", inSs, 1, SPOT_DIM_SS]));
-  setP(LAYER.ssLabels, "text-opacity", e(["case", inSs, 1, SPOT_DIM_SS]));
+  const inLine = ["in", ["get", "id"], ["literal", [...spot.lineIds].sort()]];
+  const inSs = ["in", ["get", "id"], ["literal", [...spot.ssIds].sort()]];
+  return {
+    [LAYER.linesCasing]: { paint: { "line-opacity": ["case", inLine, CASING_OPACITY, SPOT_DIM_LINE] } },
+    [LAYER.linesSC]: { paint: { "line-opacity": ["case", inLine, LINE_OPACITY, SPOT_DIM_LINE] } },
+    [LAYER.linesDC]: { paint: { "line-opacity": ["case", inLine, LINE_OPACITY, SPOT_DIM_LINE] } },
+    [LAYER.substations]: {
+      paint: {
+        "circle-opacity": ["case", inSs, SS_OPACITY, SPOT_DIM_SS],
+        "circle-stroke-opacity": ["case", inSs, 1, SPOT_DIM_SS],
+      },
+    },
+    [LAYER.ssLabels]: { paint: { "text-opacity": ["case", inSs, 1, SPOT_DIM_SS] } },
+  };
+}
+
+/** Apply the connection spotlight (see `spotlightSpec`). Conditional — safe to re-run any time. */
+export function applySpotlight(map: MlMap, spot: { ssIds: Set<string>; lineIds: Set<string> } | null): void {
+  applySpec(map, spotlightSpec(spot));
 }

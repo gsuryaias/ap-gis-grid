@@ -77,6 +77,46 @@ test("generation overlay lazy-loads and survives a basemap switch", async ({ pag
   await expect.poll(() => hasLayer(page, "grid-generation")).toBe(true);
 });
 
+test("circle + coastal slice filters are applied and survive a basemap switch", async ({ page }) => {
+  await openApp(page, "#v=1&circle=Kadapa&coast=1");
+  const ssFilter = () =>
+    page.evaluate(() => {
+      const map = (window as unknown as { __map?: { getFilter(id: string): unknown } }).__map;
+      return JSON.stringify(map?.getFilter("grid-substations") ?? null);
+    });
+  await expect.poll(ssFilter).toContain('["==",["get","circle"],"Kadapa"]');
+  await expect.poll(ssFilter).toContain('["<=",["get","coastalBand"],1]');
+
+  await page.getByRole("button", { name: "Dark", exact: true }).click();
+  await expect(page).toHaveURL(/base=dark/);
+  await waitForGrid(page);
+  await expect.poll(ssFilter).toContain('["==",["get","circle"],"Kadapa"]');
+});
+
+test("MIS line-age theme writes feature-state and re-applies after a basemap switch", async ({ page }) => {
+  await openApp(page, "#v=1&w=mis&theme=age");
+  const themed = () =>
+    page.evaluate(() => {
+      type M = {
+        getLayoutProperty(id: string, p: string): unknown;
+        querySourceFeatures(src: string): { id?: string | number }[];
+        getFeatureState(f: { source: string; id: string | number }): Record<string, unknown>;
+      };
+      const map = (window as unknown as { __map?: M }).__map;
+      if (!map || map.getLayoutProperty("mis-line-theme", "visibility") !== "visible") return 0;
+      return map
+        .querySourceFeatures("src-lines")
+        .filter((f) => f.id != null && map.getFeatureState({ source: "src-lines", id: f.id }).misC != null).length;
+    });
+  await expect.poll(themed).toBeGreaterThan(100);
+
+  await page.getByRole("button", { name: "Map layers" }).click();
+  await page.getByRole("button", { name: "Dark", exact: true }).click();
+  await expect(page).toHaveURL(/base=dark/);
+  await waitForGrid(page);
+  await expect.poll(themed).toBeGreaterThan(100);
+});
+
 test("overlay choices saved by the old store (legacy localStorage shape) are restored", async ({ page }) => {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem("seeded")) {

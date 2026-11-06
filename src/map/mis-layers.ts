@@ -10,6 +10,7 @@
 import type { ExpressionSpecification, Map as MlMap } from "maplibre-gl";
 import type { Basemap } from "../state/store.ts";
 import { LAYER, SRC } from "./layers.ts";
+import { applySpec, syncFeatureState, type FeatureStateSpec, type MapSpec } from "./spec.ts";
 
 export const MIS_LAYER = { lines: "mis-line-theme", ss: "mis-ss-theme" } as const;
 
@@ -136,72 +137,82 @@ export function addMisLayers(map: MlMap): void {
   }
 }
 
-const prev = new WeakMap<MlMap, { lines: string[]; ss: string[] }>();
-
-function setStates(map: MlMap, source: string, ids: string[], key: string, values: Record<string, number> | null) {
-  for (const id of ids) {
-    try {
-      if (values && values[id] != null) map.setFeatureState({ source, id }, { [key]: values[id] });
-      else map.removeFeatureState({ source, id }, key);
-    } catch {
-      /* feature not present yet (mid style reload) */
-    }
-  }
+/** Pure: the MIS theme's layer state + the feature-state it puts on the core sources. */
+export interface MisThemeSpec {
+  layers: MapSpec;
+  lines: FeatureStateSpec;
+  ss: FeatureStateSpec;
 }
 
 /**
- * Apply (or clear, with `state = null`) the MIS theme. Idempotent; safe to call after a style
- * reload once `addMisLayers` has re-run.
+ * Pure: the layer + feature-state for a MIS theme (`null` / "voltage" = no theme: both layers
+ * hidden, every `misC` / `misV` state cleared).
+ */
+export function misThemeSpec(state: MisMapState | null, basemap: Basemap): MisThemeSpec {
+  const theme = state?.theme ?? "voltage";
+  if (!state || theme === "voltage") {
+    return {
+      layers: { [MIS_LAYER.lines]: { visibility: "none" }, [MIS_LAYER.ss]: { visibility: "none" } },
+      lines: { source: SRC.lines, keys: ["misC"], states: {} },
+      ss: { source: SRC.substations, keys: ["misC", "misV"], states: {} },
+    };
+  }
+
+  const lineStates: Record<string, Record<string, number>> = {};
+  for (const [id, c] of Object.entries(state.lineClass)) if (c != null) lineStates[id] = { misC: c };
+  const ssStates: Record<string, Record<string, number>> = {};
+  for (const [id, c] of Object.entries(state.ssClass)) if (c != null) (ssStates[id] ??= {}).misC = c;
+  for (const [id, v] of Object.entries(state.ssValue)) if (v != null) (ssStates[id] ??= {}).misV = v;
+
+  let ssPaint: Record<string, unknown>;
+  if (theme === "downstream") {
+    const has = ["!=", ["feature-state", "misV"], null];
+    ssPaint = {
+      "circle-radius": ["case", has, ["+", 3, ["*", 2.4, ["sqrt", ["to-number", ["feature-state", "misV"], 0]]]], 0],
+      "circle-color": DOWNSTREAM_COLOR,
+      "circle-opacity": ["case", has, 0.22, 0],
+      "circle-stroke-color": DOWNSTREAM_COLOR,
+      "circle-stroke-width": 1.2,
+      "circle-stroke-opacity": ["case", has, 0.9, 0],
+    };
+  } else {
+    const has = ["!=", ["feature-state", "misC"], null];
+    ssPaint = {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 6.5, 10, 10.5, 14, 15],
+      "circle-color": "#000",
+      "circle-opacity": 0,
+      "circle-stroke-color": ["match", ["feature-state", "misC"], 0, STATUS.critical, 1, STATUS.serious, STATUS.muted],
+      "circle-stroke-width": 2.5,
+      "circle-stroke-opacity": ["case", has, 0.95, 0],
+    };
+  }
+
+  return {
+    layers: {
+      [MIS_LAYER.lines]: {
+        filter: state.scopeLineIds ? ["in", ["get", "id"], ["literal", state.scopeLineIds]] : null,
+        paint: { "line-color": lineColor(theme, basemap) },
+        visibility: Object.keys(lineStates).length ? "visible" : "none",
+      },
+      [MIS_LAYER.ss]: {
+        filter: state.scopeSsIds ? ["in", ["get", "id"], ["literal", state.scopeSsIds]] : null,
+        paint: ssPaint,
+        visibility: Object.keys(ssStates).length ? "visible" : "none",
+      },
+    },
+    lines: { source: SRC.lines, keys: ["misC"], states: lineStates },
+    ss: { source: SRC.substations, keys: ["misC", "misV"], states: ssStates },
+  };
+}
+
+/**
+ * Apply (or clear, with `state = null`) the MIS theme. Conditional + diffed — safe to call any
+ * time, including after a style reload once `addMisLayers` has re-run.
  */
 export function applyMisTheme(map: MlMap, state: MisMapState | null, basemap: Basemap): void {
   if (!map.getLayer(MIS_LAYER.lines) || !map.getLayer(MIS_LAYER.ss)) return;
-  const old = prev.get(map) ?? { lines: [], ss: [] };
-  setStates(map, SRC.lines, old.lines, "misC", null);
-  setStates(map, SRC.substations, old.ss, "misC", null);
-  setStates(map, SRC.substations, old.ss, "misV", null);
-
-  const theme = state?.theme ?? "voltage";
-  if (!state || theme === "voltage") {
-    map.setLayoutProperty(MIS_LAYER.lines, "visibility", "none");
-    map.setLayoutProperty(MIS_LAYER.ss, "visibility", "none");
-    prev.set(map, { lines: [], ss: [] });
-    return;
-  }
-
-  const lineIds = Object.keys(state.lineClass);
-  const ssIds = [...new Set([...Object.keys(state.ssClass), ...Object.keys(state.ssValue)])];
-  setStates(map, SRC.lines, lineIds, "misC", state.lineClass);
-  setStates(map, SRC.substations, Object.keys(state.ssClass), "misC", state.ssClass);
-  setStates(map, SRC.substations, Object.keys(state.ssValue), "misV", state.ssValue);
-  prev.set(map, { lines: lineIds, ss: ssIds });
-
-  const lineFilter = state.scopeLineIds ? e(["in", ["get", "id"], ["literal", state.scopeLineIds]]) : null;
-  const ssFilter = state.scopeSsIds ? e(["in", ["get", "id"], ["literal", state.scopeSsIds]]) : null;
-  map.setFilter(MIS_LAYER.lines, lineFilter);
-  map.setFilter(MIS_LAYER.ss, ssFilter);
-  map.setPaintProperty(MIS_LAYER.lines, "line-color", lineColor(theme, basemap));
-  map.setLayoutProperty(MIS_LAYER.lines, "visibility", lineIds.length ? "visible" : "none");
-
-  if (theme === "downstream") {
-    const has = ["!=", ["feature-state", "misV"], null];
-    map.setPaintProperty(MIS_LAYER.ss, "circle-radius", e([
-      "case", has, ["+", 3, ["*", 2.4, ["sqrt", ["to-number", ["feature-state", "misV"], 0]]]], 0,
-    ]));
-    map.setPaintProperty(MIS_LAYER.ss, "circle-color", DOWNSTREAM_COLOR);
-    map.setPaintProperty(MIS_LAYER.ss, "circle-opacity", e(["case", has, 0.22, 0]));
-    map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-color", DOWNSTREAM_COLOR);
-    map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-width", 1.2);
-    map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-opacity", e(["case", has, 0.9, 0]));
-  } else {
-    const has = ["!=", ["feature-state", "misC"], null];
-    map.setPaintProperty(MIS_LAYER.ss, "circle-radius", e(["interpolate", ["linear"], ["zoom"], 5, 6.5, 10, 10.5, 14, 15]));
-    map.setPaintProperty(MIS_LAYER.ss, "circle-color", "#000");
-    map.setPaintProperty(MIS_LAYER.ss, "circle-opacity", 0);
-    map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-color", e([
-      "match", ["feature-state", "misC"], 0, STATUS.critical, 1, STATUS.serious, STATUS.muted,
-    ]));
-    map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-width", 2.5);
-    map.setPaintProperty(MIS_LAYER.ss, "circle-stroke-opacity", e(["case", has, 0.95, 0]));
-  }
-  map.setLayoutProperty(MIS_LAYER.ss, "visibility", ssIds.length ? "visible" : "none");
+  const spec = misThemeSpec(state, basemap);
+  syncFeatureState(map, "mis", spec.lines);
+  syncFeatureState(map, "mis", spec.ss);
+  applySpec(map, spec.layers);
 }

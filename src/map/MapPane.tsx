@@ -6,7 +6,6 @@ import { generationRes, powerGridRes } from "../data/load.ts";
 import { useResource, useResourceSnapshot } from "../data/resources.ts";
 import { weatherRes } from "../data/weather.ts";
 import { graphAnalysis, spotlightFor, type SpotlightSets } from "../data/graph-data.ts";
-import { assetsInCone } from "../lib/weather.ts";
 import { BASEMAPS } from "./basemaps.ts";
 import type { LayerPreset } from "./layer-presets.ts";
 import {
@@ -23,6 +22,7 @@ import {
   POWERGRID_INTERACTIVE,
 } from "./layer-presets.ts";
 import { addMisLayers, applyMisTheme } from "./mis-layers.ts";
+import { wxRiskIds } from "./weather-layers.ts";
 import { fitToCircle, flyToFeature, setFeatState } from "./map-helpers.ts";
 import { MeasureController } from "./measure.ts";
 import { attachOverlays } from "../overlays/map.ts";
@@ -216,9 +216,7 @@ export function MapPane({ data, mode, layers, interactive, choroplethSource }: M
       const st = useAppStore.getState();
       const wx = weatherRes.peek();
       if (!wx) return;
-      const cones = wx.cyclones.flatMap((ev) => ev.conePolygons);
-      const riskIds = cones.length ? assetsInCone(data.substations, cones).map((s) => s.id) : [];
-      addWeatherLayers(map, wx, riskIds);
+      addWeatherLayers(map, wx, wxRiskIds(wx, data.substations));
       applyWeatherVisibility(map, st.filters);
     },
     [data, layers.weather],
