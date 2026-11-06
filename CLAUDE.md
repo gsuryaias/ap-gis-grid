@@ -266,11 +266,18 @@ DISCOM + RTGS overlays live in a **self-contained module** rather than the per-o
 `catalog.ts` (defs + cartography `REF_STYLE`), `resources.ts` (`overlayLayer` / `refCatalog`), `store.ts`
 (facade over the app store's `layers` slice: enabled/status, DISCOM sub-filter, per-device persistence in
 localStorage `apgg-overlays-v1` — NOT in the URL hash), `map.ts`
-(`attachOverlays(map)` — called once in `MapPane`'s `load`; re-mounts after style reloads; keeps every overlay
-**beneath `grid-lines-casing`**; tap → MapLibre popup, core grid features always win the tap; outline-only
-boundaries are not tappable). **Every map mutation in `sync()` is conditional** — setLayoutProperty/moveLayer/
-setFilter emit `styledata`, which re-schedules `sync`; it also re-runs on `idle` because `isStyleLoaded()` is
-false while any source loads. UI: `components/OverlaySections.tsx` (`DistributionSection`, `ReferenceSection`).
+(`attachOverlays(map)` — called once in `MapPane`'s `load`: attaches the **map engine** for the overlay layers,
+plus tap → MapLibre popup (core grid features always win the tap; outline-only boundaries are not tappable),
+hover cursor and the one-shot fit). The layers themselves are **registry defs** (`map/registry/overlays.ts`:
+`LayerDef`s built purely from the `layers` slice + basemap — polygons < lines < points, then the amber focus
+highlight; towers in the `above-grid` band) mounted and reconciled by **`map/engine.ts`** (`attachEngine`): one
+`reconcile()` per frame on `layers` changes, `styledata` and `idle` (`isStyleLoaded()` is false while any source
+loads); re-mounts after style reloads; **every write is conditional** (via `applySpec` / read-back) because
+setLayoutProperty/moveLayer/setFilter emit `styledata` — a no-op reconcile makes zero writes (`engine.test.ts`,
+and an e2e "quiet second" check). Z-order comes from four empty **band sentinels** (`band-beneath` under
+`grid-lines-casing`, `band-grid` + `band-above-grid` between the grid lines and `grid-substations`, `band-top`
+topmost), not ad-hoc `moveLayer`s. The core grid / generation / power grid / weather / MIS join the engine in
+phase 1.5. UI: `components/OverlaySections.tsx` (`DistributionSection`, `ReferenceSection`).
 
 ## PWA / offline
 

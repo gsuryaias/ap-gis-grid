@@ -1,293 +1,15 @@
-import maplibregl, { type ExpressionSpecification, type Map as MlMap, type MapGeoJSONFeature } from "maplibre-gl";
+// Catalog overlays on the map: the layers themselves are registry defs (`map/registry/overlays.ts`)
+// kept in sync by the engine (`map/engine.ts`); this module adds the tap popups, the hover cursor
+// and the one-shot fit (all of which fold into the single interaction handler in phase 1.5).
+import maplibregl, { type Map as MlMap, type MapGeoJSONFeature } from "maplibre-gl";
+import { attachEngine } from "../map/engine.ts";
+import { overlayLayerIds, overlayRegistry } from "../map/registry/overlays.ts";
 import { useAppStore } from "../state/store.ts";
-import { DISCOM_COLOR, DISCOM_NAME, DISCOMS, fieldLabel, type DiscomId, type OverlayDef } from "./catalog.ts";
+import { DISCOM_NAME, fieldLabel, type DiscomId, type OverlayDef } from "./catalog.ts";
 import { overlayLayer, useOverlayStore } from "./store.ts";
 import { towerPopupHtml } from "./towers.ts";
 
-/** Overlays always sit BENEATH the transmission grid so the core network stays legible. */
-const GRID_FLOOR = "grid-lines-casing";
-/** …except `aboveGrid` layers (towers sit ON the lines): above the line layers, beneath the SS dots. */
-const GRID_CEILING = "grid-substations";
-const GRID_TOP_LINE = "grid-lines-dc";
-
-const e = (x: unknown) => x as ExpressionSpecification;
-const srcId = (id: string) => `ov-src-${id}`;
-const ids = (id: string) => ({
-  fill: `ov-${id}-fill`,
-  line: `ov-${id}-line`,
-  circle: `ov-${id}-circle`,
-  label: `ov-${id}-label`,
-});
-
-function colorExpr(def: OverlayDef): string | ExpressionSpecification {
-  if (def.style.color !== "discom") return def.style.color;
-  return e(["match", ["get", "discom"], ...DISCOMS.flatMap((d) => [d, DISCOM_COLOR[d]]), "#64748b"]);
-}
-
-function discomFilter(): ExpressionSpecification {
-  const on = DISCOMS.filter((d) => useOverlayStore.getState().discoms[d]);
-  return e(["in", ["get", "discom"], ["literal", on]]);
-}
-
-function addLayersFor(map: MlMap, def: OverlayDef): void {
-  const L = ids(def.id);
-  const color = colorExpr(def);
-  const st = def.style;
-  const dark = useAppStore.getState().basemap !== "light";
-  const minzoom = st.minzoom ?? 0;
-  const floor = st.aboveGrid ? GRID_CEILING : GRID_FLOOR;
-  const before = map.getLayer(floor) ? floor : undefined;
-  const isTower = def.format === "towers";
-  const isDiscom = def.style.color === "discom";
-
-  if (def.geometry === "polygon") {
-    if (st.fillOpacity) {
-      map.addLayer(
-        { id: L.fill, type: "fill", source: srcId(def.id), minzoom, paint: { "fill-color": color, "fill-opacity": st.fillOpacity } },
-        before,
-      );
-    }
-    map.addLayer(
-      {
-        id: L.line,
-        type: "line",
-        source: srcId(def.id),
-        minzoom,
-        paint: {
-          "line-color": color,
-          "line-width": e(["interpolate", ["linear"], ["zoom"], 6, (st.width ?? 1) * 0.7, 10, st.width ?? 1, 14, (st.width ?? 1) * 1.8]),
-          "line-opacity": 0.9,
-          ...(st.dash ? { "line-dasharray": st.dash } : {}),
-        },
-      },
-      before,
-    );
-  } else if (def.geometry === "line") {
-    map.addLayer(
-      {
-        id: L.line,
-        type: "line",
-        source: srcId(def.id),
-        minzoom,
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": color,
-          "line-width": e(["interpolate", ["linear"], ["zoom"], 6, (st.width ?? 1) * 0.6, 10, st.width ?? 1, 14, (st.width ?? 1) * 2.4]),
-          "line-opacity": 0.92,
-          ...(st.dash ? { "line-dasharray": st.dash } : {}),
-        },
-        ...(isDiscom ? { filter: discomFilter() } : {}),
-      },
-      before,
-    );
-  } else {
-    const r = st.radius ?? 3;
-    // Towers: cut / angle points (CP) drawn larger with a contrasting ring so line deviations read.
-    const cp = (k: number) => (isTower ? ["case", ["==", ["get", "cp"], "CP"], r * k * 1.5, r * k] : r * k);
-    map.addLayer(
-      {
-        id: L.circle,
-        type: "circle",
-        source: srcId(def.id),
-        minzoom,
-        paint: {
-          "circle-color": color,
-          "circle-radius": e(["interpolate", ["linear"], ["zoom"], 6, cp(0.6), 10, cp(1), 14, cp(1.9)]),
-          "circle-stroke-color": isTower
-            ? e(["case", ["==", ["get", "cp"], "CP"], dark ? "#f8fafc" : "#0f172a", dark ? "#0e1622" : "#ffffff"])
-            : dark ? "#0e1622" : "#ffffff",
-          "circle-stroke-width": isTower ? e(["case", ["==", ["get", "cp"], "CP"], 1.6, 1]) : 1,
-          "circle-opacity": 0.95,
-        },
-        ...(isDiscom ? { filter: discomFilter() } : {}),
-      },
-      before,
-    );
-  }
-
-  if (def.labelField && st.labelMinzoom != null) {
-    map.addLayer(
-      {
-        id: L.label,
-        type: "symbol",
-        source: srcId(def.id),
-        minzoom: st.labelMinzoom,
-        layout: {
-          "text-field": ["coalesce", ["get", def.labelField], ""],
-          "text-font": ["Open Sans Bold"],
-          "text-size": def.group === "Boundaries" ? 11.5 : 10.5,
-          "text-max-width": 9,
-          "text-optional": true,
-          ...(def.geometry === "point"
-            ? { "text-anchor": "top", "text-offset": [0, 0.7] }
-            : def.geometry === "line"
-              ? { "symbol-placement": "line" }
-              : {}),
-        },
-        paint: {
-          "text-color": dark ? "#e2e8f0" : def.group === "Boundaries" ? "#1e293b" : "#334155",
-          "text-halo-color": dark ? "rgba(14,22,34,0.9)" : "rgba(255,255,255,0.92)",
-          "text-halo-width": 1.4,
-        },
-        ...(isDiscom ? { filter: discomFilter() } : {}),
-      },
-      before,
-    );
-  }
-}
-
-function layerIdsOf(def: OverlayDef): string[] {
-  const L = ids(def.id);
-  return [L.fill, L.line, L.circle, L.label];
-}
-
-const appliedDiscomKey = new WeakMap<MlMap, string>();
-
-/**
- * Bring the map in line with the overlay store. Idempotent, and every mutation is conditional:
- * setLayoutProperty / moveLayer / setFilter emit `styledata`, which re-schedules this — so an
- * unconditional write would loop forever.
- */
-function sync(map: MlMap): void {
-  if (!map.isStyleLoaded()) return;
-  const s = useOverlayStore.getState();
-  const discomKey = DISCOMS.filter((d) => s.discoms[d]).join(",");
-  const discomChanged = appliedDiscomKey.get(map) !== discomKey;
-  let order: string[] | null = null;
-  for (const def of Object.values(s.defs)) {
-    const on = !!s.enabled[def.id];
-    const fc = overlayLayer.peek(def.id);
-    let added = false;
-    if (on && fc && !map.getSource(srcId(def.id))) {
-      map.addSource(srcId(def.id), { type: "geojson", data: fc, tolerance: 0.5 });
-      addLayersFor(map, def);
-      added = true;
-    }
-    for (const lid of layerIdsOf(def)) {
-      const layer = map.getLayer(lid);
-      if (!layer) continue;
-      const vis = on ? "visible" : "none";
-      if (map.getLayoutProperty(lid, "visibility") !== vis) map.setLayoutProperty(lid, "visibility", vis);
-      if (def.style.color === "discom" && layer.type !== "fill" && discomChanged && !added) map.setFilter(lid, discomFilter());
-      // Keep beneath the grid even if the grid was (re)added after us — or, for `aboveGrid` layers,
-      // between the grid lines and the substation dots.
-      if (def.style.aboveGrid) {
-        if (map.getLayer(GRID_CEILING) && map.getLayer(GRID_TOP_LINE)) {
-          order ??= map.getLayersOrder();
-          const i = order.indexOf(lid);
-          if (i < order.indexOf(GRID_TOP_LINE) || i > order.indexOf(GRID_CEILING)) {
-            map.moveLayer(lid, GRID_CEILING);
-            order = null;
-          }
-        }
-      } else if (map.getLayer(GRID_FLOOR)) {
-        order ??= map.getLayersOrder();
-        if (order.indexOf(lid) > order.indexOf(GRID_FLOOR)) {
-          map.moveLayer(lid, GRID_FLOOR);
-          order = null;
-        }
-      }
-    }
-  }
-  appliedDiscomKey.set(map, discomKey);
-  syncFocus(map);
-}
-
-const FOCUS_COLOR = "#f59e0b"; // amber — distinct from every DISCOM/voltage colour
-const FOCUS_LINE = "ov-focus-lines";
-const FOCUS_SS = "ov-focus-ss";
-const FOCUS_LINE11 = "ov-focus-lines11";
-const FOCUS_PT = "ov-focus-point";
-const FOCUS_PT_SRC = "ov-focus-point-src";
-const appliedFocus = new WeakMap<MlMap, string>();
-
-/** Highlight the selected TRANSCO SS's downstream 33 kV feeders + 33/11 kV SS (conditional writes only). */
-function syncFocus(map: MlMap): void {
-  const { focus } = useOverlayStore.getState();
-  const before = map.getLayer(GRID_FLOOR) ? GRID_FLOOR : undefined;
-  if (map.getSource(srcId("discom-lines")) && !map.getLayer(FOCUS_LINE)) {
-    map.addLayer(
-      {
-        id: FOCUS_LINE,
-        type: "line",
-        source: srcId("discom-lines"),
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": FOCUS_COLOR,
-          "line-width": e(["interpolate", ["linear"], ["zoom"], 6, 2.5, 10, 4, 14, 7]),
-          "line-opacity": 0.9,
-        },
-        filter: e(["in", ["get", "id"], ["literal", []]]),
-      },
-      before,
-    );
-    appliedFocus.delete(map);
-  }
-  if (map.getSource(srcId("discom-ss")) && !map.getLayer(FOCUS_SS)) {
-    map.addLayer(
-      {
-        id: FOCUS_SS,
-        type: "circle",
-        source: srcId("discom-ss"),
-        paint: {
-          "circle-color": "rgba(0,0,0,0)",
-          "circle-radius": e(["interpolate", ["linear"], ["zoom"], 6, 4, 10, 7, 14, 11]),
-          "circle-stroke-color": FOCUS_COLOR,
-          "circle-stroke-width": 2.5,
-        },
-        filter: e(["in", ["get", "id"], ["literal", []]]),
-      },
-      before,
-    );
-    appliedFocus.delete(map);
-  }
-  if (map.getSource(srcId("discom-11kv-lines")) && !map.getLayer(FOCUS_LINE11)) {
-    map.addLayer(
-      {
-        id: FOCUS_LINE11,
-        type: "line",
-        source: srcId("discom-11kv-lines"),
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": FOCUS_COLOR, "line-width": e(["interpolate", ["linear"], ["zoom"], 8, 2, 12, 3.5, 16, 6]), "line-opacity": 0.95 },
-        filter: e(["in", ["get", "id"], ["literal", []]]),
-      },
-      before,
-    );
-    appliedFocus.delete(map);
-  }
-  if (!map.getSource(FOCUS_PT_SRC)) {
-    map.addSource(FOCUS_PT_SRC, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-    map.addLayer({
-      id: FOCUS_PT,
-      type: "circle",
-      source: FOCUS_PT_SRC,
-      paint: {
-        "circle-color": "rgba(245,158,11,0.18)",
-        "circle-radius": e(["interpolate", ["linear"], ["zoom"], 8, 7, 14, 12, 18, 16]),
-        "circle-stroke-color": FOCUS_COLOR,
-        "circle-stroke-width": 3,
-      },
-    });
-    appliedFocus.delete(map);
-  }
-  const key = focus
-    ? `${focus.lines.join(",")}|${focus.ss.join(",")}|${(focus.lines11 ?? []).join(",")}|${focus.point?.join(",") ?? ""}`
-    : "";
-  if (appliedFocus.get(map) === key) return;
-  if (map.getLayer(FOCUS_LINE)) map.setFilter(FOCUS_LINE, e(["in", ["get", "id"], ["literal", focus?.lines ?? []]]));
-  if (map.getLayer(FOCUS_SS)) map.setFilter(FOCUS_SS, e(["in", ["get", "id"], ["literal", focus?.ss ?? []]]));
-  if (map.getLayer(FOCUS_LINE11)) map.setFilter(FOCUS_LINE11, e(["in", ["get", "id"], ["literal", focus?.lines11 ?? []]]));
-  (map.getSource(FOCUS_PT_SRC) as maplibregl.GeoJSONSource | undefined)?.setData({
-    type: "FeatureCollection",
-    features: focus?.point ? [{ type: "Feature", geometry: { type: "Point", coordinates: focus.point }, properties: {} }] : [],
-  });
-  // Above the DISCOM layers, still beneath the grid; the point marker stays on top of everything.
-  if (before) for (const lid of [FOCUS_LINE, FOCUS_SS, FOCUS_LINE11]) if (map.getLayer(lid)) map.moveLayer(lid, before);
-  if (map.getLayer(FOCUS_PT)) map.moveLayer(FOCUS_PT);
-  // Every focus layer clears this key when it is (re)created, so recording it now is safe — and it
-  // must be recorded, or each `idle` would re-run setData → render → idle in a loop.
-  appliedFocus.set(map, key);
-}
+const overlayDefs = overlayRegistry((id) => overlayLayer.peek(id));
 
 function interactiveLayers(map: MlMap): string[] {
   const s = useOverlayStore.getState();
@@ -298,7 +20,7 @@ function interactiveLayers(map: MlMap): string[] {
       if (!s.enabled[def.id]) continue;
       // Outline-only boundaries are informative but shouldn't eat every map tap.
       if (kind === "line" && def.geometry === "polygon" && !def.style.fillOpacity) continue;
-      const lid = ids(def.id)[kind];
+      const lid = overlayLayerIds(def.id)[kind];
       if (map.getLayer(lid)) out.push(lid);
     }
   return out;
@@ -364,20 +86,13 @@ function defForLayer(layerId: string): OverlayDef | undefined {
  * `coreLayers` → the grid's clickable layers; a tap on a core feature always wins.
  */
 export function attachOverlays(map: MlMap, opts: { suppressed: () => boolean; coreLayers: readonly string[] }): () => void {
-  let raf = 0;
-  const schedule = () => {
-    if (raf) return;
-    raf = requestAnimationFrame(() => {
-      raf = 0;
-      sync(map);
-    });
-  };
-  const unsub = useOverlayStore.subscribe(schedule);
-  // isStyleLoaded() is false while ANY source is still loading, so a sync can bail early — `idle`
-  // guarantees a retry once the map settles (a no-op sync mutates nothing, so this can't loop).
-  map.on("styledata", schedule);
-  map.on("idle", schedule);
-  schedule();
+  // The overlay layers re-sync on `layers`-slice changes (a basemap switch reloads the style, which
+  // the engine sees as `styledata`), on `styledata` and on `idle`.
+  const engine = attachEngine(map, {
+    getState: useAppStore.getState,
+    subscribe: (fn) => useOverlayStore.subscribe(fn),
+    defs: overlayDefs,
+  });
 
   const popup = new maplibregl.Popup({ closeButton: true, maxWidth: "300px", className: "ov-popup-wrap", focusAfterOpen: false });
 
@@ -466,12 +181,9 @@ export function attachOverlays(map: MlMap, opts: { suppressed: () => boolean; co
   map.on("mousemove", onMove);
 
   return () => {
-    unsub();
+    engine.detach();
     unsubFit();
-    if (raf) cancelAnimationFrame(raf);
     if (moveRaf) cancelAnimationFrame(moveRaf);
-    map.off("styledata", schedule);
-    map.off("idle", schedule);
     map.off("click", onClick);
     map.off("mousemove", onMove);
     popup.remove();

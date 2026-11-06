@@ -1,82 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { LayerSpecification } from "maplibre-gl";
 import { ENERGY_TYPES, type SubstationProps } from "../data/types.ts";
 import type { WeatherData } from "../data/weather.ts";
 import { freshFilters } from "../state/slices/filters.ts";
 import { buildLayers, gridSpec, LAYER, spotlightSpec, SRC } from "./layers.ts";
 import { MIS_LAYER, misThemeSpec, type MisMapState } from "./mis-layers.ts";
-import { applySpec, mergeSpecs, sameValue, syncFeatureState, type SpecMap } from "./spec.ts";
+import { applySpec, mergeSpecs, sameValue, syncFeatureState } from "./spec.ts";
+import { FakeMap } from "./testing/fake-map.ts";
 import { weatherVisibilitySpec, WX_LAYER, wxRiskIds, wxRiskSpec } from "./weather-layers.ts";
-
-// ---- A fake MapLibre map: layers keep raw spec values (as MapLibre's getters return them) ----
-interface FakeLayer {
-  filter?: unknown;
-  visibility?: string;
-  paint: Record<string, unknown>;
-}
-class FakeMap {
-  layers = new Map<string, FakeLayer>();
-  sources = new Map<string, object>();
-  featureState = new Map<string, Record<string, unknown>>();
-  writes: string[] = [];
-
-  addLayer(spec: LayerSpecification): void {
-    const s = spec as { id: string; filter?: unknown; layout?: { visibility?: string }; paint?: Record<string, unknown> };
-    this.layers.set(s.id, { filter: s.filter, visibility: s.layout?.visibility, paint: { ...(s.paint ?? {}) } });
-  }
-  addSource(id: string): void {
-    this.sources.set(id, {});
-  }
-  /** Simulate `setStyle`: every custom layer, source and feature-state is dropped. */
-  reloadStyle(): void {
-    this.layers.clear();
-    this.sources.clear();
-    this.featureState.clear();
-  }
-  getLayer(id: string) {
-    return this.layers.get(id);
-  }
-  getSource(id: string) {
-    return this.sources.get(id);
-  }
-  getFilter(id: string) {
-    return this.layers.get(id)!.filter;
-  }
-  setFilter(id: string, f: unknown) {
-    this.writes.push(`filter:${id}`);
-    this.layers.get(id)!.filter = f ?? undefined;
-  }
-  getLayoutProperty(id: string, _p: string) {
-    return this.layers.get(id)!.visibility;
-  }
-  setLayoutProperty(id: string, _p: string, v: string) {
-    this.writes.push(`vis:${id}`);
-    this.layers.get(id)!.visibility = v;
-  }
-  getPaintProperty(id: string, p: string) {
-    return this.layers.get(id)!.paint[p];
-  }
-  setPaintProperty(id: string, p: string, v: unknown) {
-    this.writes.push(`paint:${id}:${p}`);
-    this.layers.get(id)!.paint[p] = v;
-  }
-  setFeatureState(t: { source: string; id: string }, st: Record<string, unknown>) {
-    this.writes.push(`fs:${t.source}:${t.id}`);
-    const k = `${t.source}/${t.id}`;
-    this.featureState.set(k, { ...this.featureState.get(k), ...st });
-  }
-  removeFeatureState(t: { source: string; id: string }, key: string) {
-    this.writes.push(`fs-rm:${t.source}:${t.id}:${key}`);
-    const st = this.featureState.get(`${t.source}/${t.id}`);
-    if (st) delete st[key];
-  }
-  state(source: string, id: string) {
-    return this.featureState.get(`${source}/${id}`) ?? {};
-  }
-  get api(): SpecMap {
-    return this as unknown as SpecMap;
-  }
-}
 
 function gridMap(): FakeMap {
   const m = new FakeMap();

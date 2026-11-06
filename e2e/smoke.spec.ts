@@ -117,6 +117,53 @@ test("MIS line-age theme writes feature-state and re-applies after a basemap swi
   await expect.poll(themed).toBeGreaterThan(100);
 });
 
+test("overlay engine: DISCOM beneath the grid, towers between lines and SS — also after a basemap switch", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("seeded")) {
+      localStorage.setItem("apgg-overlays-v1", JSON.stringify({ enabled: ["discom-lines", "towers-400kv"], discoms: [] }));
+      sessionStorage.setItem("seeded", "1");
+    }
+  });
+  await openApp(page);
+  const stacked = () =>
+    page.evaluate(() => {
+      const map = (window as unknown as { __map?: { getLayersOrder(): string[] } }).__map;
+      const o = map?.getLayersOrder() ?? [];
+      const at = (id: string) => o.indexOf(id);
+      const ids = ["ov-discom-lines-line", "grid-lines-casing", "grid-lines-dc", "ov-towers-400kv-circle", "grid-substations"];
+      if (ids.some((id) => at(id) < 0)) return false;
+      return ids.every((id, i) => i === 0 || at(ids[i - 1]) < at(id)) && o[o.length - 1] === "band-top";
+    });
+  await expect.poll(stacked, { timeout: 15_000 }).toBe(true);
+  // The engine settles: after a second for the style + sources to finish loading, a quiet second
+  // brings no more style events (an unconditional write would re-trigger itself through
+  // `styledata` forever).
+  const styleEventsInQuietSecond = () =>
+    page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          type M = { on(e: string, f: () => void): void; off(e: string, f: () => void): void };
+          const map = (window as unknown as { __map: M }).__map;
+          setTimeout(() => {
+            let n = 0;
+            const count = () => n++;
+            map.on("styledata", count);
+            setTimeout(() => {
+              map.off("styledata", count);
+              resolve(n);
+            }, 1000);
+          }, 1000);
+        }),
+    );
+  expect(await styleEventsInQuietSecond()).toBe(0);
+
+  await page.getByRole("button", { name: "Dark", exact: true }).click();
+  await expect(page).toHaveURL(/base=dark/);
+  await waitForGrid(page);
+  await expect.poll(stacked, { timeout: 15_000 }).toBe(true);
+  expect(await styleEventsInQuietSecond()).toBe(0);
+});
+
 test("overlay choices saved by the old store (legacy localStorage shape) are restored", async ({ page }) => {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem("seeded")) {
