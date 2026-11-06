@@ -109,3 +109,6 @@ export const SpotlightIcon = (p: P) => (
 export const CycloneIcon = (p: P) => (
   <svg {...base(p)}><circle cx="12" cy="12" r="2.5" /><path d="M12 2.5a9.5 9.5 0 0 1 9.5 9.5M12 21.5A9.5 9.5 0 0 1 2.5 12" /><path d="M12 6a6 6 0 0 1 6 6M12 18a6 6 0 0 1-6-6" /></svg>
 );
+export const LinkIcon = (p: P) => (
+  <svg {...base(p)}><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" /><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" /></svg>
+);

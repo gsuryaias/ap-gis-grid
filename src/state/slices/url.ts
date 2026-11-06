@@ -1,63 +1,74 @@
 import { CIRCUITS, VOLTAGES } from "../../data/types.ts";
-import { defaultHashState, defaultMapLayout } from "../../url/hash.ts";
+import { defaultMapLayout } from "../../url/layout.ts";
+import { defaultUrlState, type UrlState } from "../../url/v2.ts";
 import type { SliceCreator, UrlSlice } from "../types.ts";
 
 /**
- * v1 URL-hash bridge. Pure state mapping: a deep link that turns an overlay on (gen/pg/wx=1)
- * just sets the filter — whatever draws the overlay loads its resource.
+ * URL v2 bridge. Pure state mapping: a link that switches a layer on only sets the flag — whatever
+ * draws the layer loads its resource (catalog overlays are fetched by `layers.restore()`).
  */
 export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
-  applyHash: (h) =>
+  applyUrl: (u, opts) => {
     set((s) => {
-      const voltages = h.voltages
-        ? { 400: h.voltages.includes(400), 220: h.voltages.includes(220), 132: h.voltages.includes(132) }
+      const voltages = u.voltages
+        ? { 400: u.voltages.includes(400), 220: u.voltages.includes(220), 132: u.voltages.includes(132) }
         : s.filters.voltages;
-      const circuits = h.circuits ? { SC: h.circuits.includes("SC"), DC: h.circuits.includes("DC") } : s.filters.circuits;
-      const selectedId = h.selectedId !== undefined ? h.selectedId : s.selectedId;
-      // Any newly linked selection flies: core ids via useMapCamera, the rest once the Inspector resolves them.
-      const flySignal = selectedId && selectedId !== s.selectedId ? { id: selectedId, ts: Date.now() } : s.flySignal;
-      const workspace = h.workspace ?? s.workspace;
+      const circuits = u.circuits ? { SC: u.circuits.includes("SC"), DC: u.circuits.includes("DC") } : s.filters.circuits;
+      const selectedId = u.selectedId !== undefined ? u.selectedId : s.selectedId;
+      const changed = selectedId !== s.selectedId;
+      // A link's own camera wins over flying to its selection (the sender's view, or the view Back returns to).
+      const flySignal = selectedId && changed && !u.camera ? { id: selectedId, ts: Date.now() } : s.flySignal;
+      const workspace = u.workspace ?? s.workspace;
       const mapLayout =
-        h.mapLayout ?? (workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);
+        u.mapLayout ?? (workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);
       const workspaceContext = { ...s.workspaceContext };
-      if (h.misBy !== undefined) workspaceContext.misBy = h.misBy ?? undefined;
-      if (h.misFilters !== undefined) workspaceContext.misFilters = h.misFilters ?? undefined;
-      if (h.misTab !== undefined) workspaceContext.misTab = h.misTab ?? undefined;
-      if (h.misTheme !== undefined) workspaceContext.misTheme = h.misTheme ?? undefined;
+      if (u.misBy !== undefined) workspaceContext.misBy = u.misBy ?? undefined;
+      if (u.misFilters !== undefined) workspaceContext.misFilters = u.misFilters ?? undefined;
+      if (u.misTab !== undefined) workspaceContext.misTab = u.misTab ?? undefined;
+      if (u.misTheme !== undefined) workspaceContext.misTheme = u.misTheme ?? undefined;
+      const layers = u.overlays
+        ? { ...s.layers, enabled: Object.fromEntries(u.overlays.map((id) => [id, true])), version: s.layers.version + 1 }
+        : s.layers;
       return {
         workspace,
         mapLayout,
         workspaceContext,
         selectedId,
-        history: selectedId === s.selectedId ? s.history : [],
-        basemap: h.basemap ?? s.basemap,
-        tableOpen: h.tableOpen ?? s.tableOpen,
+        history: changed ? [] : s.history,
+        here: changed ? null : s.here,
+        basemap: u.basemap ?? s.basemap,
+        tableOpen: u.tableOpen ?? s.tableOpen,
         filters: {
           ...s.filters,
           voltages,
           circuits,
-          circle: h.circle !== undefined ? h.circle : s.filters.circle,
-          coastalBand: h.coastalBand !== undefined ? h.coastalBand : s.filters.coastalBand,
-          showSubstations: h.showSubstations ?? s.filters.showSubstations,
-          showLines: h.showLines ?? s.filters.showLines,
-          showGeneration: h.showGeneration ?? s.filters.showGeneration,
-          showPowerGrid: h.showPowerGrid ?? s.filters.showPowerGrid,
-          showWeather: h.showWeather ?? s.filters.showWeather,
+          circle: u.circle !== undefined ? u.circle : s.filters.circle,
+          coastalBand: u.coastalBand !== undefined ? u.coastalBand : s.filters.coastalBand,
+          showSubstations: u.showSubstations ?? s.filters.showSubstations,
+          showLines: u.showLines ?? s.filters.showLines,
+          showGeneration: u.showGeneration ?? s.filters.showGeneration,
+          showPowerGrid: u.showPowerGrid ?? s.filters.showPowerGrid,
+          showWeather: u.showWeather ?? s.filters.showWeather,
         },
+        layers,
         flySignal,
+        camera: u.camera ?? s.camera,
+        cameraSignal: u.camera ? { camera: u.camera, ts: Date.now(), animate: !opts?.initial } : s.cameraSignal,
       };
-    }),
+    });
+    // Overlays a link switched on: fetch them (and the RTGS catalogue if one is a reference layer).
+    if (u.overlays) get().layers.restore();
+  },
 
-  hashState: () => {
+  urlState: (): UrlState => {
     const s = get();
     const ctx = s.workspaceContext;
     return {
-      ...defaultHashState,
+      ...defaultUrlState(),
       workspace: s.workspace,
-      mapLayout: s.workspace === "atlas" ? "atlas-only" : s.mapLayout,
       selectedId: s.selectedId,
+      camera: s.camera,
       basemap: s.basemap,
-      tableOpen: s.tableOpen,
       voltages: VOLTAGES.filter((v) => s.filters.voltages[v]),
       circuits: CIRCUITS.filter((c) => s.filters.circuits[c]),
       circle: s.filters.circle,
@@ -67,6 +78,11 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
       showGeneration: s.filters.showGeneration,
       showPowerGrid: s.filters.showPowerGrid,
       showWeather: s.filters.showWeather,
+      overlays: Object.keys(s.layers.enabled)
+        .filter((id) => s.layers.enabled[id])
+        .sort(),
+      tableOpen: s.tableOpen,
+      mapLayout: s.workspace === "atlas" ? "atlas-only" : s.mapLayout,
       misBy: ctx.misBy ?? null,
       misFilters: ctx.misFilters ?? null,
       misTab: ctx.misTab ?? null,

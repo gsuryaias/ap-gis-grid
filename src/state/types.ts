@@ -7,7 +7,8 @@ import type { FilterState, PgClass, WxLayer } from "../data/selectors.ts";
 import type { Circuit, EnergyType, GridData, Voltage } from "../data/types.ts";
 import type { MeasureMode, MeasureStats } from "../map/measure.ts";
 import type { MisMapState } from "../map/mis-layers.ts";
-import type { HashState, MapLayout } from "../url/hash.ts";
+import type { MapLayout } from "../url/layout.ts";
+import type { Camera, UrlState } from "../url/v2.ts";
 import type { WorkspaceId } from "../workspaces/registry.ts";
 
 export type Basemap = "light" | "dark" | "satellite";
@@ -83,6 +84,14 @@ export interface SelectionSlice {
   setHere: (items: HereItem[] | null) => void;
 }
 
+/** A camera move requested by the URL (a deep link or browser Back / Forward). */
+export interface CameraSignal {
+  camera: Camera;
+  ts: number;
+  /** Ease there (history navigation) vs jump (first load). */
+  animate: boolean;
+}
+
 export interface ViewSlice {
   /** Active workspace (DSS shell). */
   workspace: WorkspaceId;
@@ -94,10 +103,14 @@ export interface ViewSlice {
    * (transient). Stays armed across selections; inert when nothing (or an overlay) is selected.
    */
   spotlight: boolean;
+  /** The settled map camera (URL `@lng,lat,zoom z`); written on every moveend. */
+  camera: Camera | null;
+  cameraSignal: CameraSignal | null;
   setWorkspace: (w: WorkspaceId) => void;
   setMapLayout: (layout: MapLayout) => void;
   setBasemap: (b: Basemap) => void;
   toggleSpotlight: () => void;
+  setCamera: (c: Camera) => void;
 }
 
 /**
@@ -191,10 +204,12 @@ export interface LayersSlice {
   layers: LayersState;
 }
 
-/** URL-hash (v1) bridge — replaced by URL v2 in phase 2. */
+/** URL v2 bridge (`url/v2.ts`, synced by `url/useUrlSync.ts`). */
 export interface UrlSlice {
-  applyHash: (h: Partial<HashState>) => void;
-  hashState: () => HashState;
+  /** Apply a decoded URL (`initial`: first load — jump the camera instead of easing). */
+  applyUrl: (u: Partial<UrlState>, opts?: { initial?: boolean }) => void;
+  /** The URL-relevant state. */
+  urlState: () => UrlState;
 }
 
 export type AppState = CoreSlice & SelectionSlice & ViewSlice & FiltersSlice & UiSlice & CtxSlice & LayersSlice & UrlSlice;

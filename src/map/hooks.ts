@@ -34,8 +34,22 @@ export function useMapCamera(map: MlMap | null, data: GridData, isHidden: boolea
     lastCircle.current = { map, circle };
     if (prev?.map === map) {
       if (prev.circle !== circle) fitToCircle(map, data, circle);
-    } else if (circle && !useAppStore.getState().flySignal) fitToCircle(map, data, circle);
+    } else if (circle && !useAppStore.getState().flySignal && !useAppStore.getState().cameraSignal) fitToCircle(map, data, circle);
   }, [map, circle, data]);
+
+  // A camera from the URL: Back / Forward eases to the view that entry had (after any circle fit
+  // above, so it wins); the first load already jumped there when the map was created.
+  const cameraSignal = useAppStore((s) => s.cameraSignal);
+  const lastCamTs = useRef(0);
+  useEffect(() => {
+    if (!map || isHidden || !cameraSignal || cameraSignal.ts === lastCamTs.current) return;
+    lastCamTs.current = cameraSignal.ts;
+    const { lng, lat, zoom } = cameraSignal.camera;
+    const c = map.getCenter();
+    if (Math.abs(c.lng - lng) < 1e-4 && Math.abs(c.lat - lat) < 1e-4 && Math.abs(map.getZoom() - zoom) < 0.01) return;
+    if (cameraSignal.animate) map.easeTo({ center: [lng, lat], zoom, duration: 600 });
+    else map.jumpTo({ center: [lng, lat], zoom });
+  }, [map, cameraSignal, isHidden]);
 
   // Network MIS: fit to the drill-down scope once per new request key.
   const lastFitKey = useRef<string | null>(null);

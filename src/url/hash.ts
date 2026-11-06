@@ -1,17 +1,14 @@
-// Typed, versioned URL-hash (de)serializer. Selection is keyed on synthetic feature IDs
-// (never names — many substations share a name), so deep links are unambiguous.
+// URL v1 — the deep-link format before Atlas 2.0 (`#v=1&sel=…&gen=1…`). The app now writes URL v2
+// (`url/v2.ts`); this stays as `decodeV1` so every v1 link already shared keeps opening (the app
+// then rewrites it to v2). `serializeHash` is kept only for the v1 contract tests.
 import { CIRCUITS, VOLTAGES, type Circuit, type Voltage } from "../data/types.ts";
 import { isWorkspaceId, type WorkspaceId } from "../workspaces/registry.ts";
+import { defaultMapLayout, type MapLayout } from "./layout.ts";
 
 const VERSION = 1;
 
-export type MapLayout = "open" | "collapsed" | "atlas-only";
-
-/** Sensible default for the split-map pane when no `map=` deep link is present. */
-export function defaultMapLayout(): MapLayout {
-  if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) return "collapsed";
-  return "open";
-}
+export type { MapLayout } from "./layout.ts";
+export { defaultMapLayout } from "./layout.ts";
 
 export interface HashState {
   /** Active workspace (`w` key; absent or unknown = atlas). */
