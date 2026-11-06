@@ -66,11 +66,6 @@ export function locateGeometry(g: Geometry | null | undefined, pointZoom: number
   return b ? { bounds: b, maxZoom } : null;
 }
 
-/** The feature with `properties.id` (or top-level id) === id. */
-export function featureById(fc: FeatureCollection | undefined, id: string): Feature | undefined {
-  return fc?.features.find((f) => f.properties?.id === id || f.id === id);
-}
-
 export const oneFeature = (f: Feature | undefined): FeatureCollection | null => (f ? { type: "FeatureCollection", features: [f] } : null);
 
 /** Display a raw property value (numbers in en-IN, arrays joined, ISO dates as IST calendar dates). */

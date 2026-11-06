@@ -19,6 +19,18 @@ export async function waitForGrid(page: Page) {
     .toBe(true);
 }
 
+/** Is `layer` drawn from vector tiles in this build (`npm run build:tiles` ran before `build`)? */
+export function isTiled(page: Page, layer: string) {
+  return page.evaluate(async (id) => {
+    try {
+      const r = await fetch("./tiles/index.json");
+      return r.ok && !!((await r.json()) as { layers: Record<string, unknown> }).layers[id];
+    } catch {
+      return false;
+    }
+  }, layer);
+}
+
 export function hasLayer(page: Page, id: string) {
   return page.evaluate((layerId) => {
     const map = (window as unknown as { __map?: { getLayer(id: string): unknown } }).__map;

@@ -5,7 +5,7 @@
 // so they are unit-testable; `custom` is the escape hatch for live widgets (downstream 33 kV
 // network, tower summary, spot weather, MIS supply box).
 import type { ReactNode } from "react";
-import type { FeatureCollection } from "geojson";
+import type { Feature, FeatureCollection } from "geojson";
 import type { MethodId } from "../content/methods.ts";
 import type { NetItem } from "../data/network-search.ts";
 import type { GenerationData, GridData, PowerGridData, Voltage } from "../data/types.ts";
@@ -101,8 +101,10 @@ export interface InspectorCtx {
   gen?: GenerationData;
   pg?: PowerGridData;
   weather?: WeatherData;
-  /** Loaded overlay features by overlay id (undefined while loading / off). */
+  /** A whole overlay layer's features by overlay id (undefined unless an adapter `needs.overlay`). */
   overlay: (id: string) => FeatureCollection | undefined;
+  /** The selected ref's own feature (full attributes + geometry) when the adapter `needs.row`. */
+  row?: Feature | null;
   overlayDef: (id: string) => OverlayDef | undefined;
   /** The distribution-network search item for this ref, once resolved (net refs only). */
   netItem?: NetItem | null;
@@ -111,8 +113,12 @@ export interface InspectorCtx {
 
 /** What an adapter needs loaded before it can resolve a ref. */
 export interface Needs {
-  /** An overlay layer's features (also switched on so the feature is visible). */
-  overlay?: string | null;
+  /** The overlay layer the entity is drawn on — switched on so it is visible (no data implied). */
+  layer?: string | null;
+  /** …and that layer's whole feature collection (towers / RTGS: refs are feature indexes). */
+  overlay?: boolean;
+  /** …or just the ref's own feature, by id (DISCOM: the sidecar shard when tiled). */
+  row?: boolean;
   /** The distribution-network search item (trace chain) — resolved in the search worker. */
   net?: boolean;
   /** The generation / power-grid overlay data (a deep-linked plant works without the layer on). */

@@ -1,6 +1,6 @@
 // Smoke suite — the user journeys every Atlas 2.0 PR must keep working.
 import { expect, test } from "@playwright/test";
-import { hasLayer, openApp, openLayers, switchBasemap, toggleLayer } from "./helpers.ts";
+import { hasLayer, isTiled, openApp, openLayers, switchBasemap, toggleLayer } from "./helpers.ts";
 
 test("loads the network and draws the grid", async ({ page }) => {
   const errors: string[] = [];
@@ -48,21 +48,60 @@ test("places + transformer search answer from the search worker, each file fetch
   expect(Object.keys(counts).filter((f) => f.startsWith("net-dtr-"))).toEqual(["net-dtr-ep-0344.json"]);
 });
 
-test("33 kV overlay + downstream GeoJSON share one DISCOM download", async ({ page }) => {
+test("33 kV overlay + downstream GeoJSON: tiles + sidecar shards when tiled, else one shared download", async ({ page }) => {
   const data: string[] = [];
   page.on("request", (r) => {
-    const m = /\/data\/([^?]+)/.exec(r.url());
-    if (m) data.push(m[1]);
+    const m = /\/(data|tiles)\/([^?]+)/.exec(r.url());
+    if (m) data.push(`${m[1]}/${m[2]}`);
   });
   await openApp(page, "#v=1&sel=s-ss-132kv-chnd");
+  const tiled = await isTiled(page, "discom-lines");
   await toggleLayer(page, "33 kV lines");
   await page.keyboard.press("Escape"); // close the drawer — the Inspector's buttons are what we test
-  await expect.poll(() => data.filter((f) => f === "discom-lines.geojson").length).toBe(1);
+  if (tiled) await expect.poll(() => data.some((f) => /^tiles\/discom-lines\/\d+\/\d+\/\d+\.pbf$/.test(f))).toBe(true);
+  else await expect.poll(() => data.filter((f) => f === "data/discom-lines.geojson").length).toBe(1);
+  await expect.poll(() => hasLayer(page, "ov-discom-lines-line")).toBe(true);
+  // …and the features actually draw (a broken tile URL still "loads" — as HTML).
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const map = (window as unknown as { __map: { queryRenderedFeatures(g?: unknown, o?: { layers: string[] }): unknown[] } }).__map;
+        return map.queryRenderedFeatures(undefined, { layers: ["ov-discom-lines-line"] }).length;
+      }),
+    )
+    .toBeGreaterThan(0);
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "GeoJSON", exact: true }).first().click();
   await download;
-  expect(data.filter((f) => f === "discom-lines.geojson")).toHaveLength(1);
-  expect(data.filter((f) => f === "discom-ss.geojson")).toHaveLength(1);
+  if (tiled) {
+    // Only the shards those feeders / SS live in — never the whole layer files.
+    expect(data.filter((f) => /^data\/discom-(lines|ss)\.geojson$/.test(f))).toEqual([]);
+    expect(data.some((f) => f.startsWith("tiles/discom-lines/rows/"))).toBe(true);
+  } else {
+    expect(data.filter((f) => f === "data/discom-lines.geojson")).toHaveLength(1);
+    expect(data.filter((f) => f === "data/discom-ss.geojson")).toHaveLength(1);
+  }
+});
+
+test("an 11 kV feeder deep link stays under the 300 KB pick budget when tiled", async ({ page }) => {
+  const bytes: Record<string, number> = {};
+  // Decoded body bytes — stricter than the wire (vite preview / Pages may gzip).
+  page.on("response", async (r) => {
+    if (!/discom-11kv/.test(r.url())) return;
+    bytes[r.url()] = (await r.body().catch(() => Buffer.alloc(0))).length;
+  });
+  await openApp(page, "#@83.9,18.3,13z&v=2&sel=f11-ep-01111101");
+  test.skip(!(await isTiled(page, "discom-11kv-lines")), "no tiles in this build (GeoJSON fallback)");
+  const inspector = page.getByRole("complementary", { name: "Feature details" });
+  await expect(inspector.getByText("11 kV feeder").first()).toBeVisible();
+  await expect.poll(() => hasLayer(page, "ov-discom-11kv-lines-line")).toBe(true);
+  await page.waitForFunction(() => (window as unknown as { __map: { loaded(): boolean } }).__map.loaded());
+  await expect.poll(() => Object.keys(bytes).some((u) => /\.pbf/.test(u))).toBe(true);
+  const urls = Object.keys(bytes);
+  expect(urls.some((u) => /discom-11kv-lines\.geojson/.test(u))).toBe(false);
+  expect(urls.some((u) => /\/rows\//.test(u))).toBe(true);
+  const total = Object.values(bytes).reduce((a, b) => a + b, 0);
+  expect(total, urls.join("\n")).toBeLessThan(300_000);
 });
 
 test("generation overlay lazy-loads and survives a basemap switch", async ({ page }) => {

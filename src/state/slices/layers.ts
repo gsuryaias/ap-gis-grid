@@ -1,9 +1,9 @@
 // DISCOM / RTGS / tower overlays — the former `overlays/store.ts`, now the `layers` slice of the one
-// app store. Feature data lives in the `overlayLayer` resource, not here.
+// app store. What the map draws from (tiles or GeoJSON) lives in the `overlayView` resource, not here.
 import type { PersistStorage, StorageValue } from "zustand/middleware";
 import { lensOnlyOverlays } from "../../lenses/registry.ts";
 import { DISCOMS, refDef, type DiscomId } from "../../overlays/catalog.ts";
-import { overlayLayer, refCatalog, STATIC_OVERLAY_DEFS } from "../../overlays/resources.ts";
+import { overlayView, refCatalog, STATIC_OVERLAY_DEFS } from "../../overlays/resources.ts";
 import type { AppState, LayersSlice, LayersState, OverlayFocus, PersistedLayers, SliceCreator } from "../types.ts";
 
 /** Per-viewer convenience only (which overlays were on last time) — never required state. */
@@ -103,12 +103,12 @@ export const createLayersSlice: SliceCreator<LayersSlice> = (set, get) => {
     const st = L().status[id];
     if (!L().defs[id] || st === "loading" || st === "ready") return;
     setL((l) => ({ status: { ...l.status, [id]: "loading" } }));
-    overlayLayer
+    overlayView
       .ensure(id)
-      .then((fc) =>
+      .then((view) =>
         setL((l) => ({
           status: { ...l.status, [id]: "ready" },
-          defs: { ...l.defs, [id]: { ...l.defs[id], count: l.defs[id].count || fc.features.length } },
+          defs: { ...l.defs, [id]: { ...l.defs[id], count: l.defs[id].count || (view.kind === "tiles" ? view.info.count : view.fc.features.length) } },
         })),
       )
       .catch((e: unknown) => {

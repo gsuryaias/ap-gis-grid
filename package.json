@@ -17,7 +17,8 @@
     "sync:towers": "tsx scripts/sync-towers.mts",
     "sync:network": "tsx scripts/sync-network.mts",
     "e2e": "PLAYWRIGHT_BROWSERS_PATH=0 playwright test",
-    "e2e:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium"
+    "e2e:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium",
+    "build:tiles": "tsx scripts/build-tiles.mts"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",

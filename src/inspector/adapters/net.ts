@@ -6,7 +6,7 @@ import { NET_KIND_LABEL, type Chain, type NetItem, type NetKind } from "../../da
 import { DISCOM_NAME, fieldLabel, type DiscomId } from "../../overlays/catalog.ts";
 import { NET_LAYER, netKindOf } from "../refs.ts";
 import type { Adapter, FieldRow, Locate, TraceLevel } from "../types.ts";
-import { display, featureById, locateGeometry, oneFeature } from "./util.ts";
+import { display, locateGeometry, oneFeature } from "./util.ts";
 
 export interface NetEntity {
   ref: string;
@@ -77,15 +77,17 @@ const ZOOM: Record<NetKind, number> = { ss33: 14, f33: 13, f11: 13, dtr: 16.5, s
 
 export const netAdapter: Adapter<NetEntity> = {
   kind: "net",
+  // Its own feature row (a sidecar shard when tiled) — never the whole layer. Transformers and
+  // sections have no feature: the search item carries them (the 11 kV layer is shown for context).
   needs: (ref) => {
     const k = netKindOf(ref);
-    return { overlay: k ? NET_LAYER[k] : null, net: true };
+    return { layer: k ? NET_LAYER[k] : null, ...(k && k !== "dtr" && k !== "sec" ? { row: true } : {}), net: true };
   },
   resolve: (ref, ctx) => {
     const kind = netKindOf(ref);
     if (!kind) return null;
     const layer = NET_LAYER[kind];
-    const feature = (layer && kind !== "dtr" ? featureById(ctx.overlay(layer), ref) : undefined) ?? null;
+    const feature = (layer && kind !== "dtr" ? ctx.row : null) ?? null;
     const item = ctx.netItem ?? null;
     if (!feature && !item) return null;
     return { ref, kind, layer, feature, item };

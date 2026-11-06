@@ -50,3 +50,6 @@ Thumbs.db
 # Playwright
 test-results/
 playwright-report/
+
+# Static vector tiles (npm run build:tiles — built in CI, never committed)
+public/tiles/

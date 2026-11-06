@@ -7,11 +7,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "../components/states.tsx";
 import { useLiveStatus } from "../data/live-status.ts";
+import { useResource } from "../data/resources.ts";
+import { tileIndex } from "../overlays/resources.ts";
 import { CloseIcon, MoonIcon, SatelliteIcon, SearchIcon, SpotlightIcon, SunIcon } from "../components/icons.tsx";
 import { layerTokens } from "../lenses/registry.ts";
 import { layerOnFrom } from "../state/layer-on.ts";
 import { useAppStore, type Basemap } from "../state/store.ts";
-import { CAT_GROUPS, catalogueEntries, entryMeta, inZoom, matchesQuery, withLiveCounts, type CatEntry } from "./catalogue.ts";
+import { CAT_GROUPS, catalogueEntries, entryMeta, inZoom, matchesQuery, withLiveCounts, withTiles, type CatEntry } from "./catalogue.ts";
 import { EntryDetail, hasDetail } from "./details.tsx";
 import { Spinner, Switch, SwatchMark } from "./ui.tsx";
 
@@ -19,7 +21,8 @@ import { Spinner, Switch, SwatchMark } from "./ui.tsx";
 export function useCatalogue() {
   const defs = useAppStore((s) => s.layers.defs);
   const live = useLiveStatus();
-  const entries = useMemo(() => withLiveCounts(catalogueEntries(defs), live), [defs, live]);
+  const tiles = useResource(tileIndex, "").data?.layers;
+  const entries = useMemo(() => withTiles(withLiveCounts(catalogueEntries(defs), live), tiles), [defs, live, tiles]);
   const filters = useAppStore((s) => s.filters);
   const enabled = useAppStore((s) => s.layers.enabled);
   const on = useMemo(() => layerTokens(layerOnFrom(filters, enabled)), [filters, enabled]);

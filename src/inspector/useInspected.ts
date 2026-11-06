@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { generationRes, powerGridRes } from "../data/load.ts";
 import { useResource, useResourceSnapshot, type ResStatus } from "../data/resources.ts";
 import { weatherRes } from "../data/weather.ts";
-import { overlayLayer } from "../overlays/resources.ts";
+import { featureRow, overlayLayer, rowKey } from "../overlays/resources.ts";
 import { useAppStore } from "../state/store.ts";
 import { inspect, needsOf } from "./inspect.ts";
 import { refKind } from "./refs.ts";
@@ -23,7 +23,8 @@ export function useInspected(ref: string | null): InspectedState {
   const data = useAppStore((s) => s.data);
   const defs = useAppStore((s) => s.layers.defs);
   const needs = needsOf(ref);
-  const overlay = useResource(overlayLayer, needs.overlay ?? null);
+  const overlay = useResource(overlayLayer, needs.overlay && needs.layer ? needs.layer : null);
+  const row = useResource(featureRow, needs.row && needs.layer && ref ? rowKey(needs.layer, ref) : null);
   const net = useResource(netItemRes, needs.net && ref ? ref : null);
   const gen = useResource(generationRes, needs.gen ? "" : null);
   const pg = useResource(powerGridRes, needs.pg ? "" : null);
@@ -41,16 +42,17 @@ export function useInspected(ref: string | null): InspectedState {
       weather,
       overlay: (id) => overlayLayer.peek(id), // `overlay.data` (a dep) is the needed layer's entry
       overlayDef: (id) => defs[id],
+      row: row.data ?? null,
       netItem: net.data ?? null,
       year: YEAR,
     };
     const ins = inspect(ref, ctx);
     if (ins) return { ins, status: "ready" };
-    const pending: ResStatus[] = [overlay.status, net.status, gen.status, pg.status];
+    const pending: ResStatus[] = [overlay.status, row.status, net.status, gen.status, pg.status];
     if (pending.includes("loading")) return { ins: null, status: "loading" };
     if (pending.includes("error")) return { ins: null, status: "error" };
     return { ins: null, status: "missing" };
-  }, [ref, data, defs, overlay.data, overlay.status, net.data, net.status, gen.status, pg.status, genData, pgData, weather]);
+  }, [ref, data, defs, overlay.data, overlay.status, row.data, row.status, net.data, net.status, gen.status, pg.status, genData, pgData, weather]);
 }
 
 /** Kinds whose camera move `useMapCamera` already does from `flySignal` (sync data, `flyToFeature`). */
@@ -69,7 +71,7 @@ export function useInspectorSync(): void {
 
   // Switch the feature's layer on once per new selection (the user may switch it off afterwards).
   useEffect(() => {
-    const layer = needsOf(ref).overlay;
+    const layer = needsOf(ref).layer;
     if (!layer) return;
     const L = useAppStore.getState().layers;
     if (L.enabled[layer]) return;

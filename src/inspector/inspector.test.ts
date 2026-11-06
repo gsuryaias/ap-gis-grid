@@ -71,10 +71,14 @@ describe("refs", () => {
   it("only the adapters that need lazy data ask for it", () => {
     expect(needsOf("s-x")).toEqual({});
     expect(needsOf("g-x")).toEqual({ gen: true });
-    expect(needsOf("dl-ep-1")).toEqual({ overlay: "discom-lines", net: true });
-    expect(needsOf("dtr:1234")).toEqual({ overlay: "discom-11kv-lines", net: true });
-    expect(needsOf("sec:x")).toEqual({ overlay: null, net: true });
-    expect(needsOf("tw:132:5")).toEqual({ overlay: "towers-132kv" });
+    // DISCOM refs read their own row (a sidecar shard when tiled) — never the whole layer.
+    expect(needsOf("dl-ep-1")).toEqual({ layer: "discom-lines", row: true, net: true });
+    expect(needsOf("f11-ep-1")).toEqual({ layer: "discom-11kv-lines", row: true, net: true });
+    expect(needsOf("dtr:1234")).toEqual({ layer: "discom-11kv-lines", net: true });
+    expect(needsOf("sec:x")).toEqual({ layer: null, net: true });
+    // Towers / RTGS refs are feature indexes into the layer's own file.
+    expect(needsOf("tw:132:5")).toEqual({ layer: "towers-132kv", overlay: true });
+    expect(needsOf("ref:districts:3")).toEqual({ layer: "districts", overlay: true });
   });
 });
 
@@ -145,7 +149,7 @@ describe("distribution network adapter", () => {
       lengthKm: 7.59,
     },
   };
-  overlays["discom-11kv-lines"] = { type: "FeatureCollection", features: [f11] };
+
   const item: NetItem = {
     label: "11KV Arasavalli",
     kind: "f11",
@@ -157,7 +161,7 @@ describe("distribution network adapter", () => {
   };
 
   it("an 11 kV feeder: attributes (TRANSCO source + 33/11 SS as links) and the full supply path", () => {
-    const ins = inspect("f11-ep-1", ctx({ netItem: item }))!;
+    const ins = inspect("f11-ep-1", ctx({ netItem: item, row: f11 }))!;
     expect(ins.header).toMatchObject({ title: "11KV Arasavalli", kicker: "11 kV feeder · APEPDCL" });
     expect(ids(ins.sections)).toEqual(["overview", "trace", "provenance"]);
     const rows = ins.sections[0].kind === "fields" ? ins.sections[0].rows : [];
@@ -172,7 +176,8 @@ describe("distribution network adapter", () => {
   });
 
   it("resolves from the overlay alone (map tap before the trace chain arrives)", () => {
-    const ins = inspect("f11-ep-1", ctx({ netItem: null }))!;
+    expect(inspect("f11-ep-1", ctx({ netItem: null }))).toBeNull(); // nothing loaded yet
+    const ins = inspect("f11-ep-1", ctx({ netItem: null, row: f11 }))!;
     const trace = ins.sections.find((s) => s.id === "trace");
     expect(trace?.kind === "trace" && trace.levels[0]).toMatchObject({ name: "132 kV CHILAKAPALEM", ref: "s-ss-132kv-ckpm" });
   });

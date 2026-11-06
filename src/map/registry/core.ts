@@ -269,11 +269,11 @@ const WX_RISK: Def = {
 
 // ---- the full registry -------------------------------------------------------------------------
 /**
- * Every map def, bottom → top within each band. `overlayData` reads the catalog overlays' loaded
- * GeoJSON (the `overlayLayer` resource).
+ * Every map def, bottom → top within each band. `overlayView` reads what each catalog overlay is
+ * drawn from — its vector tiles or GeoJSON (the `overlayView` resource).
  */
-export function mapRegistry(overlayData: Parameters<typeof overlayRegistry>[0]): (s: S) => Def[] {
-  const overlays = overlayRegistry(overlayData);
+export function mapRegistry(overlayView: Parameters<typeof overlayRegistry>[0]): (s: S) => Def[] {
+  const overlays = overlayRegistry(overlayView);
   const compose = memo((ov: LayerDef<S>[]): Def[] => {
     const pin = ov.filter((d) => d.band === "top");
     const rest = ov.filter((d) => d.band !== "top");

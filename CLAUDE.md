@@ -45,6 +45,7 @@ npm run sync:network # pull the DISCOM 11 kV network (feeders, DTRs, AB switches
 npm run build:ref    # RTGS shapefile library (OneDrive, RTGS_DIR) → public/data/ref/* — run locally, commit outputs
 npm run dev          # Vite dev server → http://localhost:5173/ap-gis-grid/
 npm run build:data   # ETL: data/raw/{gridmap/*.shp, generation.kml, geonames-ap.tsv, coastline-ap.geojson} → public/data/*
+npm run build:tiles  # vector tiles for the heavy overlays → public/tiles/* (git-ignored; tippecanoe via PATH or Docker; optional locally)
 npm run build        # tsc --noEmit && vite build  (production)
 npm run preview      # serve dist/ (use this to verify prod; dev HMR can be flaky for map state)
 npm test             # Vitest run: ETL + lib + URL-contract unit tests + emitted-data integrity checks
@@ -68,6 +69,7 @@ deep-link contract — URL v2 must keep decoding every fixture there.
 gis.aptransco.gov.in ─(sync:live / sync:towers / sync:network, India-only)─▶ data/raw/live/*  ─┐
 data/raw/{gridmap/*.shp, generation.kml, geonames-ap.tsv, coastline-ap.geojson, discom/…}  ───┼─(build:data ETL)─▶ public/data/*  ─▶ React + MapLibre shell ─▶ GitHub Pages
 RTGS shapefile library (OneDrive) ─(build:ref, local)─▶ public/data/ref/*  [committed]          ┘   [committed]
+                                                   public/data/* ─(build:tiles, CI / Docker)─▶ public/tiles/*  [NOT committed]
 ```
 
 `build:data` reads the shapefiles via the `shapefile` dep (build-time only). All source layers are
@@ -173,6 +175,29 @@ conductor, pole count, km). **Never import its HT-consumer services, AB switches
 does not refresh these — re-run the import when APCPDCL supplies a newer export; the UI footnote shows the export
 date (`live-status.json → discom.APCPDCL.linesFrom`).
 
+## Vector tiles (`scripts/build-tiles.mts`, Atlas 2.0 phase 4 PR 12)
+
+The heavy display layers — 11 kV feeders, the three tower layers, DISCOM 33 kV lines + SS, and RTGS layers
+≥ 300 KB — are drawn from **static `z/x/y.pbf` directories** (not PMTiles: GitHub Pages' CDN breaks range requests on
+gzip-encoded copies). `npm run build:tiles` reads the files `build:data` / `build:ref` emit and writes `public/tiles/`
+(**git-ignored, built in CI**; ≈ 9k files / 67 MB): uncompressed MVT (`--no-tile-compression --drop-densest-as-needed`,
+one source-layer named after the overlay, low max zooms — z12 lines/towers, z10–11 DISCOM / RTGS; MapLibre over-zooms),
+plus `index.json` (`TileIndex`: per layer minzoom/maxzoom/bounds/count/content hash `v`/shards). Contract in
+`src/overlays/tiles-core.ts` (shared with the script).
+- **Tiles carry only what the style filters / labels / picks on** (`keep`: DISCOM `id, discom, name`; towers `i, no, cp`
+  with MVT id = index; RTGS label fields, MVT id = feature index so `ref:<layer>:<i>` refs keep working).
+- **Attributes come from JSON**: id-keyed DISCOM layers get **sidecar shards** `tiles/<layer>/rows/<k>.json` (full
+  features incl. geometry, `shardOf(id)` = FNV-1a mod 128 / 16 / 8) — the Inspector (`featureRow`), fly-to bounds and the
+  downstream GeoJSON download (`featureRows`) read only the shard(s) they need. Towers / RTGS Inspector picks still load
+  the layer's own JSON (refs are indexes). An 11 kV feeder deep link ≈ one ~30 KB-gz shard + a few small tiles (e2e budget
+  test < 300 KB decoded; was 3.1 MB gz).
+- **Fallback**: no `tiles/index.json` (dev without tiles, Vite answering with index.html) ⇒ `overlayView` returns the
+  GeoJSON and everything behaves as before — `npm run dev` never needs tippecanoe. The e2e suite passes both ways.
+- **tippecanoe**: native when on PATH (CI: Ubuntu's apt `tippecanoe` 2.49), else a project-local Docker image
+  `apgg-tippecanoe:2.49` built once from `ubuntu:24.04` + apt; neither → a warning, no tiles (`--require` makes that fatal,
+  as in CI). Unchanged inputs are skipped (content hash in the index); `--force` rebuilds; ids as args build a subset.
+- The Layers drawer shows "tiled" instead of the file size for tiled entries (`withTiles`).
+
 ## Resource loader (`src/data/resources.ts`, Atlas 2.0 phase 1)
 
 Every lazy asset goes through **one loader**: `defineResource<T>(name, {load(param, signal), refreshMs?})`
@@ -185,8 +210,10 @@ subscribed by an **active** consumer and the tab is visible (keeping stale data 
 alive (use it for opportunistic reads, e.g. DLR in the line Inspector). Current resources: `gridRes` (core grid;
 the store mirrors it as `data`), `generationRes`, `powerGridRes` (`data/load.ts`), `weatherRes` (10-min
 poll, awaits `gridRes` for circle points), `connectivity` (`transco-33kv.json`), `liveStatus` (15-min poll),
-`spotWeather` (per cell), `refCatalog` + `overlayLayer` (`overlays/resources.ts`, per overlay id — the map
-layer and the DISCOM GeoJSON download share one fetch), `placesTier` / `networkTier` (search worker).
+`spotWeather` (per cell), `refCatalog`, `tileIndex`, `overlayView` (what the map draws an overlay from: tiles or
+GeoJSON), `overlayLayer` (a layer's whole GeoJSON — the fallback, the tower / RTGS Inspector), `featureRow` (one
+id-keyed feature: its sidecar shard when tiled) — all in `overlays/resources.ts` — and `placesTier` / `networkTier`
+(search worker).
 **Add new lazy data as a resource** — don't hand-roll a module promise, and don't copy loaded data or its
 status into the store. **Whoever draws/uses lazy data loads it** (`useResource(res, on ? "" : null)`);
 store toggles and `applyUrl` only flip visibility flags.
@@ -236,7 +263,7 @@ feeders/lines, distribution transformers (DTRs) and APEPDCL AB switches → `dat
   employee ids are deliberately not kept. **Owner decision (2026-11-05): the AB-switch raw file and DTR
   `pole_no` (from the open GIS) stay published as they are** — don't re-raise.
 - **ETL** (`buildNetwork` in build-data → `etl-network.ts`): `discom-11kv-lines.geojson` (lazy overlay,
-  ≈ 20 MB raw / 3.1 MB gz — the biggest file; tiling it is Atlas 2.0 phase 4), `net-dtr-<shard>.json`
+  ≈ 20 MB raw / 3.1 MB gz — the biggest file; drawn from vector tiles when built, see "Vector tiles"), `net-dtr-<shard>.json`
   (≈ 305k DTRs in ~380 shards: APEPDCL by the first 4 chars of the DTR code, APSPDCL by the first 2 of the
   serial) and `search-network.json` (the "network" search tier + upstream trace chains). Every 11 kV feeder is
   linked to its 33/11 kV SS (APEPDCL: recorded `sub_station_id`; APSPDCL: name within 5 km, else a run end
@@ -304,7 +331,8 @@ ONE detail view for every selectable thing (it replaced DetailPanel, the MIS Dos
 overlay tap popups). The selection (`selectedId`, URL `sel=`) is an **Inspector ref** (`refs.ts`): bare core /
 plant / power-grid / DISCOM ids (`s-` `l-` `g-` `pl-` `ps-` `rs-` `bs-` `ds-` `dl-` `f11-`, so v1 links still open) or
 typed `dtr:<code>` · `sec:<label>` · `tw:<kv>:<index>` · `ref:<layer>:<index>` (RTGS sources use `generateId`).
-- **Adapters** (`adapters/*`, registry `inspect.ts`): `needs(ref)` (overlay layer / net item / gen / pg) ·
+- **Adapters** (`adapters/*`, registry `inspect.ts`): `needs(ref)` (`layer` to switch on + `overlay` = its whole file
+  (towers / RTGS, refs are indexes) or `row` = just this feature (DISCOM — a sidecar shard when tiled) / net item / gen / pg) ·
   `resolve(ref, ctx)` · `header` · `sections` · `locate` · `focus` (amber DISCOM highlight) · `geojson`. Sections are
   data — `fields | links | trace | callout | note | custom` with ids (overview, risk, weather, connectivity, supply,
   trace, downstream, towers, provenance) — unit-tested in `inspector.test.ts` on the real `public/data`. Adapters
@@ -328,8 +356,8 @@ towers in the `above-grid` band) — see "Map engine". UI: the Layers drawer (`s
 ## Map engine (`src/map/`, Atlas 2.0 phase 1)
 
 Everything the map draws is a **registry `LayerDef`** (`registry/types.ts`): a source (`geojson` from state or a
-resource, `computed` with a `key` → `setData` on change, `raster` → `setTiles` on change, or `ride` on another def's
-source), its style layers, a z-**band**, `visible(s)`, and memoised pure `spec(s)` (filter / paint) and
+resource, `computed` with a `key` → `setData` on change, `raster` → `setTiles` on change, `spec` = a whole source spec
+from a lazy resource (catalog overlays: vector tiles or GeoJSON), or `ride` on another def's source), its style layers, a z-**band**, `visible(s)`, and memoised pure `spec(s)` (filter / paint) and
 `featureState(s)`. `registry/core.ts` (`mapRegistry`) lists them bottom → top over one `MapState` (`{app: store,
 data, gen, pg, wx, preset}`): weather radar + cyclone fills, catalog overlays + focus highlight (`beneath`) · core
 lines + MIS line theme (`grid`) · towers + MIS SS rings (`above-grid`) · SS dots/labels, wx-risk halo, plants, the
@@ -357,8 +385,9 @@ power-grid classes, cyclone track, focus pin (`top`).
 ## PWA / offline
 
 `public/manifest.webmanifest` + `public/sw.js` (registered in `main.tsx`, prod only): hashed assets cache-first,
-navigations network-first, `data/*` stale-while-revalidate (`live-status.json` network-first), CARTO/Esri
-basemap tiles SWR in a 1,500-entry cache. Bump `VERSION` in `sw.js` to invalidate. Because data is SWR, the
+navigations network-first, `data/*` stale-while-revalidate (`live-status.json` network-first), overlay vector tiles
++ sidecars (`tiles/*`, content-versioned) cache-first in a 4,000-entry cache (`tiles/index.json` network-first), CARTO/Esri
+basemap tiles SWR in a 1,500-entry cache. (Atlas 2.0 PR 13 reworks this: build-hash VERSION, byte-bounded LRU.) Bump `VERSION` in `sw.js` to invalidate. Because data is SWR, the
 "updated — reload" toast compares the loaded `meta.generatedAt` with the latest `live-status.generatedAt`.
 
 ## Generation overlay (lazy-loaded)
@@ -784,7 +813,7 @@ so CI can regenerate. `Transco.kml` is retained for reference but unused.
 ## Deploy
 
 `.github/workflows/deploy.yml` publishes `dist/` to Pages on push to `main` (it runs `build:data` →
-`npm test` → `build`); a parallel, non-blocking `e2e` job runs the Playwright smoke suite against the build
+`apt install tippecanoe` + `build:tiles --require` → `npm test` → `build`); a parallel, non-blocking `e2e` job runs the Playwright smoke suite against the build
 and uploads traces on failure. Vite `base` is `/ap-gis-grid/` (override via `BASE_PATH` env — `/` for a
 user/org site, `/<repo>/` if renamed). Repo: Settings → Pages → Source = GitHub Actions.
 

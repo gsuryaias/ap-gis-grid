@@ -156,6 +156,10 @@ export function attachEngine<S>(map: EngineMap, opts: EngineOptions<S>): Engine 
         if (!tiles) return { ok: false, writes: 0 };
         map.addSource(id, { ...src.options, type: "raster", tiles } as never);
         sourceKey(id, map.getSource(id), tiles.join("\n"));
+      } else if (src.kind === "spec") {
+        const spec = src.spec(s);
+        if (!spec) return { ok: false, writes: 0 };
+        map.addSource(id, spec);
       } else {
         const data = src.data(s);
         if (!data) return { ok: false, writes: 0 };

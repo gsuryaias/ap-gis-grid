@@ -5,6 +5,8 @@
  *  - Network data (/data/*.json|geojson)    → stale-while-revalidate, so the map opens instantly
  *    and a fresh live-sync deploy is picked up in the background (live-status.json is always
  *    network-first so the "Live" badge never lies).
+ *  - Overlay vector tiles + sidecars (/tiles/*, content-versioned `?v=`) → cache-first in a
+ *    count-capped cache; /tiles/index.json (which names the versions) → network-first.
  *  - Basemap tiles / glyphs (CARTO, Esri)   → stale-while-revalidate in a size-capped cache, so
  *    places you've viewed keep a basemap in the field with poor connectivity.
  * Bump VERSION to invalidate everything.
@@ -15,6 +17,8 @@ const ASSETS = `assets-${VERSION}`;
 const DATA = `data-${VERSION}`;
 const TILES = `tiles-${VERSION}`;
 const TILE_MAX = 1500;
+const VTILES = `vtiles-${VERSION}`;
+const VTILE_MAX = 4000;
 const SCOPE = self.registration.scope; // e.g. https://host/ap-gis-grid/
 
 self.addEventListener("install", (event) => {
@@ -22,7 +26,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  const keep = new Set([SHELL, ASSETS, DATA, TILES]);
+  const keep = new Set([SHELL, ASSETS, DATA, TILES, VTILES]);
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
   );
@@ -47,12 +51,15 @@ async function networkFirst(req, cacheName) {
   }
 }
 
-async function cacheFirst(req, cacheName) {
+async function cacheFirst(req, cacheName, max) {
   const c = await caches.open(cacheName);
   const hit = await c.match(req);
   if (hit) return hit;
   const res = await fetch(req);
-  if (res.ok) c.put(req, res.clone());
+  if (res.ok) {
+    await c.put(req, res.clone());
+    if (max) trim(cacheName, max);
+  }
   return res;
 }
 
@@ -86,6 +93,8 @@ self.addEventListener("fetch", (event) => {
     if (path.startsWith("assets/")) return event.respondWith(cacheFirst(req, ASSETS));
     if (path === "data/live-status.json") return event.respondWith(networkFirst(req, DATA));
     if (path.startsWith("data/")) return event.respondWith(staleWhileRevalidate(event, req, DATA));
+    if (path === "tiles/index.json") return event.respondWith(networkFirst(req, DATA));
+    if (path.startsWith("tiles/")) return event.respondWith(cacheFirst(req, VTILES, VTILE_MAX));
     return event.respondWith(networkFirst(req, SHELL));
   }
 

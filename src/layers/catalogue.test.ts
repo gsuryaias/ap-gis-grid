@@ -5,7 +5,7 @@ import { LENSES, lensDefaultTokens } from "../lenses/registry.ts";
 import { refDef, type RefCatalogEntry } from "../overlays/catalog.ts";
 import { STATIC_OVERLAY_DEFS } from "../overlays/resources.ts";
 import type { LiveStatus } from "../data/live-status.ts";
-import { BUILTIN_ENTRIES, CAT_GROUPS, catalogueEntries, entryMeta, inZoom, matchesQuery, STATIC_OVERLAY_BYTES, withLiveCounts } from "./catalogue.ts";
+import { BUILTIN_ENTRIES, CAT_GROUPS, catalogueEntries, entryMeta, inZoom, matchesQuery, STATIC_OVERLAY_BYTES, withLiveCounts, withTiles } from "./catalogue.ts";
 
 const dataFile = (f: string) => new URL(`../../public/data/${f}`, import.meta.url);
 const ref = JSON.parse(readFileSync(dataFile("ref/catalog.json"), "utf8")) as RefCatalogEntry[];
@@ -61,6 +61,10 @@ describe("layer catalogue", () => {
     expect(inZoom(towers, 9)).toBe(true);
     expect(inZoom(towers, null)).toBe(true);
     expect(entryMeta(towers)).toBe("5.2 MB · from zoom 9");
+    // A tiled build downloads only what's on screen — the file size would mislead.
+    const [tiled] = withTiles([towers], { "towers-132kv": {} });
+    expect(entryMeta(tiled)).toBe("tiled · from zoom 9");
+    expect(withTiles(all, {})).toBe(all);
     expect(entryMeta(all.find((e) => e.id === "districts")!)).toMatch(/^26 · \d+ KB · \d{4}$/);
   });
 

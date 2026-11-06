@@ -8,7 +8,7 @@ import { generationRes, powerGridRes } from "../data/load.ts";
 import { useResource } from "../data/resources.ts";
 import type { GridData } from "../data/types.ts";
 import { weatherRes } from "../data/weather.ts";
-import { overlayLayer } from "../overlays/resources.ts";
+import { overlayView } from "../overlays/resources.ts";
 import { useAppStore } from "../state/store.ts";
 import type { AppState } from "../state/types.ts";
 import { BASEMAPS } from "./basemaps.ts";
@@ -58,7 +58,7 @@ function subscribeMapInputs(fn: () => void): () => void {
   return () => unsubs.forEach((u) => u());
 }
 
-const registry = mapRegistry((id) => overlayLayer.peek(id));
+const registry = mapRegistry((id) => overlayView.peek(id));
 
 export function MapPane({ data, mode, layers }: MapPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
