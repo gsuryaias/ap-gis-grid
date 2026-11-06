@@ -66,6 +66,8 @@ export function MapPane({ data, mode, layers }: MapPaneProps) {
   const measureRef = useRef<MeasureController | null>(null);
   const presetRef = useRef(layers);
   presetRef.current = layers;
+  const hiddenRef = useRef(mode === "hidden");
+  hiddenRef.current = mode === "hidden";
   const [map, setMap] = useState<MlMap | null>(null);
   const isFull = mode === "full";
   const isHidden = mode === "hidden";
@@ -115,11 +117,19 @@ export function MapPane({ data, mode, layers }: MapPaneProps) {
       });
       engineRef.current = engine;
       detachInteraction = attachInteraction(m, { defs: engine.defs, suppressed: clickSuppressed });
-      // Phones: the search/tools stack covers the top ~190 px — fit AP into what's left visible.
+      // A link's camera (`@lng,lat,zoom`) wins; otherwise fit AP — on phones into what the
+      // search/tools stack (top ~190 px) leaves visible.
+      const linked = useAppStore.getState().cameraSignal?.camera;
       const narrow = (containerRef.current?.clientWidth ?? 1024) < 640;
-      m.fitBounds(data.meta.bounds as LngLatBoundsLike, {
-        padding: narrow ? { top: 190, bottom: 70, left: 12, right: 12 } : 60,
-        duration: 0,
+      if (linked) m.jumpTo({ center: [linked.lng, linked.lat], zoom: linked.zoom });
+      else
+        m.fitBounds(data.meta.bounds as LngLatBoundsLike, {
+          padding: narrow ? { top: 190, bottom: 70, left: 12, right: 12 } : 60,
+          duration: 0,
+        });
+      // The settled camera goes to the URL (replace, debounced) — not while the pane is hidden.
+      m.on("moveend", () => {
+        if (!hiddenRef.current) useAppStore.getState().setCamera({ ...m.getCenter(), zoom: m.getZoom() });
       });
       // End-to-end test hook (e2e/*.spec.ts) — only exposed when the page is opened with `?e2e`.
       if (new URLSearchParams(window.location.search).has("e2e")) (window as unknown as { __map?: MlMap }).__map = m;

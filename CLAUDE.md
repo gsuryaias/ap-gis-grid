@@ -76,7 +76,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 |-------|------|-------|
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
-| State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices"; versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
+| State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices" and "URL v2"; selection history (`back()`), workspace + workspaceContext |
 | Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
 | Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
 | Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
@@ -186,7 +186,7 @@ poll, awaits `gridRes` for circle points), `connectivity` (`transco-33kv.json`),
 layer and the DISCOM GeoJSON download share one fetch), `placesTier` / `networkTier` (search worker).
 **Add new lazy data as a resource** — don't hand-roll a module promise, and don't copy loaded data or its
 status into the store. **Whoever draws/uses lazy data loads it** (`useResource(res, on ? "" : null)`);
-store toggles and `applyHash` only flip visibility flags.
+store toggles and `applyUrl` only flip visibility flags.
 
 ## Store slices (`src/state/`, Atlas 2.0 phase 1)
 
@@ -260,6 +260,21 @@ lessee** (lessees are often private individuals — deliberately withheld). Stat
 only when RTGS publishes new data (`npx tsx scripts/build-ref-layers.mts <id…>` rebuilds a subset but does NOT
 rewrite `catalog.json`).
 
+## URL v2 (`src/url/`, Atlas 2.0 phase 2)
+
+Everything has a URL, and browser Back / Forward work inside the app. `url/v2.ts` (pure, `v2.test.ts`):
+`#@lng,lat,zoomz&v=2&lens=plan&sel=<ref>&lyr=gen,pg,wx,discom-lines,ref:districts,-ss&volt=…&circ=…&circle=…&coast=…&base=…&tbl=1&map=…&by=…&mf=…&tab=…&th=…`
+— defaults omitted; `lens` = explore (Atlas) | plan (MIS) (field/storm decode to explore until phase 3); MIS keys only in
+Plan; `lyr` present ⇒ authoritative layer set (wins over the remembered overlays), absent ⇒ layers untouched.
+- **History** (`historyMode`): selection, lens, circle and MIS drill (`mf`/`by`/`tab`) **push**; everything else
+  (filters, layers, basemap, camera, theme) **replaces**, debounced 300 ms (`url/useUrlSync.ts`). Only `URL_INPUTS`
+  re-serialise — never hover / measure. popstate / hashchange → `applyUrl` (a full state: omitted keys reset).
+- **Camera**: MapPane writes the settled camera on every `moveend` (`setCamera`, rounded); a URL camera arrives as
+  `cameraSignal` — jumped to on load (instead of the AP fit), eased to on Back. A link's camera wins over flying to
+  its `sel`.
+- **v1 links** (`#v=1&…`) decode through `url/hash.ts` (`parseHash`, pinned by `hash.test.ts`) → `fromV1`, then the
+  app rewrites them to v2 in place. Header **Copy link** (`components/CopyLink.tsx`) copies the full view.
+
 ## Inspector (`src/inspector/`, Atlas 2.0 phase 2)
 
 ONE detail view for every selectable thing (it replaced DetailPanel, the MIS Dossier, NetworkTracePanel and the
@@ -283,7 +298,7 @@ typed `dtr:<code>` · `sec:<label>` · `tw:<kv>:<index>` · `ref:<layer>:<index>
 DISCOM + RTGS overlays live in a **self-contained module** rather than the per-overlay store/selection plumbing:
 `catalog.ts` (defs + cartography `REF_STYLE`), `resources.ts` (`overlayLayer` / `refCatalog`), `store.ts`
 (facade over the app store's `layers` slice: enabled/status, DISCOM sub-filter, per-device persistence in
-localStorage `apgg-overlays-v1` — NOT in the URL hash). Their map
+localStorage `apgg-overlays-v1`; a URL `lyr=` list wins over it). Their map
 layers are registry defs (`map/registry/overlays.ts`: polygons < lines < points, then the amber focus highlight;
 towers in the `above-grid` band) — see "Map engine". UI: `components/OverlaySections.tsx` (`DistributionSection`,
 `ReferenceSection`).
@@ -366,7 +381,7 @@ user enables it. It bundles **three classes** behind one master toggle, each wit
   `normalizeKv`, `parseMva`) live in `etl-lib.ts`. Voltage is a **`number`** (765 supported); a few
   source rows have unparseable voltage → `0` (UI shows "—"). Validation gate: build fails on 0 features.
 - **Lazy contract**: the initial grid load does NOT fetch these. `powerGridRes` loads all four files
-  (one `Promise.all`) while `filters.showPowerGrid` is on (toggle or `pg=1` deep link alike). Per-class visibility is `filters.pgClasses` (NOT in the URL hash —
+  (one `Promise.all`) while `filters.showPowerGrid` is on (toggle or `lyr=pg` deep link alike). Per-class visibility is `filters.pgClasses` (NOT in the URL hash —
   only the single `pg=1` key, like generation's `genTypes`). Layers are four engine defs
   (`PG_LINES` / `PG_SS` / `RAILWAY` / `BULKLOAD` in `map/registry/core.ts`), one per source.
 - **Not in `data.byId`**: all classes live in a shared `powergrid.byId` (store) with kinds
@@ -396,7 +411,7 @@ unit-tested; fetch clients in `src/data/weather.ts` (`loadWeather()` = one `Prom
 in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
 
 - **Lazy contract**: same as generation/powergrid — `weatherRes` loads only while the overlay is on
-  (`MapPane` / layer panel) or the Weather monitor is open (`WeatherView`). Hash key **`wx=1`**
+  (`MapPane` / layer panel) or the Weather monitor is open (`WeatherView`). URL **`lyr=wx`**
   (master only; `wxLayers` radar/cyclone sub-toggles are NOT in the hash, like `genTypes`). The load awaits
   `gridRes` for circle points, so a wx=1 deep link needs no special casing.
 - **Auto-refresh**: `weatherRes.refreshMs` = 10 min, alive only while an active consumer is mounted
@@ -447,7 +462,7 @@ deps, no backend.
 - **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The `ControlPanel`
   **Region → Circle** `<select>` (13 canonical circles from `meta.circles`) filters the **core** lines +
   substations (`gridSpec` ANDs `["==",["get","circle"],…]`) and `fitToCircle` (`useMapCamera`) zooms to the
-  circle's SS bounds (back to `meta.bounds` when cleared). Deep-linkable: hash key **`circle`**.
+  circle's SS bounds (back to `meta.bounds` when cleared). Deep-linkable: URL key **`circle`** (changing it pushes a history entry).
   **Circle-only** because `zone`/`division` exist on substations but are **absent on all lines** — circle
   is the one admin field both layers carry. Overlays are not sliced (PGCIL has no circle).
 - **Nearest substation / locate-me** — `NearbyControl` pill (beside Measure): **Locate me** (browser
@@ -556,9 +571,9 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
   which overlay groups the embedded map may mount (no auto-toggling — visibility stays user-controlled
   via `MapLayerPanel`). An analysis workspace that needs overlay DATA without showing the layer calls
   `useResource(generationRes)` / `useResource(powerGridRes)`.
-- **`workspaceContext`** (store) carries cross-workspace focus. Hash-synced (only while `w=mis`): `misBy`
+- **`workspaceContext`** (store) carries cross-workspace focus. URL-synced (only in the Plan lens, `lens=plan`): `misBy`
   (`by=`, default circle), `misFilters` (`mf=`, the drill path `dim:value~dim:value`), `misTab` (`tab=`),
-  `misTheme` (`theme=`). Transient, never hashed: `misMap` (thematic classes + scope ids for the map) and
+  `misTheme` (`th=`; v1 `theme=`). Transient, never in the URL: `misMap` (thematic classes + scope ids for the map) and
   `fit` (`{key, bounds}` — `useMapCamera` fits once per new key).
 
 - **Network MIS** (`workspaces/mis/`) — an analyst's view of the network built on the live GIS data

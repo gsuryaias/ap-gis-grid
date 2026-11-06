@@ -1,4 +1,5 @@
-import { defaultMapLayout } from "../../url/hash.ts";
+import { defaultMapLayout } from "../../url/layout.ts";
+import { roundCamera } from "../../url/v2.ts";
 import type { SliceCreator, ViewSlice } from "../types.ts";
 
 export const createViewSlice: SliceCreator<ViewSlice> = (set) => ({
@@ -6,6 +7,8 @@ export const createViewSlice: SliceCreator<ViewSlice> = (set) => ({
   mapLayout: "atlas-only",
   basemap: "light",
   spotlight: false,
+  camera: null,
+  cameraSignal: null,
 
   setWorkspace: (workspace) =>
     set((s) => ({
@@ -16,4 +19,10 @@ export const createViewSlice: SliceCreator<ViewSlice> = (set) => ({
   setMapLayout: (mapLayout) => set({ mapLayout }),
   setBasemap: (basemap) => set({ basemap }),
   toggleSpotlight: () => set((s) => ({ spotlight: !s.spotlight })),
+  setCamera: (c) =>
+    set((s) => {
+      const camera = roundCamera(c);
+      const p = s.camera;
+      return p && p.lng === camera.lng && p.lat === camera.lat && p.zoom === camera.zoom ? s : { camera };
+    }),
 });

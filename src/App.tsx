@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type Componen
 import { useAppStore } from "./state/store.ts";
 import { useIsMobile } from "./lib/useMediaQuery.ts";
 import { WORKSPACES, type WorkspaceId } from "./workspaces/registry.ts";
-import { useHashSync } from "./url/useHashSync.ts";
+import { useUrlSync } from "./url/useUrlSync.ts";
 import { MapPane, type MapPaneMode } from "./map/MapPane.tsx";
 import { WORKSPACE_LAYER_PRESETS } from "./map/layer-presets.ts";
 import { BrandHeader } from "./components/BrandHeader.tsx";
@@ -206,7 +206,7 @@ export function App() {
     return () => window.removeEventListener("resize", onResize);
   }, [clampPaneWidth]);
 
-  useHashSync();
+  useUrlSync();
   useInspectorSync();
 
   useEffect(() => {

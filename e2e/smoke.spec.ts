@@ -1,5 +1,4 @@
-// Smoke suite — the user journeys every Atlas 2.0 PR must keep working. Phase-2/3 journeys that the
-// current UI cannot do yet are declared with test.fixme so they flip on as the revamp lands.
+// Smoke suite — the user journeys every Atlas 2.0 PR must keep working.
 import { expect, test } from "@playwright/test";
 import { hasLayer, openApp, switchBasemap } from "./helpers.ts";
 
@@ -69,7 +68,7 @@ test("generation overlay lazy-loads and survives a basemap switch", async ({ pag
   await openApp(page);
   await page.getByRole("switch", { name: "Toggle generation plants" }).click();
   await expect.poll(() => hasLayer(page, "grid-generation")).toBe(true);
-  await expect(page).toHaveURL(/gen=1/);
+  await expect(page).toHaveURL(/lyr=gen/);
 
   await switchBasemap(page, "Dark");
   await expect.poll(() => hasLayer(page, "grid-generation")).toBe(true);
@@ -291,8 +290,39 @@ test("v1 deep link opens the Network MIS", async ({ page }) => {
   await expect(page.getByText(/Radial feeds/).first()).toBeVisible();
 });
 
-test.fixme("browser Back clears a selection without leaving the app (URL v2, phase 2)", async ({ page }) => {
-  await openApp(page, "#v=1&sel=s-placeholder");
+test("browser Back / Forward step through selections without leaving the app (URL v2)", async ({ page }) => {
+  await openApp(page);
+  await expect(page).toHaveURL(/#@[\d.]+,[\d.]+,[\d.]+z&v=2/); // the camera is in the URL
+  const search = page.getByRole("textbox", { name: /Search substations/ });
+  await search.fill("Vijayawada");
+  await page.getByRole("listbox").getByRole("option").first().getByRole("button").click();
+  await expect(page).toHaveURL(/sel=s-/);
+  const inspector = page.getByRole("complementary", { name: "Feature details" });
+  await expect(inspector).toBeVisible();
+
   await page.goBack();
-  await expect(page).toHaveURL(/ap-gis-grid/);
+  await expect(page).not.toHaveURL(/sel=/);
+  await expect(page).toHaveURL(/\/ap-gis-grid\/\?e2e#/);
+  await expect(inspector).toBeHidden();
+
+  await page.goForward();
+  await expect(page).toHaveURL(/sel=s-/);
+  await expect(inspector).toBeVisible();
+});
+
+test("a v1 link is rewritten to v2; a v2 link restores camera + layers", async ({ page }) => {
+  await openApp(page, "#v=1&sel=s-ss-132kv-chnd&gen=1&base=dark");
+  await expect(page).toHaveURL(/v=2&sel=s-ss-132kv-chnd&lyr=gen.*base=dark/);
+  await expect(page.getByRole("complementary", { name: "Feature details" }).getByRole("heading", { name: "CHANDODU" })).toBeVisible();
+
+  await page.goto("./?e2e#@80.6,16.5,10z&v=2&lyr=discom-ss");
+  await page.reload();
+  await expect.poll(() => hasLayer(page, "ov-discom-ss-circle")).toBe(true);
+  const cam = await page.evaluate(() => {
+    const m = (window as unknown as { __map: { getCenter(): { lng: number; lat: number }; getZoom(): number } }).__map;
+    return { lng: m.getCenter().lng, lat: m.getCenter().lat, zoom: m.getZoom() };
+  });
+  expect(cam.lng).toBeCloseTo(80.6, 2);
+  expect(cam.lat).toBeCloseTo(16.5, 2);
+  expect(cam.zoom).toBeCloseTo(10, 1);
 });

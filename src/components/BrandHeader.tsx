@@ -3,6 +3,7 @@ import { formatInt } from "../lib/format.ts";
 import { useAppStore } from "../state/store.ts";
 import { WORKSPACES, type WorkspaceId } from "../workspaces/registry.ts";
 import { CloudIcon, InfoIcon, LayersIcon } from "./icons.tsx";
+import { CopyLinkButton } from "./CopyLink.tsx";
 import { LiveStatusBadge } from "./LiveStatus.tsx";
 
 const TAB_LABEL: Record<WorkspaceId, string> = { atlas: "Atlas", mis: "MIS" };
@@ -92,6 +93,7 @@ export function BrandHeader({
         <LiveStatusBadge />
         {workspaceNav}
         {atlasActions}
+        <CopyLinkButton className="shrink-0" />
       </section>
     );
   }

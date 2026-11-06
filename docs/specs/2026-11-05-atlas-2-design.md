@@ -9,7 +9,7 @@
 |---|---|---|
 | 0 | Groundwork & hygiene (retire dormant code, e2e safety net, v1 hash contract, docs truth-up, baseline) | done — PR #14 |
 | 1 | Platform core (resource loader, store slices, pure layer specs, sync engine) | done — PR 1 (resource loader + search worker) done, PR #15 · PR 2 (store slices) done, PR #16 · PR 3 (pure layer specs) PR #17 · PR 4 (engine for overlays) PR #18 · PR 5 (engine for everything + one interaction handler; MapPane 586 → 164 lines) PR #19 — **done** |
-| 2 | Inspector adapters + URL v2 | in progress — PR 6 (Inspector adapters + What's here; DetailPanel / Dossier / NetworkTracePanel / popups deleted) `feat/atlas2-inspector` · PR 7 (URL v2) next |
+| 2 | Inspector adapters + URL v2 | in review — PR 6 (Inspector adapters + What's here; DetailPanel / Dossier / NetworkTracePanel / popups deleted) PR #20 · PR 7 (URL v2: push/replace history, camera, `lyr=`, Copy link; v1 links rewritten) `feat/atlas2-url-v2` |
 | 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | planned |
 | 4 | Vector-tile directories, service-worker rework, Field offline pack, ETL split | planned |
 | 5 | Storm / Field / Plan mission depth | planned |

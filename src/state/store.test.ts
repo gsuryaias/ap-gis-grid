@@ -82,7 +82,7 @@ describe("app store slices", () => {
 
   it("a gen/pg/wx deep link only sets visibility — no fetch side effects in the store", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    useAppStore.getState().applyHash({ showGeneration: true, showPowerGrid: true, showWeather: true, voltages: [400] });
+    useAppStore.getState().applyUrl({ showGeneration: true, showPowerGrid: true, showWeather: true, voltages: [400] });
     const f = useAppStore.getState().filters;
     expect([f.showGeneration, f.showPowerGrid, f.showWeather]).toEqual([true, true, true]);
     expect(f.voltages).toEqual({ 400: true, 220: false, 132: false });
@@ -92,15 +92,43 @@ describe("app store slices", () => {
     fetchSpy.mockRestore();
   });
 
-  it("hashState round-trips through applyHash", () => {
+  it("urlState round-trips through applyUrl", () => {
     const s = useAppStore.getState();
     s.toggleVoltage(132);
     s.setRegionCircle("Kadapa");
     s.setCoastalBand(1);
-    const h = useAppStore.getState().hashState();
+    s.setCamera({ lng: 80.123456, lat: 16.5, zoom: 9.876 });
+    s.select("s-ss-132kv-chnd");
+    const u = useAppStore.getState().urlState();
+    expect(u.camera).toEqual({ lng: 80.1235, lat: 16.5, zoom: 9.88 });
     useAppStore.setState(initial, true);
-    useAppStore.getState().applyHash(h);
-    expect(useAppStore.getState().hashState()).toEqual(h);
+    useAppStore.getState().applyUrl(u);
+    expect(useAppStore.getState().urlState()).toEqual(u);
+  });
+
+  it("a linked camera wins over flying to the linked selection; Back-style applies clear the breadcrumb", () => {
+    const s = useAppStore.getState();
+    s.select("s-a");
+    s.select("s-b");
+    expect(useAppStore.getState().history).toEqual(["s-a"]);
+    useAppStore.getState().applyUrl({ selectedId: "s-c", camera: { lng: 80, lat: 16, zoom: 8 } });
+    const st = useAppStore.getState();
+    expect(st.history).toEqual([]);
+    expect(st.flySignal?.id).not.toBe("s-c");
+    expect(st.cameraSignal).toMatchObject({ camera: { lng: 80, lat: 16, zoom: 8 }, animate: true });
+    useAppStore.getState().applyUrl({ selectedId: "s-d" }, { initial: true });
+    expect(useAppStore.getState().flySignal?.id).toBe("s-d");
+  });
+
+  it("a link's `lyr` overlays replace the remembered ones; no `lyr` leaves them alone", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise(() => {})); // loads stay pending
+    useAppStore.getState().layers.toggle("discom-ss", true);
+    useAppStore.getState().applyUrl({ selectedId: null });
+    expect(useAppStore.getState().layers.enabled).toEqual({ "discom-ss": true });
+    useAppStore.getState().applyUrl({ overlays: ["discom-lines"] });
+    expect(useAppStore.getState().layers.enabled).toEqual({ "discom-lines": true });
+    expect(useAppStore.getState().layers.status["discom-lines"]).toBe("loading"); // restore() fetched it
+    fetchSpy.mockRestore();
   });
 
   it("resetFilters clears only the slicing filters", () => {
