@@ -27,25 +27,6 @@ export function sourceForId(
   return f.kind === "line" ? SRC.lines : SRC.substations;
 }
 
-export function setFeatState(
-  map: MlMap,
-  data: GridData,
-  gen: GenerationData | null | undefined,
-  pg: PowerGridData | null | undefined,
-  id: string | null,
-  key: string,
-  value: boolean,
-): void {
-  if (!id) return;
-  const source = sourceForId(data, gen, pg, id);
-  if (!source || !map.getSource(source)) return;
-  try {
-    map.setFeatureState({ source, id }, { [key]: value });
-  } catch {
-    /* feature not yet present (e.g. mid style reload) */
-  }
-}
-
 export function flyToFeature(
   map: MlMap,
   data: GridData,

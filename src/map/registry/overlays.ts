@@ -4,18 +4,22 @@
 import type { ExpressionSpecification, LayerSpecification } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
 import { DISCOM_COLOR, DISCOMS, type DiscomId, type OverlayDef } from "../../overlays/catalog.ts";
+import { popupHtml } from "../../overlays/popup.ts";
+import { towerPopupHtml } from "../../overlays/towers.ts";
 import type { Basemap, OverlayFocus } from "../../state/types.ts";
 import type { MapSpec } from "../spec.ts";
-import type { LayerDef } from "./types.ts";
+import { memo, type Interaction, type LayerDef } from "./types.ts";
 
-/** The state the overlay defs read (the app store satisfies it). */
+/** The state the overlay defs read (the map state, whose `app` is the store, satisfies it). */
 export interface OverlayRegistryState {
-  basemap: Basemap;
-  layers: {
-    defs: Record<string, OverlayDef>;
-    enabled: Record<string, boolean>;
-    discoms: Record<DiscomId, boolean>;
-    focus: OverlayFocus | null;
+  app: {
+    basemap: Basemap;
+    layers: {
+      defs: Record<string, OverlayDef>;
+      enabled: Record<string, boolean>;
+      discoms: Record<DiscomId, boolean>;
+      focus: OverlayFocus | null;
+    };
   };
 }
 type S = OverlayRegistryState;
@@ -44,10 +48,10 @@ export function overlayLayers(def: OverlayDef, s: S): LayerSpecification[] {
   const source = overlaySourceId(def.id);
   const color = colorExpr(def);
   const st = def.style;
-  const dark = s.basemap !== "light";
+  const dark = s.app.basemap !== "light";
   const minzoom = st.minzoom ?? 0;
   const isTower = def.format === "towers";
-  const filter = def.style.color === "discom" ? { filter: discomFilter(s.layers.discoms) } : {};
+  const filter = def.style.color === "discom" ? { filter: discomFilter(s.app.layers.discoms) } : {};
   const out: LayerSpecification[] = [];
 
   if (def.geometry === "polygon") {
@@ -132,6 +136,42 @@ export function overlayLayers(def: OverlayDef, s: S): LayerSpecification[] {
   return out;
 }
 
+/** Discom sub-filter spec per def, memoised on the `discoms` object. */
+const discomSpecs = new Map<string, (discoms: Record<DiscomId, boolean>) => MapSpec>();
+function discomSpec(id: string, discoms: Record<DiscomId, boolean>): MapSpec {
+  let fn = discomSpecs.get(id);
+  if (!fn) {
+    const L = overlayLayerIds(id);
+    fn = memo((d: Record<DiscomId, boolean>): MapSpec => {
+      const f = discomFilter(d);
+      return { [L.line]: { filter: f }, [L.circle]: { filter: f }, [L.label]: { filter: f } };
+    });
+    discomSpecs.set(id, fn);
+  }
+  return fn(discoms);
+}
+
+/**
+ * Tap behaviour: towers (a tower sits on a core line — its popup out-ranks the line, which is
+ * still selected) > points > lines > fills, all below the core grid. Outline-only polygons are
+ * informative but not tappable, so they don't eat every map tap.
+ */
+function overlayInteraction(def: OverlayDef): Interaction | undefined {
+  const L = overlayLayerIds(def.id);
+  if (def.format === "towers") {
+    return {
+      priority: 0,
+      layers: [L.circle],
+      pad: 4,
+      pick: (f) => ({ popup: towerPopupHtml(def.id, Number(f.properties?.i), def.label) }),
+    };
+  }
+  const pick = (f: Parameters<Interaction["pick"]>[0]) => ({ popup: popupHtml(def, f) });
+  if (def.geometry === "point") return { priority: 40, layers: [L.circle], pad: 6, pick };
+  if (def.geometry === "line") return { priority: 50, layers: [L.line], pad: 6, pick };
+  return def.style.fillOpacity ? { priority: 60, layers: [L.fill], pad: 0, pick } : undefined;
+}
+
 function catalogDef(def: OverlayDef, data: (id: string) => FeatureCollection | undefined): LayerDef<S> {
   const isDiscom = def.style.color === "discom";
   return {
@@ -139,15 +179,10 @@ function catalogDef(def: OverlayDef, data: (id: string) => FeatureCollection | u
     band: def.style.aboveGrid ? "above-grid" : "beneath",
     source: { kind: "geojson", id: overlaySourceId(def.id), data: () => data(def.id), options: { tolerance: 0.5 } },
     layers: (s) => overlayLayers(def, s),
-    visible: (s) => !!s.layers.enabled[def.id],
+    visible: (s) => !!s.app.layers.enabled[def.id],
     // The DISCOM sub-filter (fills are never DISCOM-coloured).
-    spec: isDiscom
-      ? (s) => {
-          const L = overlayLayerIds(def.id);
-          const f = discomFilter(s.layers.discoms);
-          return { [L.line]: { filter: f }, [L.circle]: { filter: f }, [L.label]: { filter: f } };
-        }
-      : undefined,
+    spec: isDiscom ? (s) => discomSpec(def.id, s.app.layers.discoms) : undefined,
+    interaction: overlayInteraction(def),
   };
 }
 
@@ -163,13 +198,14 @@ const FOCUS_PT_SRC = "ov-focus-point-src";
 const idsIn = (ids: string[] | undefined) => e(["in", ["get", "id"], ["literal", ids ?? []]]);
 
 function focusRide(id: string, on: string, layer: (filter: ExpressionSpecification) => LayerSpecification, pick: (f: OverlayFocus | null) => string[] | undefined): LayerDef<S> {
+  const spec = memo((focus: OverlayFocus | null): MapSpec => ({ [id]: { filter: idsIn(pick(focus)) } }));
   return {
     id,
     band: "beneath",
     source: { kind: "ride", on: overlaySourceId(on) },
-    layers: (s) => [layer(idsIn(pick(s.layers.focus)))],
+    layers: (s) => [layer(idsIn(pick(s.app.layers.focus)))],
     visible: () => true,
-    spec: (s): MapSpec => ({ [id]: { filter: idsIn(pick(s.layers.focus)) } }),
+    spec: (s) => spec(s.app.layers.focus),
   };
 }
 
@@ -233,11 +269,11 @@ const FOCUS_POINT_DEF: LayerDef<S> = {
   source: {
     kind: "computed",
     id: FOCUS_PT_SRC,
-    key: (s) => s.layers.focus?.point?.join(",") ?? "",
+    key: (s) => s.app.layers.focus?.point?.join(",") ?? "",
     data: (s) => ({
       type: "FeatureCollection",
-      features: s.layers.focus?.point
-        ? [{ type: "Feature", geometry: { type: "Point", coordinates: s.layers.focus.point }, properties: {} }]
+      features: s.app.layers.focus?.point
+        ? [{ type: "Feature", geometry: { type: "Point", coordinates: s.app.layers.focus.point }, properties: {} }]
         : [],
     }),
   },
@@ -265,11 +301,13 @@ const GEOMETRY_RANK = { polygon: 0, line: 1, point: 2 } as const;
  * focus pin tops everything.
  */
 export function overlayRegistry(data: (id: string) => FeatureCollection | undefined): (s: S) => LayerDef<S>[] {
-  return (s) => {
-    const catalog = Object.values(s.layers.defs)
+  // Rebuilt only when the catalogue changes (not on every reconcile).
+  const build = memo((defs: Record<string, OverlayDef>): LayerDef<S>[] => {
+    const catalog = Object.values(defs)
       .map((def, i) => ({ def, i }))
       .sort((a, b) => GEOMETRY_RANK[a.def.geometry] - GEOMETRY_RANK[b.def.geometry] || a.i - b.i)
       .map(({ def }) => catalogDef(def, data));
     return [...catalog, ...FOCUS_DEFS, FOCUS_POINT_DEF];
-  };
+  });
+  return (s) => build(s.app.layers.defs);
 }

@@ -6,11 +6,11 @@
 //                         (class index). Lines without a class stay transparent → voltage shows.
 //   - `mis-ss-theme`    — a circle layer under the substation dots: status rings (N-1 role) or
 //                         proportional symbols sized by `misV` (33/11 kV substations served).
-// Both are filtered to the MIS scope (the drill path) and re-mounted after every style reload.
-import type { ExpressionSpecification, Map as MlMap } from "maplibre-gl";
+// Both are filtered to the MIS scope (the drill path); the engine re-mounts them after a style reload.
+import type { ExpressionSpecification, LayerSpecification } from "maplibre-gl";
 import type { Basemap } from "../state/store.ts";
-import { LAYER, SRC } from "./layers.ts";
-import { applySpec, syncFeatureState, type FeatureStateSpec, type MapSpec } from "./spec.ts";
+import { SRC } from "./layers.ts";
+import type { FeatureStateSpec, MapSpec } from "./spec.ts";
 
 export const MIS_LAYER = { lines: "mis-line-theme", ss: "mis-ss-theme" } as const;
 
@@ -104,37 +104,33 @@ function lineColor(theme: MisTheme, basemap: Basemap): ExpressionSpecification {
 
 const lineWidth = e(["interpolate", ["linear"], ["zoom"], 5, 1.6, 9, 3.4, 13, 6.5]);
 
-export function addMisLayers(map: MlMap): void {
-  if (!map.getSource(SRC.lines) || !map.getSource(SRC.substations)) return;
-  const beforeSs = map.getLayer(LAYER.substations) ? LAYER.substations : undefined;
-  if (!map.getLayer(MIS_LAYER.lines)) {
-    map.addLayer(
-      {
-        id: MIS_LAYER.lines,
-        type: "line",
-        source: SRC.lines,
-        layout: { "line-cap": "round", "line-join": "round", visibility: "none" },
-        paint: {
-          "line-color": "#000",
-          "line-width": lineWidth,
-          "line-opacity": e(["case", ["!=", ["feature-state", "misC"], null], 0.95, 0]),
-        },
+/** The two MIS theme layers — both ride on the core sources and start hidden. */
+export function misLineLayers(): LayerSpecification[] {
+  return [
+    {
+      id: MIS_LAYER.lines,
+      type: "line",
+      source: SRC.lines,
+      layout: { "line-cap": "round", "line-join": "round", visibility: "none" },
+      paint: {
+        "line-color": "#000",
+        "line-width": lineWidth,
+        "line-opacity": e(["case", ["!=", ["feature-state", "misC"], null], 0.95, 0]),
       },
-      beforeSs,
-    );
-  }
-  if (!map.getLayer(MIS_LAYER.ss)) {
-    map.addLayer(
-      {
-        id: MIS_LAYER.ss,
-        type: "circle",
-        source: SRC.substations,
-        layout: { visibility: "none" },
-        paint: { "circle-radius": 0, "circle-opacity": 0, "circle-stroke-opacity": 0 },
-      },
-      beforeSs,
-    );
-  }
+    },
+  ];
+}
+
+export function misSsLayers(): LayerSpecification[] {
+  return [
+    {
+      id: MIS_LAYER.ss,
+      type: "circle",
+      source: SRC.substations,
+      layout: { visibility: "none" },
+      paint: { "circle-radius": 0, "circle-opacity": 0, "circle-stroke-opacity": 0 },
+    },
+  ];
 }
 
 /** Pure: the MIS theme's layer state + the feature-state it puts on the core sources. */
@@ -203,16 +199,4 @@ export function misThemeSpec(state: MisMapState | null, basemap: Basemap): MisTh
     lines: { source: SRC.lines, keys: ["misC"], states: lineStates },
     ss: { source: SRC.substations, keys: ["misC", "misV"], states: ssStates },
   };
-}
-
-/**
- * Apply (or clear, with `state = null`) the MIS theme. Conditional + diffed — safe to call any
- * time, including after a style reload once `addMisLayers` has re-run.
- */
-export function applyMisTheme(map: MlMap, state: MisMapState | null, basemap: Basemap): void {
-  if (!map.getLayer(MIS_LAYER.lines) || !map.getLayer(MIS_LAYER.ss)) return;
-  const spec = misThemeSpec(state, basemap);
-  syncFeatureState(map, "mis", spec.lines);
-  syncFeatureState(map, "mis", spec.ss);
-  applySpec(map, spec.layers);
 }

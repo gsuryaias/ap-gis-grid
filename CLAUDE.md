@@ -77,7 +77,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
 | State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices"; versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
-| Map | `src/map/` | `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS), `spec.ts` (declarative layer state: `MapSpec` / `FeatureStateSpec` + the conditional appliers `applySpec` / `syncFeatureState` — read back, write only on a difference; the pure `gridSpec` / `spotlightSpec` / `misThemeSpec` / `weatherVisibilitySpec` / `wxRiskSpec` live beside their layers and are tested in `spec.test.ts`), `layers.ts` (paint), `layer-presets.ts` (per-workspace overlay defaults), `basemaps.ts`, `measure.ts`, `weather-layers.ts`, `mis-layers.ts` (MIS thematic layer), `map-helpers.ts` (shared map utils) |
+| Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
 | Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, `NetworkTracePanel`, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
 | Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
 | Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `risk.ts`, `weather.ts`, `format.ts`, `export.ts` |
@@ -220,7 +220,7 @@ circle, coast + layer visibility) is read by the map AND the data table (`passes
   one row per feeder run); stats in `live-status.json → connectivity`.
 - UI: `components/DiscomDownstream.tsx` in the TRANSCO substation detail (feeder list → served SS, Show on map,
   per-SS CSV/GeoJSON, statewide CSV link); selection sets the overlay store `focus` → amber highlight layers
-  `ov-focus-lines`/`ov-focus-ss` in `overlays/map.ts`; popups link "TRANSCO source" back to the SS (`data-select`).
+  `ov-focus-lines`/`ov-focus-ss` (registry defs in `map/registry/overlays.ts`); popups link "TRANSCO source" back to the SS (`data-select`).
 
 ## DISCOM 11 kV network + transformer search (`scripts/sync-network.mts`, `scripts/etl-network.ts`, lazy)
 
@@ -265,19 +265,38 @@ rewrite `catalog.json`).
 DISCOM + RTGS overlays live in a **self-contained module** rather than the per-overlay store/selection plumbing:
 `catalog.ts` (defs + cartography `REF_STYLE`), `resources.ts` (`overlayLayer` / `refCatalog`), `store.ts`
 (facade over the app store's `layers` slice: enabled/status, DISCOM sub-filter, per-device persistence in
-localStorage `apgg-overlays-v1` — NOT in the URL hash), `map.ts`
-(`attachOverlays(map)` — called once in `MapPane`'s `load`: attaches the **map engine** for the overlay layers,
-plus tap → MapLibre popup (core grid features always win the tap; outline-only boundaries are not tappable),
-hover cursor and the one-shot fit). The layers themselves are **registry defs** (`map/registry/overlays.ts`:
-`LayerDef`s built purely from the `layers` slice + basemap — polygons < lines < points, then the amber focus
-highlight; towers in the `above-grid` band) mounted and reconciled by **`map/engine.ts`** (`attachEngine`): one
-`reconcile()` per frame on `layers` changes, `styledata` and `idle` (`isStyleLoaded()` is false while any source
-loads); re-mounts after style reloads; **every write is conditional** (via `applySpec` / read-back) because
-setLayoutProperty/moveLayer/setFilter emit `styledata` — a no-op reconcile makes zero writes (`engine.test.ts`,
-and an e2e "quiet second" check). Z-order comes from four empty **band sentinels** (`band-beneath` under
-`grid-lines-casing`, `band-grid` + `band-above-grid` between the grid lines and `grid-substations`, `band-top`
-topmost), not ad-hoc `moveLayer`s. The core grid / generation / power grid / weather / MIS join the engine in
-phase 1.5. UI: `components/OverlaySections.tsx` (`DistributionSection`, `ReferenceSection`).
+localStorage `apgg-overlays-v1` — NOT in the URL hash), `popup.ts` (tap-popup HTML, every value escaped). Their map
+layers are registry defs (`map/registry/overlays.ts`: polygons < lines < points, then the amber focus highlight;
+towers in the `above-grid` band) — see "Map engine". UI: `components/OverlaySections.tsx` (`DistributionSection`,
+`ReferenceSection`).
+
+## Map engine (`src/map/`, Atlas 2.0 phase 1)
+
+Everything the map draws is a **registry `LayerDef`** (`registry/types.ts`): a source (`geojson` from state or a
+resource, `computed` with a `key` → `setData` on change, `raster` → `setTiles` on change, or `ride` on another def's
+source), its style layers, a z-**band**, `visible(s)`, and memoised pure `spec(s)` (filter / paint) and
+`featureState(s)`. `registry/core.ts` (`mapRegistry`) lists them bottom → top over one `MapState` (`{app: store,
+data, gen, pg, wx, preset}`): weather radar + cyclone fills, catalog overlays + focus highlight (`beneath`) · core
+lines + MIS line theme (`grid`) · towers + MIS SS rings (`above-grid`) · SS dots/labels, wx-risk halo, plants, the
+power-grid classes, cyclone track, focus pin (`top`).
+- **`engine.ts` (`attachEngine`)** mounts defs (a hidden def isn't mounted until first shown; once mounted it is only
+  hidden) and reconciles once per frame on map-relevant store changes (`MAP_INPUTS` in MapPane), passive resource
+  loads, `styledata` and `idle` (`isStyleLoaded()` is false while any source loads). **Every write is conditional**
+  (`applySpec` reads back; setLayoutProperty/moveLayer/setFilter emit `styledata`, so an unconditional write would
+  loop) — a no-op reconcile makes zero writes (`engine.test.ts` + an e2e "quiet second"). A def whose memoised
+  spec / feature-state objects and layer instances are unchanged is skipped without reading the map, so hover
+  reconciles are cheap. Hover / selected / MIS classes are feature-state, diffed per (owner, source) and re-applied
+  when a style reload replaces the source. **Z-order** = four empty band sentinels (`band-beneath` … `band-top`,
+  top kept topmost even over the measure layers); layers are moved only when out of their band/listed order.
+  `onStyleReload` re-adds the measure tool's layers after `setStyle`.
+- **`interaction.ts`** — the ONE click/hover handler: defs declare `interaction {priority, layers, pad, hover,
+  pick}` — tower 0 (popup) · core SS 10 · core line 20 · plant / power grid 30 (select) · overlay points 40 · lines
+  50 · fills 60 (popups; outline-only polygons not tappable). The first selectable hit is selected (none → cleared);
+  a popup opens only if it out-ranks that selection. Suppressed while measure / nearby own the map (nearby-pick
+  sets the origin instead). Note: towers don't sit exactly on the drawn core lines, so a tower tap selects nothing.
+- **`hooks.ts`** — `useMapCamera` (fly-to, circle fit, MIS scope fit, overlay fitSignal, nearby fly),
+  `useMeasure`, `useNearbyMarker`, `useMapResize` (debounced; MapLibre's `trackResize` is off).
+- Add a layer = add a def (and its pure builder/spec + a test); never mutate the map from a component.
 
 ## PWA / offline
 
@@ -301,8 +320,8 @@ none of its code path runs until the user enables it.
   `generationRes` resource: `MapPane` (and the layer panel) `useResource` it while `filters.showGeneration`
   is on — so a manual toggle and a `gen=1` deep link behave the same; the MIS Interfaces tab loads it
   without switching the layer on. The map
-  source/layers are added by `addGenerationLayers()` only once data arrives (re-added after a basemap
-  style reload, same as the grid layers). Plants are NOT in the initial search index or the data table.
+  source/layers are mounted by the engine (`GENERATION` def in `map/registry/core.ts`) only once data arrives
+  (re-mounted after a basemap style reload, same as the grid layers). Plants are NOT in the initial search index or the data table.
 - **Not in `data.byId`**: plants live in a separate `generation.byId` (`generationRes`). `DetailPanel` and
   `MapPane` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
   `energy` drives `ENERGY_COLOR` / the legend. The KML had no capacity; the **live layer carries
@@ -329,8 +348,8 @@ user enables it. It bundles **three classes** behind one master toggle, each wit
   source rows have unparseable voltage → `0` (UI shows "—"). Validation gate: build fails on 0 features.
 - **Lazy contract**: the initial grid load does NOT fetch these. `powerGridRes` loads all four files
   (one `Promise.all`) while `filters.showPowerGrid` is on (toggle or `pg=1` deep link alike). Per-class visibility is `filters.pgClasses` (NOT in the URL hash —
-  only the single `pg=1` key, like generation's `genTypes`). Layers added by `addPowerGridLayers()`,
-  re-added on `styledata`.
+  only the single `pg=1` key, like generation's `genTypes`). Layers are four engine defs
+  (`PG_LINES` / `PG_SS` / `RAILWAY` / `BULKLOAD` in `map/registry/core.ts`), one per source.
 - **Not in `data.byId`**: all classes live in a shared `powergrid.byId` (store) with kinds
   `pg-line | pg-substation | rail-substation | bulk-substation`. Distinct overlay colours (NOT the
   voltage palette): POWERGRID rose `#e11d48`, Railway violet `#7c3aed`, Bulk-load teal `#0d9488`.
@@ -364,12 +383,12 @@ in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
 - **Auto-refresh**: `weatherRes.refreshMs` = 10 min, alive only while an active consumer is mounted
   (passive readers like DetailPanel's DLR don't count) and the tab is visible; refreshes keep stale data
   on screen. Never persisted.
-- **Map layers** (`addWeatherLayers`, idempotent, re-run on `styledata`): radar raster + cyclone
-  fills inserted **beneath `grid-lines-casing`** so the grid stays legible; track/positions/cone
-  outline on top. Radar frame swap uses `RasterTileSource.setTiles` (URL memoised per map in a
-  WeakMap). Substations inside a forecast cone get an amber halo — a separate `wx-risk-substations`
-  circle layer on the core SS source with an id `in`-filter (NOT feature-state). Visibility is
-  gated by `applyWeatherVisibility(map, filters)` — called by MapPane alongside `applyFilters`.
+- **Map layers** (engine defs `WX_RADAR` / `WX_CYCLONE_FILLS` / `WX_CYCLONE_LINES` / `WX_RISK` in
+  `map/registry/core.ts`, builders in `weather-layers.ts`): radar raster + cyclone fills in the `beneath` band so the
+  grid stays legible; track/positions/cone outline on top. A new radar frame swaps tiles in place (`setTiles`), a new
+  fetch re-uploads the cyclone GeoJSON (`computed` source keyed on `fetchedAt`). Substations inside a forecast cone
+  get an amber halo — the `wx-risk-substations` circle layer rides the core SS source with an id `in`-filter
+  (`wxRiskSpec`, NOT feature-state). Visibility = `weatherOn(filters, layer)` (master × sub-toggle).
 - **Weather monitor** (`WeatherView`, `weatherOpen` like `summaryOpen`, not in hash): cyclone alert
   cards (GDACS level colours + "N substations inside the forecast envelope" via `assetsInCone`),
   13-circle conditions grid, coastal sea state, 3-day outlook table, last-updated + manual refresh.
@@ -386,15 +405,13 @@ A client-side **distance / area** measure tool (top-centre `MeasureControl` pill
 
 - **Controller**: `src/map/measure.ts` (`MeasureController`) owns a dedicated `src-measure` GeoJSON
   source + overlay layers (magenta — outside every other palette) and all click/move/dbl-click/keyboard
-  handling. One instance per map, created in `MapPane` (full/Atlas mode only) **once the map's `load`
-  has fired** — creation is gated on a `mapReady` state so the effect re-runs after the async load
-  (a ref alone can't, which is what silently left the tool dead on a fresh Atlas load); `setMode(mode|null)`
-  toggles it. `ensureLayers` is idempotent and **re-run on `styledata`** like the grid/generation layers
-  (setStyle drops them).
+  handling. One instance per map, created by `useMeasure` (`map/hooks.ts`, full/Atlas mode only) once the
+  map has loaded (MapPane keeps the loaded map in state, so the effect re-runs); `setMode(mode|null)`
+  toggles it. `ensureLayers` is idempotent and re-run by the engine's `onStyleReload` (setStyle drops them).
 - Click adds vertices, a dashed rubber-band tracks the cursor, **double-click / Enter** finishes,
   **Esc** clears (or exits if empty), **Backspace** undoes. Live readout published to the store
   (`measureMode` / `measureStats` — **transient, never in the URL hash**).
-- While a mode is active, `MapPane`'s feature hover/select handlers early-return (`clickSuppressed()`,
+- While a mode is active, the interaction handler's hover/select early-returns (`clickSuppressed()`,
   which is true for **either** the measure tool or the nearest-SS tool) and `doubleClickZoom` is
   disabled, so clicks place points instead of selecting features / zooming.
 
@@ -410,7 +427,7 @@ deps, no backend.
   is the only impure helper (Blob + anchor; no-op outside a browser, so the builders stay testable).
 - **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The `ControlPanel`
   **Region → Circle** `<select>` (13 canonical circles from `meta.circles`) filters the **core** lines +
-  substations (`applyFilters` ANDs `["==",["get","circle"],…]`) and `fitToCircle` (MapPane) zooms to the
+  substations (`gridSpec` ANDs `["==",["get","circle"],…]`) and `fitToCircle` (`useMapCamera`) zooms to the
   circle's SS bounds (back to `meta.bounds` when cleared). Deep-linkable: hash key **`circle`**.
   **Circle-only** because `zone`/`division` exist on substations but are **absent on all lines** — circle
   is the one admin field both layers carry. Overlays are not sliced (PGCIL has no circle).
@@ -442,7 +459,7 @@ extract** (`data/raw/geonames-ap.tsv` — the `IN` dump filtered to admin1 = `02
   `SearchBar` appends up to 8 gazetteer hits under a "Places" divider (grid assets always rank
   first; rank ties break by population so Tirupati-the-city beats its namesake villages, and
   same-name villages disambiguate by district). Choosing one calls `setNearbyOrigin` with a
-  type-based zoom (state 7 / district 9 / mandal 11 / city 12 / default 13) — `MapPane`'s
+  type-based zoom (state 7 / district 9 / mandal 11 / city 12 / default 13) — `useMapCamera`'s
   `NearbyOrigin.zoom` branch **flies** there (may zoom OUT, unlike the GPS `easeTo`), drops the
   azure nearby-dot and opens the nearest-substations panel. All transient, like the nearby tool.
 
@@ -515,7 +532,7 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
 - **Map embedding**: `MapPane` renders the shared map in `full` (Atlas), `embedded` (split layout) or
   `hidden` (collapsed) modes; the collapse is `mapLayout` (`open|collapsed|atlas-only`). The split is
   **drag-resizable** — `App`'s `PaneSplitter` sets the map-column width (persisted to localStorage under
-  `dss-map-pane-w`, clamped to `[320, innerWidth−380]`), and a `ResizeObserver` in `MapPane` redraws the
+  `dss-map-pane-w`, clamped to `[320, innerWidth−380]`), and a `ResizeObserver` (`useMapResize`) redraws the
   canvas on any container size change. `WORKSPACE_LAYER_PRESETS[ws]` (in `map/layer-presets.ts`) declares
   which overlay groups the embedded map may mount (no auto-toggling — visibility stays user-controlled
   via `MapLayerPanel`). An analysis workspace that needs overlay DATA without showing the layer calls
@@ -523,7 +540,7 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
 - **`workspaceContext`** (store) carries cross-workspace focus. Hash-synced (only while `w=mis`): `misBy`
   (`by=`, default circle), `misFilters` (`mf=`, the drill path `dim:value~dim:value`), `misTab` (`tab=`),
   `misTheme` (`theme=`). Transient, never hashed: `misMap` (thematic classes + scope ids for the map) and
-  `fit` (`{key, bounds}` — MapPane fits once per new key).
+  `fit` (`{key, bounds}` — `useMapCamera` fits once per new key).
 
 - **Network MIS** (`workspaces/mis/`) — an analyst's view of the network built on the live GIS data
   (the old parquet-based MIS is dead: the PSP feed stopped at 2026-06-11).
@@ -558,7 +575,7 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
   - Map (`map/mis-layers.ts`): `mis-line-theme` + `mis-ss-theme` ride the CORE sources via feature-state
     (`misC` class / `misV` value), filtered to the scope; themes = line age (ordinal ramp, reversed on
     dark/satellite), N-1 (status red/orange: bridges, cut-point / single-fed rings), 33 kV load
-    (proportional circles ∝ √ 33/11 SS served). Out-of-scope features are dimmed through `applySpotlight`
+    (proportional circles ∝ √ 33/11 SS served). Out-of-scope features are dimmed through `spotlightSpec`
     (a selection spotlight, when armed, wins).
   - Pagination is the shared `usePager`/`PagerBar` in `components/Pager.tsx` (also used by the Atlas
     `DataTableSheet`).

@@ -13,7 +13,7 @@ interface FakeLayer {
 export class FakeMap {
   layers = new Map<string, FakeLayer>();
   order: string[] = [];
-  sources = new Map<string, { data?: unknown; setData: (d: unknown) => void }>();
+  sources = new Map<string, { data?: unknown; tiles?: unknown; setData: (d: unknown) => void; setTiles: (t: unknown) => void }>();
   featureState = new Map<string, Record<string, unknown>>();
   writes: string[] = [];
   styleLoaded = true;
@@ -38,14 +38,19 @@ export class FakeMap {
   getLayersOrder(): string[] {
     return [...this.order];
   }
-  addSource(id: string, spec?: { data?: unknown }): void {
+  addSource(id: string, spec?: { data?: unknown; tiles?: unknown }): void {
     if (this.sources.has(id)) throw new Error(`source ${id} already exists`);
     this.writes.push(`add-source:${id}`);
     const src = {
       data: spec?.data,
+      tiles: spec?.tiles,
       setData: (d: unknown) => {
         this.writes.push(`set-data:${id}`);
         src.data = d;
+      },
+      setTiles: (t: unknown) => {
+        this.writes.push(`set-tiles:${id}`);
+        src.tiles = t;
       },
     };
     this.sources.set(id, src);

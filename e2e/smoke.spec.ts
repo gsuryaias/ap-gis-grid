@@ -1,7 +1,7 @@
 // Smoke suite — the user journeys every Atlas 2.0 PR must keep working. Phase-2/3 journeys that the
 // current UI cannot do yet are declared with test.fixme so they flip on as the revamp lands.
 import { expect, test } from "@playwright/test";
-import { hasLayer, openApp, waitForGrid } from "./helpers.ts";
+import { hasLayer, openApp, switchBasemap } from "./helpers.ts";
 
 test("loads the network and draws the grid", async ({ page }) => {
   const errors: string[] = [];
@@ -71,9 +71,7 @@ test("generation overlay lazy-loads and survives a basemap switch", async ({ pag
   await expect.poll(() => hasLayer(page, "grid-generation")).toBe(true);
   await expect(page).toHaveURL(/gen=1/);
 
-  await page.getByRole("button", { name: "Dark", exact: true }).click();
-  await expect(page).toHaveURL(/base=dark/);
-  await waitForGrid(page);
+  await switchBasemap(page, "Dark");
   await expect.poll(() => hasLayer(page, "grid-generation")).toBe(true);
 });
 
@@ -87,9 +85,7 @@ test("circle + coastal slice filters are applied and survive a basemap switch", 
   await expect.poll(ssFilter).toContain('["==",["get","circle"],"Kadapa"]');
   await expect.poll(ssFilter).toContain('["<=",["get","coastalBand"],1]');
 
-  await page.getByRole("button", { name: "Dark", exact: true }).click();
-  await expect(page).toHaveURL(/base=dark/);
-  await waitForGrid(page);
+  await switchBasemap(page, "Dark");
   await expect.poll(ssFilter).toContain('["==",["get","circle"],"Kadapa"]');
 });
 
@@ -111,9 +107,7 @@ test("MIS line-age theme writes feature-state and re-applies after a basemap swi
   await expect.poll(themed).toBeGreaterThan(100);
 
   await page.getByRole("button", { name: "Map layers" }).click();
-  await page.getByRole("button", { name: "Dark", exact: true }).click();
-  await expect(page).toHaveURL(/base=dark/);
-  await waitForGrid(page);
+  await switchBasemap(page, "Dark");
   await expect.poll(themed).toBeGreaterThan(100);
 });
 
@@ -135,33 +129,103 @@ test("overlay engine: DISCOM beneath the grid, towers between lines and SS — a
       return ids.every((id, i) => i === 0 || at(ids[i - 1]) < at(id)) && o[o.length - 1] === "band-top";
     });
   await expect.poll(stacked, { timeout: 15_000 }).toBe(true);
-  // The engine settles: after a second for the style + sources to finish loading, a quiet second
-  // brings no more style events (an unconditional write would re-trigger itself through
-  // `styledata` forever).
-  const styleEventsInQuietSecond = () =>
+  // The engine settles: once the map has gone idle, a quiet second brings no more map writes (an
+  // unconditional write would re-trigger itself through `styledata` → reconcile forever).
+  const writesInQuietSecond = () =>
     page.evaluate(
       () =>
-        new Promise<number>((resolve) => {
-          type M = { on(e: string, f: () => void): void; off(e: string, f: () => void): void };
+        new Promise<string[]>((resolve) => {
+          type M = Record<string, unknown> & { once(e: string, f: () => void): void; loaded(): boolean };
           const map = (window as unknown as { __map: M }).__map;
-          setTimeout(() => {
-            let n = 0;
-            const count = () => n++;
-            map.on("styledata", count);
+          const methods = ["setFilter", "setLayoutProperty", "setPaintProperty", "moveLayer", "addLayer", "addSource", "setFeatureState", "removeFeatureState"];
+          const start = () =>
             setTimeout(() => {
-              map.off("styledata", count);
-              resolve(n);
-            }, 1000);
-          }, 1000);
+              const writes: string[] = [];
+              const orig = methods.map((m) => map[m]);
+              methods.forEach((m, i) => {
+                map[m] = (...a: unknown[]) => {
+                  writes.push(`${m} ${JSON.stringify(a[0]).slice(0, 60)}`);
+                  return (orig[i] as (...x: unknown[]) => unknown).apply(map, a);
+                };
+              });
+              setTimeout(() => {
+                methods.forEach((m, i) => (map[m] = orig[i]));
+                resolve(writes);
+              }, 1000);
+            }, 300);
+          if (map.loaded()) start();
+          else map.once("idle", start);
         }),
     );
-  expect(await styleEventsInQuietSecond()).toBe(0);
+  expect(await writesInQuietSecond()).toEqual([]);
 
-  await page.getByRole("button", { name: "Dark", exact: true }).click();
-  await expect(page).toHaveURL(/base=dark/);
-  await waitForGrid(page);
+  await switchBasemap(page, "Dark");
   await expect.poll(stacked, { timeout: 15_000 }).toBe(true);
-  expect(await styleEventsInQuietSecond()).toBe(0);
+  expect(await writesInQuietSecond()).toEqual([]);
+});
+
+test("map taps: hover + select a substation; a DISCOM point opens its popup and clears the selection", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("seeded")) {
+      localStorage.setItem("apgg-overlays-v1", JSON.stringify({ enabled: ["discom-ss"], discoms: [] }));
+      sessionStorage.setItem("seeded", "1");
+    }
+  });
+  await openApp(page, "#v=1&circle=Vijayawada");
+  await expect.poll(() => hasLayer(page, "ov-discom-ss-circle")).toBe(true);
+  type P = { x: number; y: number; id: string } | null;
+  /** Screen point of a rendered feature on `layer` with nothing from `avoid` within 12 px. */
+  const findPoint = (layer: string, avoid: string[]) =>
+    page.evaluate(
+      ([layer, avoid]) => {
+        type F = { id?: string | number; properties: Record<string, unknown>; geometry: { type: string; coordinates: [number, number] } };
+        const map = (window as unknown as {
+          __map: {
+            queryRenderedFeatures(g?: unknown, o?: { layers: string[] }): F[];
+            project(c: [number, number]): { x: number; y: number };
+            getCanvas(): HTMLCanvasElement;
+            getLayer(id: string): unknown;
+            isMoving(): boolean;
+          };
+        }).__map;
+        if (map.isMoving()) return null; // wait out the circle fit — screen points would go stale
+        const avoidLayers = (avoid as string[]).filter((l) => map.getLayer(l));
+        const rect = map.getCanvas().getBoundingClientRect();
+        for (const f of map.queryRenderedFeatures(undefined, { layers: [layer as string] })) {
+          if (f.geometry.type !== "Point") continue;
+          const p = map.project(f.geometry.coordinates);
+          // Only points where the map canvas itself is under the pointer (not a panel over it).
+          if (document.elementFromPoint(rect.left + p.x, rect.top + p.y) !== map.getCanvas()) continue;
+          const near = avoidLayers.length ? map.queryRenderedFeatures([[p.x - 12, p.y - 12], [p.x + 12, p.y + 12]], { layers: avoidLayers }) : [];
+          if (!near.length) return { x: rect.left + p.x, y: rect.top + p.y, id: String(f.id ?? f.properties.id) };
+        }
+        return null;
+      },
+      [layer, avoid] as const,
+    ) as Promise<P>;
+  const core = ["grid-substations", "grid-lines-sc", "grid-lines-dc"];
+
+  // A core substation wins a tap over the DISCOM points beneath it, so no need to avoid them.
+  await expect.poll(async () => !!(await findPoint("grid-substations", []))).toBe(true);
+  const ss = (await findPoint("grid-substations", []))!;
+  await page.mouse.move(ss.x, ss.y);
+  await expect
+    .poll(() =>
+      page.evaluate((id) => {
+        const map = (window as unknown as { __map: { getFeatureState(f: { source: string; id: string }): { hover?: boolean } } }).__map;
+        return !!map.getFeatureState({ source: "src-substations", id }).hover;
+      }, ss.id),
+    )
+    .toBe(true);
+  await page.mouse.click(ss.x, ss.y);
+  await expect(page).toHaveURL(new RegExp(`sel=${ss.id}`));
+
+  await expect.poll(async () => !!(await findPoint("ov-discom-ss-circle", core))).toBe(true);
+  const ds = (await findPoint("ov-discom-ss-circle", core))!;
+  await page.mouse.click(ds.x, ds.y);
+  await expect(page.locator(".ov-popup")).toBeVisible();
+  // A DISCOM tap is not a core feature: the core selection is cleared.
+  await expect(page).not.toHaveURL(/sel=/);
 });
 
 test("overlay choices saved by the old store (legacy localStorage shape) are restored", async ({ page }) => {

@@ -1,21 +1,6 @@
-// Layer composition presets for MapPane — workspaces pick a preset; overlay mount helpers
-// are re-exported here so analysis surfaces can compose sources without importing all of layers.ts.
+// Layer composition presets for MapPane — which layer groups a workspace's map may mount (the
+// registry defs in `registry/core.ts` gate on these).
 import type { WorkspaceId } from "../workspaces/registry.ts";
-
-export {
-  addGenerationLayers,
-  addGridLayers,
-  addPowerGridLayers,
-  ALL_INTERACTIVE,
-  applyFilters,
-  applySpotlight,
-  INTERACTIVE_LAYERS,
-  LAYER,
-  POWERGRID_INTERACTIVE,
-  SRC,
-} from "./layers.ts";
-export { addWeatherLayers, applyWeatherVisibility, WX_LAYER, WX_SRC } from "./weather-layers.ts";
-export { addMisLayers, applyMisTheme, MIS_LAYER } from "./mis-layers.ts";
 
 /** Which overlay groups MapPane may mount for a workspace context. */
 export interface LayerPreset {
