@@ -164,7 +164,7 @@ test("overlay engine: DISCOM beneath the grid, towers between lines and SS — a
   expect(await writesInQuietSecond()).toEqual([]);
 });
 
-test("map taps: hover + select a substation; a DISCOM point opens its popup and clears the selection", async ({ page }) => {
+test("map taps: hover + select a substation; a DISCOM point opens in the Inspector", async ({ page }) => {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem("seeded")) {
       localStorage.setItem("apgg-overlays-v1", JSON.stringify({ enabled: ["discom-ss"], discoms: [] }));
@@ -223,9 +223,36 @@ test("map taps: hover + select a substation; a DISCOM point opens its popup and 
   await expect.poll(async () => !!(await findPoint("ov-discom-ss-circle", core))).toBe(true);
   const ds = (await findPoint("ov-discom-ss-circle", core))!;
   await page.mouse.click(ds.x, ds.y);
-  await expect(page.locator(".ov-popup")).toBeVisible();
-  // A DISCOM tap is not a core feature: the core selection is cleared.
-  await expect(page).not.toHaveURL(/sel=/);
+  // DISCOM features are selectable like everything else: the Inspector shows it, the URL carries it.
+  await expect(page).toHaveURL(/sel=ds-/);
+  const inspector = page.getByRole("complementary", { name: "Feature details" });
+  await expect(inspector.getByText(/33\/11 kV SS/).first()).toBeVisible();
+  await expect(inspector.getByRole("heading")).toBeVisible();
+});
+
+test("right-click lists what's here; picking an entry opens it", async ({ page }) => {
+  await openApp(page, "#v=1&circle=Vijayawada");
+  const find = () => page.evaluate(() => {
+    type F = { geometry: { coordinates: [number, number] } };
+    const map = (window as unknown as {
+      __map: { queryRenderedFeatures(g?: unknown, o?: { layers: string[] }): F[]; project(c: [number, number]): { x: number; y: number }; getCanvas(): HTMLCanvasElement; isMoving(): boolean };
+    }).__map;
+    if (map.isMoving()) return null;
+    const rect = map.getCanvas().getBoundingClientRect();
+    for (const f of map.queryRenderedFeatures(undefined, { layers: ["grid-substations"] })) {
+      const p = map.project(f.geometry.coordinates);
+      if (document.elementFromPoint(rect.left + p.x, rect.top + p.y) === map.getCanvas()) return { x: rect.left + p.x, y: rect.top + p.y };
+    }
+    return null;
+  });
+  await expect.poll(async () => !!(await find())).toBe(true);
+  const ss = await find();
+  await page.mouse.click(ss!.x, ss!.y, { button: "right" });
+  const list = page.getByRole("complementary", { name: "What's here" });
+  await expect(list).toBeVisible();
+  await list.getByRole("button", { name: /TRANSCO substation/ }).first().click();
+  await expect(page).toHaveURL(/sel=s-/);
+  await expect(page.getByRole("complementary", { name: "Feature details" })).toBeVisible();
 });
 
 test("overlay choices saved by the old store (legacy localStorage shape) are restored", async ({ page }) => {

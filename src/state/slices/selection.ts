@@ -5,13 +5,15 @@ export const createSelectionSlice: SliceCreator<SelectionSlice> = (set) => ({
   history: [],
   hoverId: null,
   flySignal: null,
+  here: null,
 
   select: (id, opts) =>
     set((s) => ({
       selectedId: id,
-      // Push the previous selection so the detail panel can offer a "back" breadcrumb.
+      // Push the previous selection so the Inspector can offer a "back" breadcrumb.
       history: id ? (s.selectedId && s.selectedId !== id ? [...s.history, s.selectedId].slice(-25) : s.history) : [],
       flySignal: id && opts?.fly ? { id, ts: Date.now() } : s.flySignal,
+      here: opts?.keepHere ? s.here : null,
     })),
 
   back: () =>
@@ -22,4 +24,6 @@ export const createSelectionSlice: SliceCreator<SelectionSlice> = (set) => ({
     }),
 
   setHover: (id) => set((s) => (s.hoverId === id ? s : { hoverId: id })),
+
+  setHere: (here) => set({ here: here?.length ? here : null }),
 });

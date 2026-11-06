@@ -3,7 +3,7 @@ import { NET_KIND_LABEL, type NetItem } from "../data/network-search.ts";
 import { useResource } from "../data/resources.ts";
 import { rank } from "../data/search-core.ts";
 import { networkTier, placesTier, searchTiers } from "../data/search-client.ts";
-import { useOverlayStore } from "../overlays/store.ts";
+import { primeNetItem } from "../inspector/resources.ts";
 import type { GridData, PlaceItem, SearchItem } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { SearchIcon, CloseIcon, SubstationIcon, LineIcon, PinIcon } from "./icons.tsx";
@@ -37,7 +37,6 @@ export function SearchBar({ data }: { data: GridData }) {
   const [warm, setWarm] = useState(false);
   const placesStatus = useResource(placesTier, warm ? "" : null).status;
   const netStatus = useResource(networkTier, warm ? "" : null).status;
-  const focusNetwork = useOverlayStore((s) => s.focusNetwork);
 
   const [hits, setHits] = useState<{ q: string; places: PlaceItem[]; net: NetItem[]; dtr: NetItem[] }>({ q: "", places: [], net: [], dtr: [] });
   useEffect(() => {
@@ -86,13 +85,12 @@ export function SearchBar({ data }: { data: GridData }) {
 
   function choose(row: Row) {
     if (row.kind === "feature") {
-      focusNetwork(null);
       select(row.item.id, { fly: true });
     } else if (row.kind === "net") {
-      // Network assets aren't core features — open the trace panel and fly to the asset.
-      select(null);
+      // A distribution asset: the Inspector shows its attributes + inferred supply path; its layer
+      // is switched on, highlighted and flown to (inspector/useInspected.ts).
       setNearbyOrigin(null);
-      focusNetwork(row.item);
+      select(primeNetItem(row.item), { fly: true });
       setQuery(row.item.label);
       setOpen(false);
       inputRef.current?.blur();

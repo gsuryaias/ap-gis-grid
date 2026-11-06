@@ -14,8 +14,8 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
         : s.filters.voltages;
       const circuits = h.circuits ? { SC: h.circuits.includes("SC"), DC: h.circuits.includes("DC") } : s.filters.circuits;
       const selectedId = h.selectedId !== undefined ? h.selectedId : s.selectedId;
-      const flySignal =
-        selectedId && selectedId !== s.selectedId && s.data?.byId.has(selectedId) ? { id: selectedId, ts: Date.now() } : s.flySignal;
+      // Any newly linked selection flies: core ids via useMapCamera, the rest once the Inspector resolves them.
+      const flySignal = selectedId && selectedId !== s.selectedId ? { id: selectedId, ts: Date.now() } : s.flySignal;
       const workspace = h.workspace ?? s.workspace;
       const mapLayout =
         h.mapLayout ?? (workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);

@@ -12,9 +12,9 @@ import { MapLayerPanel } from "./components/MapLayerPanel.tsx";
 import { WorkspaceChrome, workspaceMapWidth } from "./components/WorkspaceChrome.tsx";
 import { MeasureControl } from "./components/MeasureControl.tsx";
 import { NearbyControl } from "./components/NearbyControl.tsx";
-import { DetailPanel } from "./components/DetailPanel.tsx";
 import { NearbyPanel } from "./components/NearbyPanel.tsx";
-import { NetworkTracePanel } from "./components/NetworkTracePanel.tsx";
+import { Inspector } from "./inspector/Inspector.tsx";
+import { useInspectorSync } from "./inspector/useInspected.ts";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
 import { DataQualityView } from "./components/DataQualityView.tsx";
 import { SummaryView } from "./components/SummaryView.tsx";
@@ -151,7 +151,7 @@ export function App() {
   const toggleTable = useAppStore((s) => s.toggleTable);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
   const selectedId = useAppStore((s) => s.selectedId);
-  const netFocus = useOverlayStore((s) => s.netFocus);
+  const hereOpen = useAppStore((s) => !!s.here);
   const isMobile = useIsMobile();
   const workspace = useAppStore((s) => s.workspace);
   const mapLayout = useAppStore((s) => s.mapLayout);
@@ -207,6 +207,7 @@ export function App() {
   }, [clampPaneWidth]);
 
   useHashSync();
+  useInspectorSync();
 
   useEffect(() => {
     void init();
@@ -290,15 +291,9 @@ export function App() {
                       </div>
                     </div>
 
-                    {/* Bottom sheet — DetailPanel renders null when nothing is selected, so this is empty/idle otherwise. */}
+                    {/* Bottom sheet — the Inspector renders null when nothing is selected, so this is empty/idle otherwise. */}
                     <div className="pointer-events-none absolute inset-x-2 bottom-2 z-30 flex max-h-[55dvh] flex-col">
-                      {nearbyOrigin ? (
-                        <NearbyPanel data={data} />
-                      ) : netFocus && !selectedId ? (
-                        <NetworkTracePanel />
-                      ) : (
-                        <DetailPanel data={data} />
-                      )}
+                      {nearbyOrigin ? <NearbyPanel data={data} /> : <Inspector />}
                     </div>
                   </>
                 ) : (
@@ -318,18 +313,12 @@ export function App() {
                     </div>
 
                     <div className="pointer-events-none absolute right-3 top-3 z-20 flex max-h-[calc(100dvh-5.5rem)] max-w-[calc(100vw-1.5rem)] flex-col">
-                      {nearbyOrigin ? (
-                        <NearbyPanel data={data} />
-                      ) : netFocus && !selectedId ? (
-                        <NetworkTracePanel />
-                      ) : (
-                        <DetailPanel data={data} />
-                      )}
+                      {nearbyOrigin ? <NearbyPanel data={data} /> : <Inspector />}
                     </div>
                   </>
                 )}
 
-                {!tableOpen && !(isMobile && (nearbyOrigin || selectedId)) && (
+                {!tableOpen && !(isMobile && (nearbyOrigin || selectedId || hereOpen)) && (
                   <button
                     onClick={() => toggleTable(true)}
                     className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface/95 px-4 py-2 text-sm font-medium text-ink shadow-[var(--shadow-panel)] backdrop-blur hover:bg-surface-2"
@@ -344,12 +333,6 @@ export function App() {
               </>
             )}
 
-            {/* Core substations / lines open the MIS dossier instead; overlay features keep the card. */}
-            {!isAtlas && !mapCollapsed && !(selectedId && data.byId.has(selectedId)) && (
-              <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex max-h-[min(280px,calc(100%-6rem))] max-w-[min(300px,calc(100%-1.5rem))] flex-col">
-                <DetailPanel data={data} />
-              </div>
-            )}
           </div>
 
           {!isAtlas && !mapCollapsed && (

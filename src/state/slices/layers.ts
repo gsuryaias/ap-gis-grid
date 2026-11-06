@@ -123,35 +123,11 @@ export const createLayersSlice: SliceCreator<LayersSlice> = (set, get) => {
       errors: {},
       discoms: { APSPDCL: true, APEPDCL: true, APCPDCL: true },
       focus: null,
-      netFocus: null,
       fitSignal: null,
       version: 0,
 
       setFocus: (focus: OverlayFocus | null) => setL(() => ({ focus })),
       fitTo: (bounds, maxZoom) => setL(() => ({ fitSignal: { bounds, ts: Date.now(), maxZoom } })),
-
-      focusNetwork: (item) => {
-        if (!item) {
-          setL(() => ({ netFocus: null, focus: null }));
-          return;
-        }
-        const layer =
-          item.kind === "f33" ? "discom-lines" : item.kind === "ss33" ? "discom-ss" : item.kind === "sec" ? null : "discom-11kv-lines";
-        if (layer && !L().enabled[layer]) L().toggle(layer, true);
-        const focus: OverlayFocus = {
-          lines: item.kind === "f33" ? [item.ref] : [],
-          ss: item.kind === "ss33" ? [item.ref] : [],
-          lines11: item.kind === "f11" ? [item.ref] : item.kind === "dtr" && item.dtr?.feederId ? [item.dtr.feederId] : [],
-          point: item.kind === "dtr" || item.kind === "ss33" ? [item.lng, item.lat] : null,
-        };
-        const d = item.kind === "dtr" ? 0.004 : item.kind === "ss33" ? 0.01 : item.kind === "sec" ? 0.05 : 0.03;
-        const maxZoom = item.kind === "dtr" ? 16.5 : item.kind === "ss33" ? 14 : item.kind === "sec" ? 12 : 13;
-        setL(() => ({
-          netFocus: item,
-          focus,
-          fitSignal: { bounds: [[item.lng - d, item.lat - d], [item.lng + d, item.lat + d]], ts: Date.now(), maxZoom },
-        }));
-      },
 
       loadCatalog: () => {
         if (L().catalogStatus !== "idle") return;

@@ -1,7 +1,7 @@
-// Transmission towers overlay — decoding + popup for public/data/towers-<kv>.json (written by the
+// Transmission towers overlay — decoding + attribute rows for public/data/towers-<kv>.json (written by the
 // ETL from `npm run sync:towers`; shape documented in scripts/towers-lib.ts). Towers are stored
 // grouped by line with dictionary-encoded columns, so map features carry only an index + the
-// fields the cartography needs; the popup re-assembles every attribute from the decoded file.
+// fields the cartography needs; the Inspector re-assembles every attribute from the decoded file.
 import type { FeatureCollection } from "geojson";
 
 export interface WebTowersFile {
@@ -47,7 +47,7 @@ export function towerAttributes(defId: string, index: number): { line: WebTowers
   return { line, props };
 }
 
-/** Decode a web towers file into a lean point FeatureCollection (and keep it for popups). */
+/** Decode a web towers file into a lean point FeatureCollection (and keep it for the Inspector). */
 export function decodeTowers(defId: string, f: WebTowersFile): FeatureCollection {
   files.set(defId, f);
   const noCol = f.cols.indexOf("tower_number");
@@ -91,7 +91,6 @@ const LABEL: Record<string, string> = {
 };
 const ORDER = Object.keys(LABEL);
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const nice = (k: string) => LABEL[k] ?? k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
 function fmt(k: string, v: unknown): string {
@@ -105,28 +104,15 @@ function fmt(k: string, v: unknown): string {
   return String(v);
 }
 
-/** Popup HTML for a tower — every attribute the source carries (empty fields omitted). */
-export function towerPopupHtml(defId: string, index: number, label: string): string {
-  const a = towerAttributes(defId, index);
-  if (!a) return "";
-  const { line, props } = a;
-  const keys = Object.keys(props).sort((x, y) => {
-    const ix = ORDER.indexOf(x);
-    const iy = ORDER.indexOf(y);
-    return (ix < 0 ? 999 : ix) - (iy < 0 ? 999 : iy) || x.localeCompare(y);
-  });
-  const rows = keys
+/** Every attribute a tower carries, labelled and in reading order (empty fields omitted). */
+export function towerRows(props: Record<string, unknown>): Array<{ label: string; value: string }> {
+  return Object.keys(props)
+    .sort((x, y) => {
+      const ix = ORDER.indexOf(x);
+      const iy = ORDER.indexOf(y);
+      return (ix < 0 ? 999 : ix) - (iy < 0 ? 999 : iy) || x.localeCompare(y);
+    })
     // span / span_km are almost never filled — the source stores 0 for "not recorded".
-    .filter((k) => k !== "line_name" && !((k === "span" || k === "span_km") && !props[k]))
-    .map((k) => `<tr><th>${esc(nice(k))}</th><td>${esc(fmt(k, props[k]))}</td></tr>`)
-    .join("");
-  const lineCell = line.lineId
-    ? `<button type="button" class="ov-link" data-select="${esc(line.lineId)}">${esc(line.name)}</button>`
-    : esc(line.name);
-  return (
-    `<div class="ov-popup"><div class="ov-popup-kicker">Transmission · ${esc(label)}</div>` +
-    `<div class="ov-popup-title">Tower ${esc(String(props.tower_number ?? "—"))}</div>` +
-    `<table><tr><th>Line</th><td>${lineCell}</td></tr>${rows}</table>` +
-    `<div class="ov-popup-src">AP-TRANSCO enterprise GIS — tower layers (live). Tower type / CP-SP as recorded; in “DA+3” the letters are the design type and +n is usually the body extension in metres (indicative).</div></div>`
-  );
+    .filter((k) => k !== "line_name" && props[k] != null && props[k] !== "" && !((k === "span" || k === "span_km") && !props[k]))
+    .map((k) => ({ label: nice(k), value: fmt(k, props[k]) }));
 }

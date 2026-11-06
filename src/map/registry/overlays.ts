@@ -1,11 +1,10 @@
 // Registry defs for the catalog overlays — DISCOM 33 / 11 kV, transmission towers, RTGS reference
 // layers — plus the amber DISCOM focus highlight. Pure: built from the `layers` slice + basemap and
 // a data getter (the `overlayLayer` resource), so it is unit-testable without a map or a store.
-import type { ExpressionSpecification, LayerSpecification } from "maplibre-gl";
+import type { ExpressionSpecification, LayerSpecification, MapGeoJSONFeature } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
 import { DISCOM_COLOR, DISCOMS, type DiscomId, type OverlayDef } from "../../overlays/catalog.ts";
-import { popupHtml } from "../../overlays/popup.ts";
-import { towerPopupHtml } from "../../overlays/towers.ts";
+import { refFeatureRef, towerRef } from "../../inspector/refs.ts";
 import type { Basemap, OverlayFocus } from "../../state/types.ts";
 import type { MapSpec } from "../spec.ts";
 import { memo, type Interaction, type LayerDef } from "./types.ts";
@@ -151,25 +150,38 @@ function discomSpec(id: string, discoms: Record<DiscomId, boolean>): MapSpec {
   return fn(discoms);
 }
 
+/** RTGS reference layers carry no feature ids — MapLibre numbers them by index (`generateId`). */
+const isRefLayer = (def: OverlayDef) => def.group !== "Distribution" && def.group !== "Transmission";
+
+/** What a tap on an overlay feature selects (an Inspector ref) + its "What's here" label. */
+export function overlayPick(def: OverlayDef, f: Pick<MapGeoJSONFeature, "id" | "properties">): { ref: string; label: string } | null {
+  const p = (f.properties ?? {}) as Record<string, unknown>;
+  if (def.format === "towers") {
+    const i = Number(p.i);
+    return Number.isInteger(i) ? { ref: towerRef(def.id, i), label: `Tower ${p.no ?? "—"}` } : null;
+  }
+  if (isRefLayer(def)) {
+    if (typeof f.id !== "number") return null;
+    const label = (def.labelField && p[def.labelField]) || p.name || def.label;
+    return { ref: refFeatureRef(def.id, f.id), label: String(label) };
+  }
+  const id = typeof p.id === "string" ? p.id : typeof f.id === "string" ? f.id : null;
+  return id ? { ref: id, label: String(p.name || `Unnamed ${def.label.replace(/s$/, "")}`) } : null;
+}
+
 /**
- * Tap behaviour: towers (a tower sits on a core line — its popup out-ranks the line, which is
- * still selected) > points > lines > fills, all below the core grid. Outline-only polygons are
+ * Tap behaviour: towers (a tower sits on a core line — it out-ranks the line, which is then listed
+ * under "What's here") > points > lines > fills, all below the core grid. Outline-only polygons are
  * informative but not tappable, so they don't eat every map tap.
  */
 function overlayInteraction(def: OverlayDef): Interaction | undefined {
   const L = overlayLayerIds(def.id);
-  if (def.format === "towers") {
-    return {
-      priority: 0,
-      layers: [L.circle],
-      pad: 4,
-      pick: (f) => ({ popup: towerPopupHtml(def.id, Number(f.properties?.i), def.label) }),
-    };
-  }
-  const pick = (f: Parameters<Interaction["pick"]>[0]) => ({ popup: popupHtml(def, f) });
-  if (def.geometry === "point") return { priority: 40, layers: [L.circle], pad: 6, pick };
-  if (def.geometry === "line") return { priority: 50, layers: [L.line], pad: 6, pick };
-  return def.style.fillOpacity ? { priority: 60, layers: [L.fill], pad: 0, pick } : undefined;
+  const pick = (f: MapGeoJSONFeature) => overlayPick(def, f);
+  const kind = def.label;
+  if (def.format === "towers") return { priority: 0, kind, layers: [L.circle], pad: 4, pick };
+  if (def.geometry === "point") return { priority: 40, kind, layers: [L.circle], pad: 6, pick };
+  if (def.geometry === "line") return { priority: 50, kind, layers: [L.line], pad: 6, pick };
+  return def.style.fillOpacity ? { priority: 60, kind, layers: [L.fill], pad: 0, pick } : undefined;
 }
 
 function catalogDef(def: OverlayDef, data: (id: string) => FeatureCollection | undefined): LayerDef<S> {
@@ -177,7 +189,12 @@ function catalogDef(def: OverlayDef, data: (id: string) => FeatureCollection | u
   return {
     id: def.id,
     band: def.style.aboveGrid ? "above-grid" : "beneath",
-    source: { kind: "geojson", id: overlaySourceId(def.id), data: () => data(def.id), options: { tolerance: 0.5 } },
+    source: {
+      kind: "geojson",
+      id: overlaySourceId(def.id),
+      data: () => data(def.id),
+      options: isRefLayer(def) ? { tolerance: 0.5, generateId: true } : { tolerance: 0.5 },
+    },
     layers: (s) => overlayLayers(def, s),
     visible: (s) => !!s.app.layers.enabled[def.id],
     // The DISCOM sub-filter (fills are never DISCOM-coloured).

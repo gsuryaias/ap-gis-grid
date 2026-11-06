@@ -106,9 +106,23 @@ export class SearchEngine {
     return { places, net, dtr };
   }
 
-  /** A network item by its overlay feature id (trace-panel "go up a level"). */
+  /**
+   * A network item by its Inspector ref: an overlay feature id (ds- / dl- / f11-), `dtr:<code>`
+   * (fetches only that code's shard) or `sec:<label>`.
+   */
   async byRef(ref: string): Promise<NetItem | null> {
     await this.loadNetwork();
-    return this.net?.byRef.get(ref) ?? null;
+    const net = this.net;
+    if (!net) return null;
+    if (ref.startsWith("sec:")) {
+      const label = ref.slice(4);
+      return net.items.find((i) => i.kind === "sec" && i.label === label) ?? null;
+    }
+    if (ref.startsWith("dtr:")) {
+      const code = ref.slice(4);
+      const all = await Promise.all(dtrShardsFor(code, net.shards).map((k) => this.shard(k).catch(() => [] as NetItem[])));
+      return all.flat().find((d) => d.label === code) ?? null;
+    }
+    return net.byRef.get(ref) ?? null;
   }
 }

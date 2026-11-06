@@ -31,7 +31,7 @@ renders is pure static assets, so there is no backend at request time.
 
 > **Risk Room removed, Network MIS added (2026-11):** the Risk Room workspace was replaced by the
 > **Network MIS** (`workspaces/mis/`), preserved on the local `archive/risk-room` branch. `WorkspaceId`
-> is `atlas | mis`. `lib/risk.ts` stays (DetailPanel, SummaryView, WeatherView use it).
+> is `atlas | mis`. `lib/risk.ts` stays (the Inspector, SummaryView, WeatherView use it).
 
 > **Removed workspaces (2026-06):** the Planning Studio and the old parquet MIS live on the
 > `archive/planning-studio` / `archive/mis-workspace` branches.
@@ -78,7 +78,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
 | State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices"; versioned URL-hash sync (`VERSION=1`), selection history (`back()`), workspace + workspaceContext |
 | Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
-| Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, `NetworkTracePanel`, DetailPanel, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
+| Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
 | Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
 | Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `risk.ts`, `weather.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
@@ -135,7 +135,7 @@ if never synced. (A self-hosted runner in India could automate this later; delib
 132 kV 53,555). Fields: tower_number, cp_sp (CP / SP / Boom / Gantry, spelling varies → `canonicalCpSp`),
 tower_type ("DA+3": design type + body extension), tower_ckts_conductor ("DCT, 2C, Quad Moose"), conductor,
 circuit type, commissioning date, relay-setting length, circle/zone/division/subdivision; the 132 kV layer
-also has ~24 structural/insulator fields that are currently empty (the popup shows any that get filled).
+also has ~24 structural/insulator fields that are currently empty (the Inspector shows any that get filled).
 - **Storage — grouped by line, not GeoJSON** (~40 MB as GeoJSON): `groupTowers` keeps each line's shared
   attributes once and one row per tower (`[lineIdx, lng, lat, …cols]`, natural tower-number order, one row
   per text line for small diffs) → `data/raw/live/towers-<kv>.json` (15 MB total, lossless vs the fields
@@ -149,8 +149,8 @@ also has ~24 structural/insulator fields that are currently empty (the popup sho
 - **UI**: overlay defs `TOWER_DEFS` (`overlays/catalog.ts`, `format: "towers"`, `aboveGrid` — drawn between
   the grid lines and the SS dots, unlike every other overlay), decoded by `overlays/towers.ts`; per-voltage
   toggles in the layer panel ("Transmission · towers"), minzoom 9 (400 kV 8), CP towers larger + ringed,
-  labels (tower no.) from z14. A tower tap wins over the line beneath and opens a popup with every
-  attribute + a link to the line. `components/LineTowers.tsx` (line DetailPanel + MIS line dossier): count,
+  labels (tower no.) from z14. A tower tap wins over the line beneath (listed under "Also here") and opens the Inspector with every
+  attribute + a link to the line. `components/LineTowers.tsx` (a section of the line Inspector): count,
   CP/SP split, top types, "Show towers on map".
 
 ## DISCOM 33 kV overlay (`scripts/etl-discom.ts`, lazy)
@@ -179,7 +179,7 @@ failures (network / 5xx / 429) twice with backoff, aborts a load once every sign
 gone (un-signalled `ensure()` pins it), never makes errors sticky, and re-polls `refreshMs` resources while
 subscribed by an **active** consumer and the tab is visible (keeping stale data on failure).
 `useResourceSnapshot(res, param)` observes **passively** — no load, and it does NOT keep the refresh timer
-alive (use it for opportunistic reads, e.g. DLR in DetailPanel). Current resources: `gridRes` (core grid;
+alive (use it for opportunistic reads, e.g. DLR in the line Inspector). Current resources: `gridRes` (core grid;
 the store mirrors it as `data`), `generationRes`, `powerGridRes` (`data/load.ts`), `weatherRes` (10-min
 poll, awaits `gridRes` for circle points), `connectivity` (`transco-33kv.json`), `liveStatus` (15-min poll),
 `spotWeather` (per cell), `refCatalog` + `overlayLayer` (`overlays/resources.ts`, per overlay id — the map
@@ -193,7 +193,7 @@ store toggles and `applyHash` only flip visibility flags.
 One zustand store composed from slices: `slices/{core,selection,view,filters,ui,ctx,layers,url}.ts`, shapes
 in `state/types.ts`. `useAppStore` is the flat legacy facade (= the store); `useOverlayStore`
 (`overlays/store.ts`) is a facade over the nested **`layers`** slice (ex-overlay store: defs, enabled, status,
-DISCOM sub-filter, focus, netFocus, fitSignal — its `subscribe` fires only on `layers` changes). Named hooks
+DISCOM sub-filter, focus, fitSignal — its `subscribe` fires only on `layers` changes). Named hooks
 with `useShallow` in `state/hooks.ts` (`useGrid`, `useFilters`, `useSelection`, `useView`) — prefer them in
 new/migrated code; call sites move over file by file. **One filter model**: `filters` (voltage, circuit,
 circle, coast + layer visibility) is read by the map AND the data table (`passesSlice`/`sliceActive` in
@@ -210,7 +210,7 @@ circle, coast + layer visibility) is read by the map AND the data table (`passes
   `skeleton` for transliteration variants like Narsapuram~Narasapuram) or `abbrevMatch` ("J R GUDEM" ~
   Jangareddygudem), voltage hint honoured, nearest wins; (b) `proximity` — a feeder end ≤ 1.5 km from a TRANSCO
   SS (APSPDCL records no source); (c) `feeder-group` — other runs of the same named feeder inherit.
-  Recorded sources absent from TRANSCO's data (Gundlapadu, Abburu, Jindal…) fall to (b); the popup shows both.
+  Recorded sources absent from TRANSCO's data (Gundlapadu, Abburu, Jindal…) fall to (b); the Inspector shows both.
 - **Feeder → 33/11 kV SS served**: same-DISCOM SS within 300 m of the route (grid-indexed point-segment).
 - Current coverage: APEPDCL 531/532 feeders, APCPDCL 462/462, 33/11 kV SS traced to TRANSCO 909/972 and 916/949;
   APSPDCL only 273/1,704 (its 33 kV map is partial — every DISCOM SS also gets `nearestTranscoSs`).
@@ -220,7 +220,7 @@ circle, coast + layer visibility) is read by the map AND the data table (`passes
   one row per feeder run); stats in `live-status.json → connectivity`.
 - UI: `components/DiscomDownstream.tsx` in the TRANSCO substation detail (feeder list → served SS, Show on map,
   per-SS CSV/GeoJSON, statewide CSV link); selection sets the overlay store `focus` → amber highlight layers
-  `ov-focus-lines`/`ov-focus-ss` (registry defs in `map/registry/overlays.ts`); popups link "TRANSCO source" back to the SS (`data-select`).
+  `ov-focus-lines`/`ov-focus-ss` (registry defs in `map/registry/overlays.ts`); the Inspector's "TRANSCO source" field links back to the SS.
 
 ## DISCOM 11 kV network + transformer search (`scripts/sync-network.mts`, `scripts/etl-network.ts`, lazy)
 
@@ -243,8 +243,8 @@ feeders/lines, distribution transformers (DTRs) and APEPDCL AB switches → `dat
   driven from `data/search-client.ts`) loads `search-network.json` on first search focus; a query that
   `looksLikeDtrCode` (≥ 4 chars, has a digit, no spaces) fetches only the matching DTR shard(s) — all parsed
   and ranked off the main thread, only the top hits cross back. Picking a
-  result sets the overlay store `netFocus` → `components/NetworkTracePanel.tsx` (attributes + clickable trace,
-  coverage caveat) and turns on/zooms the overlay. Coverage is partial (APSPDCL sparse; APCPDCL has no open
+  result primes its item and selects its ref (`f11-…` / `dtr:<code>` / …) → the Inspector's `net` adapter (attributes +
+  clickable trace, coverage caveat), which turns on / highlights / zooms the overlay. Coverage is partial (APSPDCL sparse; APCPDCL has no open
   11 kV data) — the UI says so.
 
 ## RTGS reference layers (`scripts/build-ref-layers.mts` → `public/data/ref/`, lazy)
@@ -260,12 +260,30 @@ lessee** (lessees are often private individuals — deliberately withheld). Stat
 only when RTGS publishes new data (`npx tsx scripts/build-ref-layers.mts <id…>` rebuilds a subset but does NOT
 rewrite `catalog.json`).
 
+## Inspector (`src/inspector/`, Atlas 2.0 phase 2)
+
+ONE detail view for every selectable thing (it replaced DetailPanel, the MIS Dossier, NetworkTracePanel and the
+overlay tap popups). The selection (`selectedId`, URL `sel=`) is an **Inspector ref** (`refs.ts`): bare core /
+plant / power-grid / DISCOM ids (`s-` `l-` `g-` `pl-` `ps-` `rs-` `bs-` `ds-` `dl-` `f11-`, so v1 links still open) or
+typed `dtr:<code>` · `sec:<label>` · `tw:<kv>:<index>` · `ref:<layer>:<index>` (RTGS sources use `generateId`).
+- **Adapters** (`adapters/*`, registry `inspect.ts`): `needs(ref)` (overlay layer / net item / gen / pg) ·
+  `resolve(ref, ctx)` · `header` · `sections` · `locate` · `focus` (amber DISCOM highlight) · `geojson`. Sections are
+  data — `fields | links | trace | callout | note | custom` with ids (overview, risk, weather, connectivity, supply,
+  trace, downstream, towers, provenance) — unit-tested in `inspector.test.ts` on the real `public/data`. Adapters
+  never fetch: `useInspected` (`useInspected.ts`) loads what `needs` asks through the resource loader (`netItemRes`
+  resolves `net` refs in the search worker; a search pick primes it).
+- `useInspectorSync()` (mounted once in App): switches the selected feature's layer on, shows its `focus`, and
+  flies non-core refs once resolved (core/plant/PG flights stay in `useMapCamera`).
+- `Inspector.tsx`: `variant="panel"` (Atlas right column / phone sheet) or `"inline"` (MIS); `extend` merges
+  workspace sections by id (same id replaces, new ids follow the overview) — MIS passes `misInspector(model, …)`.
+  Back breadcrumb = selection `history`; "Also here · N" / "What's here" = the `here` list from the last tap.
+
 ## Overlay catalog module (`src/overlays/`)
 
 DISCOM + RTGS overlays live in a **self-contained module** rather than the per-overlay store/selection plumbing:
 `catalog.ts` (defs + cartography `REF_STYLE`), `resources.ts` (`overlayLayer` / `refCatalog`), `store.ts`
 (facade over the app store's `layers` slice: enabled/status, DISCOM sub-filter, per-device persistence in
-localStorage `apgg-overlays-v1` — NOT in the URL hash), `popup.ts` (tap-popup HTML, every value escaped). Their map
+localStorage `apgg-overlays-v1` — NOT in the URL hash). Their map
 layers are registry defs (`map/registry/overlays.ts`: polygons < lines < points, then the amber focus highlight;
 towers in the `above-grid` band) — see "Map engine". UI: `components/OverlaySections.tsx` (`DistributionSection`,
 `ReferenceSection`).
@@ -290,9 +308,10 @@ power-grid classes, cyclone track, focus pin (`top`).
   top kept topmost even over the measure layers); layers are moved only when out of their band/listed order.
   `onStyleReload` re-adds the measure tool's layers after `setStyle`.
 - **`interaction.ts`** — the ONE click/hover handler: defs declare `interaction {priority, layers, pad, hover,
-  pick}` — tower 0 (popup) · core SS 10 · core line 20 · plant / power grid 30 (select) · overlay points 40 · lines
-  50 · fills 60 (popups; outline-only polygons not tappable). The first selectable hit is selected (none → cleared);
-  a popup opens only if it out-ranks that selection. Suppressed while measure / nearby own the map (nearby-pick
+  kind, pick → Inspector ref}` — tower 0 · core SS 10 · core line 20 · plant / power grid 30 · overlay points 40 ·
+  lines 50 · fills 60 (outline-only polygons not tappable). The best exact hit is selected; everything in a 16 px box
+  is the "What's here" list (`here` in the selection slice — "Also here" in the Inspector; with no exact hit one box
+  hit is selected, several are listed; right-click lists without selecting). No popups. Suppressed while measure / nearby own the map (nearby-pick
   sets the origin instead). Note: towers don't sit exactly on the drawn core lines, so a tower tap selects nothing.
 - **`hooks.ts`** — `useMapCamera` (fly-to, circle fit, MIS scope fit, overlay fitSignal, nearby fly),
   `useMeasure`, `useNearbyMarker`, `useMapResize` (debounced; MapLibre's `trackResize` is off).
@@ -322,8 +341,8 @@ none of its code path runs until the user enables it.
   without switching the layer on. The map
   source/layers are mounted by the engine (`GENERATION` def in `map/registry/core.ts`) only once data arrives
   (re-mounted after a basemap style reload, same as the grid layers). Plants are NOT in the initial search index or the data table.
-- **Not in `data.byId`**: plants live in a separate `generation.byId` (`generationRes`). `DetailPanel` and
-  `MapPane` resolve a selection across both maps. Plant `voltage` reuses the grid voltage palette;
+- **Not in `data.byId`**: plants live in a separate `generation.byId` (`generationRes`). The Inspector's `plant`
+  adapter loads `generationRes` itself, so a deep-linked plant opens without the layer on. Plant `voltage` reuses the grid voltage palette;
   `energy` drives `ENERGY_COLOR` / the legend. The KML had no capacity; the **live layer carries
   `capacityMw` (`total_capacity`) + `units`** for the plants the source has filled in (null otherwise). **No grid
   connectivity** is modelled for plants.
@@ -381,7 +400,7 @@ in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
   (master only; `wxLayers` radar/cyclone sub-toggles are NOT in the hash, like `genTypes`). The load awaits
   `gridRes` for circle points, so a wx=1 deep link needs no special casing.
 - **Auto-refresh**: `weatherRes.refreshMs` = 10 min, alive only while an active consumer is mounted
-  (passive readers like DetailPanel's DLR don't count) and the tab is visible; refreshes keep stale data
+  (passive readers like the line Inspector's DLR don't count) and the tab is visible; refreshes keep stale data
   on screen. Never persisted.
 - **Map layers** (engine defs `WX_RADAR` / `WX_CYCLONE_FILLS` / `WX_CYCLONE_LINES` / `WX_RISK` in
   `map/registry/core.ts`, builders in `weather-layers.ts`): radar raster + cyclone fills in the `beneath` band so the
@@ -392,7 +411,7 @@ in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
 - **Weather monitor** (`WeatherView`, `weatherOpen` like `summaryOpen`, not in hash): cyclone alert
   cards (GDACS level colours + "N substations inside the forecast envelope" via `assetsInCone`),
   13-circle conditions grid, coastal sea state, 3-day outlook table, last-updated + manual refresh.
-- **DetailPanel** shows a "Weather now" line for a selected substation **only while the overlay is
+- **The SS Inspector** shows a "Weather now" line for a selected substation **only while the overlay is
   on** (`spotWeather` resource keyed by `spotCell` — one fetch per ~1 km cell).
 - Palette: cyclone swaths use GDACS's semantic green/orange/red (`WX_ALERT_COLOR`), track is
   rose-900 `WX_TRACK_COLOR`, risk halo amber `WX_RISK_COLOR` — all outside the voltage palette.
@@ -422,7 +441,7 @@ deps, no backend.
 
 - **Export & reporting** — `src/lib/export.ts` (pure CSV + GeoJSON builders, RFC-4180 escaping;
   unit-tested in `export.test.ts`). The `DataTableSheet` header has **CSV** + **GeoJSON** buttons that
-  export the *currently-shown* rows of the active tab (respecting the text filter); `DetailPanel` has a
+  export the *currently-shown* rows of the active tab (respecting the text filter); the Inspector has a
   per-feature **GeoJSON** download (substation Point / line geometry from `linesFc`). `downloadText()`
   is the only impure helper (Blob + anchor; no-op outside a browser, so the builders stay testable).
 - **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The `ControlPanel`
@@ -476,7 +495,7 @@ honesty convention.
   — Panther 480, Zebra 735, Moose 800, …) × a bundle factor (Twin ×2 / Quad ×4) → `conductorRating()`;
   then `lineCapacity()` = **√3 · kV · A / 1000** per circuit, × circuit count (DC ×2). `conductorRating`
   folds the source's conductor-name typos ("Zeebra"→Zebra, "Panter"→Panther) → **1181/1190 lines
-  rated (~99%)**; the rest (bare "UG Cable", "AL59" alloy) return null → UI shows nothing. `DetailPanel`
+  rated (~99%)**; the rest (bare "UG Cable", "AL59" alloy) return null → UI shows nothing. The line Inspector
   shows it per line (≈ 610 MVA, with a per-circuit split for DC) + an honesty footnote; `SummaryView`
   shows the network total (≈ 300 GVA) with coverage. A row is rated for the circuits IT carries
   (`LineProps.circuits`, see "Circuit-km" below), so Ckt-1 + Ckt-2 rows of one corridor sum to 2 circuits. **Indicative only** — not a load-flow result;
@@ -484,7 +503,7 @@ honesty convention.
 - **Asset age** — `commissionYear()` / `ageYears()` / `formatAge()` in `src/lib/format.ts`
   (unit-tested in `format.test.ts`). Parses the year from the `commissioned` "Mon YYYY" string and
   derives age vs. `new Date().getFullYear()` (kept pure by passing the reference year in).
-  `DetailPanel` appends "· 9 yrs" to the Commissioned field; the Network MIS adds the age bands, the
+  The line Inspector appends "· 9 yrs" to the Commissioned field; the Network MIS adds the age bands, the
   commissioning histogram and the line-age map theme.
 
 ## Connectivity graph + power-flow + risk (pure analytics libs)
@@ -493,8 +512,8 @@ The topological criticality / N-1 islanding work that earlier docs flagged as *d
 All of it is **pure, side-effect-free, unit-tested** (node env) and **indicative only** — it runs on the
 inferred geometric connectivity, never authoritative ratings or a real load-flow. `graph.ts` (via
 `graph-data.ts`) drives the Network MIS N-1 screening and the map spotlight; `supply-security.ts` the MIS
-radial-feed views; `risk.ts` the DetailPanel / Summary / Weather vulnerability read-outs; `dlr.ts` the
-DetailPanel's ambient-temperature derating (live — it is used). The DC load-flow and the three-axis risk
+radial-feed views; `risk.ts` the Inspector / Summary / Weather vulnerability read-outs; `dlr.ts` the
+line Inspector's ambient-temperature derating (live — it is used). The DC load-flow and the three-axis risk
 engine were retired (see the intro notes).
 
 - **`src/lib/graph.ts`** — a multigraph over substation ids (parallel circuits are distinct edges, since
@@ -569,7 +588,8 @@ workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts`
     `nextDim`; `Register` — paginated SS/line lists, hover = map hover, click = dossier + fly), `themes.tsx`
     (Radial feeds · Asset age · N-1 exposure · 33 kV downstream · Conductors & rating · Generation & interfaces
     — the last one opens with the interface connection-security matrix),
-    `Dossier.tsx` (SS / line dossier, incl. a supply-security box with "Show feed path" / bus-outage island — the core-feature detail card is suppressed on the map in MIS),
+    `inspector-ext.tsx` (MIS sections for the Inspector, which MIS renders inline where the dossier was: N-1 facts,
+    supply-security box with "Show feed path" / bus-outage island, circuits with ages, corridor-risk callout),
     `charts.tsx` / `ui.tsx` (dependency-free SVG/HTML marks per the dataviz conventions; voltage palette for
     stacks, validated blue ordinal ramp for age). Every view has a CSV export.
   - Map (`map/mis-layers.ts`): `mis-line-theme` + `mis-ss-theme` ride the CORE sources via feature-state

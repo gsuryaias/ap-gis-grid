@@ -28,17 +28,19 @@ export type SourceSpec<S> =
   /** Reuse another def's source; the def mounts once that source exists. */
   | { kind: "ride"; on: string };
 
-/** What a tap on a feature does. */
-export type Pick = { select: string } | { popup: string } | null;
+/** What a tap on a feature selects: an Inspector ref (`inspector/refs.ts`) + a label for "What's here". */
+export type Pick = { ref: string; label: string } | null;
 
 export interface Interaction {
-  /** Lower wins. A popup is shown only if it out-ranks the best selectable hit. */
+  /** Lower wins: the best hit under a tap is selected, the rest are listed as "What's here". */
   priority: number;
+  /** What the feature is, for the "What's here" list ("TRANSCO substation", "400 kV towers", …). */
+  kind: string;
   /** The def's tappable layer ids. */
   layers: string[];
   /** Tap tolerance in px around the pointer (0 = exact point). */
   pad?: number;
-  /** Hovering a feature highlights it (sets the store's hover id). */
+  /** Hovering a feature highlights it (sets the store's hover id to its ref). */
   hover?: boolean;
   pick: (f: MapGeoJSONFeature) => Pick;
 }
