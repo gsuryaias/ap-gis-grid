@@ -101,12 +101,13 @@ function selectionFs(source: string) {
 }
 
 /** Tap = select the feature; hover = highlight it. */
-const selectOnTap = (priority: number, layers: string[]): Interaction => ({
+const selectOnTap = (priority: number, kind: string, layers: string[]): Interaction => ({
   priority,
+  kind,
   layers,
   pad: 0,
   hover: true,
-  pick: (f: MapGeoJSONFeature) => (f.id != null ? { select: String(f.id) } : null),
+  pick: (f: MapGeoJSONFeature) => (f.id != null ? { ref: String(f.id), label: String(f.properties?.name ?? f.id) } : null),
 });
 
 const layersOf = (all: ReturnType<typeof buildLayers>, ids: string[]) => all.filter((l) => ids.includes(l.id));
@@ -125,7 +126,7 @@ const CORE_LINES: Def = {
   visible: (s) => s.preset.grid,
   spec: (s) => pickLines(gridSpecOf(s.app.filters), spotlightSpecOf(s)),
   featureState: selectionFs(SRC.lines),
-  interaction: selectOnTap(20, [LAYER.linesSC, LAYER.linesDC]),
+  interaction: selectOnTap(20, "TRANSCO line", [LAYER.linesSC, LAYER.linesDC]),
 };
 
 const CORE_SS: Def = {
@@ -136,7 +137,7 @@ const CORE_SS: Def = {
   visible: (s) => s.preset.grid,
   spec: (s) => pickSs(gridSpecOf(s.app.filters), spotlightSpecOf(s)),
   featureState: selectionFs(SRC.substations),
-  interaction: selectOnTap(10, [LAYER.substations]),
+  interaction: selectOnTap(10, "TRANSCO substation", [LAYER.substations]),
 };
 
 // ---- Network MIS themes (ride the core sources) ------------------------------------------------
@@ -176,7 +177,7 @@ const GENERATION: Def = {
   visible: (s) => s.preset.generation && s.app.filters.showGeneration,
   spec: (s) => pickGen(gridSpecOf(s.app.filters)),
   featureState: selectionFs(SRC.generation),
-  interaction: selectOnTap(30, [LAYER.generation]),
+  interaction: selectOnTap(30, "Generation plant", [LAYER.generation]),
 };
 
 // ---- power grid group: PGCIL lines + SS, railway traction, bulk-load (lazy) ---------------------
@@ -188,7 +189,7 @@ const PG_LINES: Def = {
   layers: (s) => buildPowerGridLayers(s.app.basemap).filter((l) => l.id === LAYER.pgLines),
   visible: (s) => pgOn(s, "powergrid"),
   featureState: selectionFs(SRC.powergridLines),
-  interaction: selectOnTap(30, [LAYER.pgLines]),
+  interaction: selectOnTap(30, "POWERGRID line", [LAYER.pgLines]),
 };
 const PG_SS: Def = {
   id: "pg-substations",
@@ -197,7 +198,7 @@ const PG_SS: Def = {
   layers: (s) => buildPowerGridLayers(s.app.basemap).filter((l) => l.id !== LAYER.pgLines),
   visible: (s) => pgOn(s, "powergrid"),
   featureState: selectionFs(SRC.powergridSubstations),
-  interaction: selectOnTap(30, [LAYER.pgSubstations]),
+  interaction: selectOnTap(30, "POWERGRID substation", [LAYER.pgSubstations]),
 };
 const RAILWAY: Def = {
   id: "railway-substations",
@@ -206,7 +207,7 @@ const RAILWAY: Def = {
   layers: (s) => buildLoadLayers(s.app.basemap, SRC.railwaySubstations, LAYER.railwaySubstations, LAYER.railwayLabels, RAILWAY_COLOR),
   visible: (s) => pgOn(s, "railway"),
   featureState: selectionFs(SRC.railwaySubstations),
-  interaction: selectOnTap(30, [LAYER.railwaySubstations]),
+  interaction: selectOnTap(30, "Railway traction SS", [LAYER.railwaySubstations]),
 };
 const BULKLOAD: Def = {
   id: "bulkload-substations",
@@ -215,7 +216,7 @@ const BULKLOAD: Def = {
   layers: (s) => buildLoadLayers(s.app.basemap, SRC.bulkloadSubstations, LAYER.bulkloadSubstations, LAYER.bulkloadLabels, BULKLOAD_COLOR),
   visible: (s) => pgOn(s, "bulkload"),
   featureState: selectionFs(SRC.bulkloadSubstations),
-  interaction: selectOnTap(30, [LAYER.bulkloadSubstations]),
+  interaction: selectOnTap(30, "Bulk-load / HT SS", [LAYER.bulkloadSubstations]),
 };
 
 // ---- live weather (lazy) -----------------------------------------------------------------------

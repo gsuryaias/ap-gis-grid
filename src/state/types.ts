@@ -3,7 +3,6 @@
 // (`layers` slice) are facades over it, so call sites can migrate to `state/hooks.ts` file by file.
 import type { StateCreator } from "zustand";
 import type { OverlayDef, DiscomId } from "../overlays/catalog.ts";
-import type { NetItem } from "../data/network-search.ts";
 import type { FilterState, PgClass, WxLayer } from "../data/selectors.ts";
 import type { Circuit, EnergyType, GridData, Voltage } from "../data/types.ts";
 import type { MeasureMode, MeasureStats } from "../map/measure.ts";
@@ -59,14 +58,29 @@ export interface CoreSlice {
   init: () => Promise<void>;
 }
 
+/** One feature under a map tap ("What's here"). */
+export interface HereItem {
+  ref: string;
+  label: string;
+  kind: string;
+}
+
 export interface SelectionSlice {
+  /**
+   * The Inspector's selection: an Inspector ref (`inspector/refs.ts`) — a core / plant / power-grid
+   * id, a DISCOM id, or a typed ref (`dtr:` / `sec:` / `tw:` / `ref:`).
+   */
   selectedId: string | null;
   history: string[];
   hoverId: string | null;
   flySignal: FlySignal | null;
-  select: (id: string | null, opts?: { fly?: boolean }) => void;
+  /** Every feature under the last map tap, best first (transient; null = none / one). */
+  here: HereItem[] | null;
+  /** `keepHere` keeps the "What's here" list (picking from it). */
+  select: (id: string | null, opts?: { fly?: boolean; keepHere?: boolean }) => void;
   back: () => void;
   setHover: (id: string | null) => void;
+  setHere: (items: HereItem[] | null) => void;
 }
 
 export interface ViewSlice {
@@ -159,8 +173,6 @@ export interface LayersState {
   discoms: Record<DiscomId, boolean>;
   /** Highlighted DISCOM features: 33 kV lines / 33/11 kV SS / 11 kV feeders / one point (transient). */
   focus: OverlayFocus | null;
-  /** Network search pick (33/11 SS, 33 / 11 kV feeder, section, transformer) shown in the trace panel. */
-  netFocus: NetItem | null;
   /** One-shot "fit the map to these bounds" request ([[w,s],[e,n]]). */
   fitSignal: { bounds: [[number, number], [number, number]]; ts: number; maxZoom?: number } | null;
   /** Bumped on every change the map must react to. */
@@ -173,8 +185,6 @@ export interface LayersState {
   restore: () => void;
   setFocus: (f: OverlayFocus | null) => void;
   fitTo: (bounds: [[number, number], [number, number]], maxZoom?: number) => void;
-  /** Open a network search result: switch on its overlay, highlight it, fly there, show the trace. */
-  focusNetwork: (item: NetItem | null) => void;
 }
 
 export interface LayersSlice {

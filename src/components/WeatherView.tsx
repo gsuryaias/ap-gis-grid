@@ -54,7 +54,7 @@ function fmtRange(from: string, to: string): string {
   return `${f(from)} – ${f(to)}`;
 }
 
-// Tier accent for the at-risk list — same token styles as DetailPanel's vulnerability read-out.
+// Tier accent for the at-risk list — same token styles as the Inspector's vulnerability read-out.
 const TIER_CLASS: Record<RiskTier, string | undefined> = {
   low: undefined,
   moderate: "text-amber-600 dark:text-amber-300",

@@ -328,7 +328,7 @@ export async function loadWeather(points: CirclePoint[]): Promise<WeatherData> {
 }
 
 // ---------------------------------------------------------------------------
-// Spot conditions for a selected feature (DetailPanel) — tiny, cached per location
+// Spot conditions for a selected feature (the Inspector) — tiny, cached per location
 // ---------------------------------------------------------------------------
 
 export interface SpotWeather {

@@ -3,7 +3,7 @@
 // Drill model: a breadcrumb of (dimension = value) filters defines the SCOPE; every panel on the
 // page (KPIs, breakdown, thematic tabs, register) and the embedded map (dimming + fit + thematic
 // layer) follows it. Clicking a breakdown row adds a filter and regroups by the next sensible
-// dimension; clicking an asset opens its dossier. The drill state lives in the URL hash
+// dimension; clicking an asset opens it in the Inspector (with the MIS sections, inspector-ext.tsx). The drill state lives in the URL hash
 // (`by`, `mf`, `tab`, `theme`), so any view is shareable.
 //
 // A multi-select voltage SLICER sits outside the ordered drill path and is applied first.
@@ -19,7 +19,8 @@ import { useAppStore } from "../../state/store.ts";
 import type { Voltage } from "../../data/types.ts";
 import { drillRecords, METRICS, recordsFocus, scopeInterfaces, type DrillSpec } from "./drill.ts";
 import { DrillPanel } from "./DrillPanel.tsx";
-import { LineDossier, SsDossier } from "./Dossier.tsx";
+import { misInspector } from "./inspector-ext.tsx";
+import { Inspector } from "../../inspector/Inspector.tsx";
 import { MisSearch } from "./MisSearch.tsx";
 import {
   applyScope,
@@ -232,8 +233,7 @@ export default function MisWorkspace() {
 
   useEffect(() => () => useAppStore.getState().setWorkspaceContext({ misMap: null, fit: null }), []);
 
-  const ssRow = selectedId ? model.ssById.get(selectedId) : undefined;
-  const lineRow = selectedId ? model.lineById.get(selectedId) : undefined;
+  const inspectorExt = useMemo(() => misInspector(model, setFocus), [model]);
   const legend = themeLegend(theme, basemap);
   const tabProps = { model, scope, filters, onDrill: drill, onFocus: setFocus, focusKey: focus?.key ?? null };
 
@@ -246,13 +246,11 @@ export default function MisWorkspace() {
     return { Generation: n("Generation"), Railway: n("Railway"), total: all.length };
   }, [model, scope.lines]);
 
-  // Bring the dossier into view whenever a core asset is picked (search, register, lists).
+  // Bring the Inspector into view whenever something is picked (search, register, lists, map).
   const dossierRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (selectedId && (model.ssById.has(selectedId) || model.lineById.has(selectedId))) {
-      dossierRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-    }
-  }, [selectedId, model]);
+    if (selectedId) dossierRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [selectedId]);
   const openAsset = useCallback((id: string) => select(id, { fly: true }), [select]);
 
   const chipFocus = mapFocus;
@@ -348,8 +346,7 @@ export default function MisWorkspace() {
 
       <div className="mx-auto max-w-[1100px] space-y-3 p-3 sm:p-4">
         <div ref={dossierRef} className="scroll-mt-28 space-y-3 empty:hidden">
-          {ssRow && <SsDossier model={model} row={ssRow} onClose={() => select(null)} onFocus={setFocus} />}
-          {lineRow && <LineDossier model={model} row={lineRow} onClose={() => select(null)} onFocus={setFocus} />}
+          <Inspector variant="inline" extend={inspectorExt} />
         </div>
 
         <div ref={ddRef} className="scroll-mt-28 empty:hidden">
