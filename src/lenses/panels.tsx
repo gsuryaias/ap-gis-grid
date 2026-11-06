@@ -30,7 +30,7 @@ export function PanelLoading() {
 
 /** The side panel of a map lens (Plan has its own split layout). */
 export function LensPanel({ lens, data }: { lens: LensId; data: GridData }) {
-  if (lens === "field") return <FieldPanel data={data} />;
+  if (lens === "field") return <FieldPanel />;
   if (lens === "storm")
     return (
       <Suspense fallback={<PanelLoading />}>

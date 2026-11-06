@@ -1,9 +1,10 @@
-// Explore lens panel: start-here tips, the network at a glance, and the layer list + legend.
+// Explore lens panel: start-here tips, the network at a glance, and what is on the map.
 import type { GridData, Voltage } from "../data/types.ts";
 import { VOLTAGES } from "../data/types.ts";
-import { MapLayerPanel } from "../components/MapLayerPanel.tsx";
+import { LayersIcon } from "../components/icons.tsx";
+import { useCatalogue } from "../layers/LayerDrawer.tsx";
+import { SwatchMark } from "../layers/ui.tsx";
 import { formatInt } from "../lib/format.ts";
-import { LENS_LAYER_PRESETS } from "../map/layer-presets.ts";
 import { useAppStore } from "../state/store.ts";
 import { VOLTAGE_COLOR } from "../theme/palette.ts";
 import { PanelSection, StartHere } from "./StartHere.tsx";
@@ -68,10 +69,31 @@ export function NetworkAtAGlance({ data }: { data: GridData }) {
   );
 }
 
-export function LayersBlock({ data, lens }: { data: GridData; lens: "explore" | "field" | "storm" }) {
+/** What is on the map now (names only) + the way into the Layers drawer. */
+export function LayersBlock() {
+  const { entries, on } = useCatalogue();
+  const toggle = useAppStore((s) => s.toggleLayersDrawer);
+  const active = entries.filter((e) => on.has(e.id));
   return (
-    <PanelSection title="Layers & legend">
-      <MapLayerPanel data={data} preset={LENS_LAYER_PRESETS[lens]} variant="embedded" lens={lens} />
+    <PanelSection
+      title={`On the map · ${active.length}`}
+      action={
+        <button type="button" onClick={() => toggle(true)} className="inline-flex items-center gap-1 text-[11px] font-medium text-accent hover:underline">
+          <LayersIcon width={12} height={12} /> Layers
+        </button>
+      }
+    >
+      <ul className="space-y-0.5">
+        {active.map((e) => (
+          <li key={e.id} className="flex items-center gap-2 text-[12px] text-ink">
+            <SwatchMark s={e.swatch} />
+            <span className="truncate">{e.label}</span>
+          </li>
+        ))}
+      </ul>
+      <button type="button" onClick={() => toggle(true)} className="mt-2 w-full rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-surface-2">
+        Add or remove layers
+      </button>
     </PanelSection>
   );
 }
@@ -81,7 +103,7 @@ export default function ExplorePanel({ data }: { data: GridData }) {
     <div className="flex flex-col gap-3">
       <StartHere lens="explore" />
       <NetworkAtAGlance data={data} />
-      <LayersBlock data={data} lens="explore" />
+      <LayersBlock />
     </div>
   );
 }

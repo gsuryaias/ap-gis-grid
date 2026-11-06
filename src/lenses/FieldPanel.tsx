@@ -1,7 +1,6 @@
 // Field lens panel: near me, trace a transformer / feeder, and the layer list (towers + 33 kV on).
 import { useLocateMe } from "../components/NearbyControl.tsx";
 import { PinIcon, SearchIcon, TargetIcon } from "../components/icons.tsx";
-import type { GridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { LayersBlock } from "./ExplorePanel.tsx";
 import { PanelSection, StartHere } from "./StartHere.tsx";
@@ -14,7 +13,7 @@ export function focusSearch() {
 const bigBtn =
   "flex min-h-11 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium transition-colors";
 
-export default function FieldPanel({ data }: { data: GridData }) {
+export default function FieldPanel() {
   const { locate, locating, error } = useLocateMe();
   const nearbyMode = useAppStore((s) => s.nearbyMode);
   const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
@@ -54,7 +53,7 @@ export default function FieldPanel({ data }: { data: GridData }) {
           The trace is inferred from the DISCOMs' open GIS: APEPDCL is near-complete, APSPDCL is partial and APCPDCL publishes no 11 kV data.
         </p>
       </PanelSection>
-      <LayersBlock data={data} lens="field" />
+      <LayersBlock />
     </div>
   );
 }

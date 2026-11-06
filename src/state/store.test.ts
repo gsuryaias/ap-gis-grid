@@ -170,6 +170,40 @@ describe("app store slices", () => {
     fetchSpy.mockRestore();
   });
 
+  it("setLayer switches any layer token; solo shows one layer and restores on a second solo", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise(() => {}));
+    const on = () => {
+      const st = useAppStore.getState();
+      return [
+        ...(["showSubstations", "showLines", "showGeneration", "showWeather"] as const).filter((k) => st.filters[k]),
+        ...Object.keys(st.layers.enabled).filter((k) => st.layers.enabled[k]),
+      ].sort();
+    };
+    const s = useAppStore.getState();
+    s.setLayer("gen");
+    s.setLayer("districts", true);
+    expect(on()).toEqual(["districts", "showGeneration", "showLines", "showSubstations"]);
+    expect(useAppStore.getState().layers.catalogStatus).toBe("loading"); // a reference layer first loads the RTGS catalogue
+    useAppStore.getState().soloLayer("districts");
+    expect(on()).toEqual(["districts"]);
+    expect(useAppStore.getState().solo?.id).toBe("districts");
+    useAppStore.getState().soloLayer("districts");
+    expect(on()).toEqual(["districts", "showGeneration", "showLines", "showSubstations"]);
+    // Soloing then switching something else drops solo mode and keeps what is on now.
+    useAppStore.getState().soloLayer("ln");
+    useAppStore.getState().setLayer("ss", true);
+    expect(useAppStore.getState().solo).toBeNull();
+    expect(on()).toEqual(["showLines", "showSubstations"]);
+    fetchSpy.mockRestore();
+  });
+
+  it("opacity is clamped, per layer, and not persisted", () => {
+    useAppStore.getState().layers.setOpacity("districts", 1.7);
+    useAppStore.getState().layers.setOpacity("wx", 0.4);
+    expect(useAppStore.getState().layers.opacity).toEqual({ districts: 1, wx: 0.4 });
+    expect(Object.keys(partializeLayers(useAppStore.getState()))).toEqual(["enabled", "discoms"]);
+  });
+
   it("resetFilters clears only the slicing filters", () => {
     const s = useAppStore.getState();
     s.toggleVoltage(400);

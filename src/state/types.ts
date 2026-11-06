@@ -9,7 +9,7 @@ import type { MeasureMode, MeasureStats } from "../map/measure.ts";
 import type { MisMapState } from "../map/mis-layers.ts";
 import type { MapLayout } from "../url/layout.ts";
 import type { Camera, UrlState } from "../url/v2.ts";
-import type { LensId } from "../lenses/registry.ts";
+import type { LayerOn, LensId } from "../lenses/registry.ts";
 
 export type Basemap = "light" | "dark" | "satellite";
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
@@ -189,6 +189,8 @@ export interface LayersState {
   focus: OverlayFocus | null;
   /** One-shot "fit the map to these bounds" request ([[w,s],[e,n]]). */
   fitSignal: { bounds: [[number, number], [number, number]]; ts: number; maxZoom?: number } | null;
+  /** Per-layer opacity multiplier 0–1 (catalog overlays + `wx` radar; absent = 1). Transient. */
+  opacity: Record<string, number>;
   /** Bumped on every change the map must react to. */
   version: number;
 
@@ -199,10 +201,22 @@ export interface LayersState {
   restore: () => void;
   setFocus: (f: OverlayFocus | null) => void;
   fitTo: (bounds: [[number, number], [number, number]], maxZoom?: number) => void;
+  setOpacity: (id: string, v: number) => void;
 }
 
 export interface LayersSlice {
   layers: LayersState;
+}
+
+/** The Layers drawer: one setter for every layer token, solo, and the drawer's open state (transient). */
+export interface CatalogueSlice {
+  layersOpen: boolean;
+  /** Solo mode: only `id` is on; `prev` is restored by soloing it again (cleared by any other change). */
+  solo: { id: string; prev: LayerOn } | null;
+  toggleLayersDrawer: (open?: boolean) => void;
+  /** Switch one layer token on / off (toggles when `on` is omitted); loads what it needs. */
+  setLayer: (id: string, on?: boolean) => void;
+  soloLayer: (id: string) => void;
 }
 
 /** URL v2 bridge (`url/v2.ts`, synced by `url/useUrlSync.ts`). */
@@ -213,7 +227,7 @@ export interface UrlSlice {
   urlState: () => UrlState;
 }
 
-export type AppState = CoreSlice & SelectionSlice & ViewSlice & FiltersSlice & UiSlice & CtxSlice & LayersSlice & UrlSlice;
+export type AppState = CoreSlice & SelectionSlice & ViewSlice & FiltersSlice & UiSlice & CtxSlice & LayersSlice & CatalogueSlice & UrlSlice;
 
 /** On-disk shape of the persisted overlay choices (unchanged from the old overlay store). */
 export interface PersistedLayers {

@@ -39,8 +39,10 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
       if (u.misFilters !== undefined) workspaceContext.misFilters = u.misFilters ?? undefined;
       if (u.misTab !== undefined) workspaceContext.misTab = u.misTab ?? undefined;
       if (u.misTheme !== undefined) workspaceContext.misTheme = u.misTheme ?? undefined;
+      const layersTouched = lens !== s.lens || u.overlays !== undefined || u.showGeneration !== undefined;
       return {
         lens,
+        solo: layersTouched ? null : s.solo,
         mapLayout,
         workspaceContext,
         selectedId,

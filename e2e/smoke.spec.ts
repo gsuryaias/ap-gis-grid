@@ -1,6 +1,6 @@
 // Smoke suite — the user journeys every Atlas 2.0 PR must keep working.
 import { expect, test } from "@playwright/test";
-import { hasLayer, openApp, switchBasemap } from "./helpers.ts";
+import { hasLayer, openApp, openLayers, switchBasemap, toggleLayer } from "./helpers.ts";
 
 test("loads the network and draws the grid", async ({ page }) => {
   const errors: string[] = [];
@@ -55,7 +55,8 @@ test("33 kV overlay + downstream GeoJSON share one DISCOM download", async ({ pa
     if (m) data.push(m[1]);
   });
   await openApp(page, "#v=1&sel=s-ss-132kv-chnd");
-  await page.getByRole("switch", { name: "Toggle 33 kV lines" }).click();
+  await toggleLayer(page, "33 kV lines");
+  await page.keyboard.press("Escape"); // close the drawer — the Inspector's buttons are what we test
   await expect.poll(() => data.filter((f) => f === "discom-lines.geojson").length).toBe(1);
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "GeoJSON", exact: true }).first().click();
@@ -66,7 +67,7 @@ test("33 kV overlay + downstream GeoJSON share one DISCOM download", async ({ pa
 
 test("generation overlay lazy-loads and survives a basemap switch", async ({ page }) => {
   await openApp(page);
-  await page.getByRole("switch", { name: "Toggle generation plants" }).click();
+  await toggleLayer(page, "Generation plants");
   await expect.poll(() => hasLayer(page, "grid-generation")).toBe(true);
   await expect(page).toHaveURL(/lyr=gen/);
 
@@ -105,8 +106,7 @@ test("MIS line-age theme writes feature-state and re-applies after a basemap swi
     });
   await expect.poll(themed).toBeGreaterThan(100);
 
-  await page.getByRole("button", { name: "Map layers" }).click();
-  await switchBasemap(page, "Dark");
+  await switchBasemap(page, "Dark"); // Plan's map has the same Layers drawer
   await expect.poll(themed).toBeGreaterThan(100);
 });
 
@@ -326,4 +326,46 @@ test("a v1 link is rewritten to v2; a v2 link restores camera + layers", async (
   expect(cam.lng).toBeCloseTo(80.6, 2);
   expect(cam.lat).toBeCloseTo(16.5, 2);
   expect(cam.zoom).toBeCloseTo(10, 1);
+});
+
+test("layers drawer: search the catalogue, Alt-click solo + restore, opacity, zoom-aware legend", async ({ page }) => {
+  await openApp(page, "#@80.6,16.5,7z&v=2");
+  const drawer = await openLayers(page);
+  await drawer.getByRole("tab", { name: "All layers" }).click();
+  await drawer.getByRole("textbox", { name: "Find a layer" }).fill("towers");
+  await expect(drawer.getByRole("switch")).toHaveCount(3);
+
+  // Switch 132 kV towers on: it is listed as on, but the legend leaves it out below zoom 9.
+  await drawer.getByRole("switch", { name: "Toggle 132 kV towers" }).click();
+  await expect(page).toHaveURL(/lyr=towers-132kv/);
+  const legend = page.getByRole("region", { name: "Legend" });
+  await expect(legend.getByText("Transmission grid")).toBeVisible();
+  await expect(legend.getByText("132 kV towers")).toHaveCount(0);
+
+  // Alt-click solos: only the towers; the same again restores the grid.
+  await drawer.getByRole("switch", { name: "Toggle 132 kV towers" }).click({ modifiers: ["Alt"] });
+  await expect(page).toHaveURL(/lyr=towers-132kv,-ss,-ln/);
+  await expect(drawer.getByText("Showing only 132 kV towers")).toBeVisible();
+  await drawer.getByRole("button", { name: "Restore layers" }).click();
+  await expect(page).toHaveURL(/lyr=towers-132kv(&|$)/);
+
+  // Opacity reaches the map paint.
+  await drawer.getByRole("tab", { name: /On now/ }).click();
+  await expect.poll(() => hasLayer(page, "ov-towers-132kv-circle")).toBe(true);
+  await drawer.getByRole("slider", { name: "132 kV towers opacity" }).fill("50");
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as { __map: { getPaintProperty(l: string, p: string): unknown } }).__map.getPaintProperty("ov-towers-132kv-circle", "circle-opacity")),
+    )
+    .toBe(0.475);
+});
+
+test("filter chips drive the shared filter (map + URL)", async ({ page }) => {
+  await openApp(page);
+  await page.getByRole("group", { name: "Filters" }).getByRole("button", { name: "400" }).click();
+  await expect(page).toHaveURL(/volt=220(,|%2C)132/);
+  await page.getByRole("combobox", { name: "Filter by AP-TRANSCO circle" }).selectOption("Kadapa");
+  await expect(page).toHaveURL(/circle=Kadapa/);
+  await page.getByRole("group", { name: "Filters" }).getByRole("button", { name: "Clear" }).click();
+  await expect(page).not.toHaveURL(/volt=|circle=/);
 });

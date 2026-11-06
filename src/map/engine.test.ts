@@ -60,6 +60,7 @@ function setup(opts: { enabled?: string[]; loaded?: string[] } = {}) {
       enabled: Object.fromEntries((opts.enabled ?? Object.keys(defs)).map((id) => [id, true])),
       discoms: { APSPDCL: true, APEPDCL: true, APCPDCL: true },
       focus: null,
+      opacity: {},
     },
   } as unknown as AppState;
   const ctl = {
@@ -155,6 +156,19 @@ describe("map engine", () => {
     expect(map.writes.sort()).toEqual(
       [`filter:${L("discom-lines").line}`, `filter:${L("discom-ss").circle}`, `filter:${L("discom-ss").label}`].sort(),
     );
+  });
+
+  it("the opacity slider rewrites only that overlay's paint, once", () => {
+    const { map, engine, setApp, ctl } = setup();
+    settle(engine);
+    map.writes = [];
+    setApp({ layers: { ...ctl.state.app.layers, opacity: { "discom-ss": 0.5 } } });
+    engine.reconcile();
+    expect(map.writes.sort()).toEqual(
+      [`paint:${L("discom-ss").circle}:circle-opacity`, `paint:${L("discom-ss").circle}:circle-stroke-opacity`, `paint:${L("discom-ss").label}:text-opacity`].sort(),
+    );
+    expect(map.getPaintProperty(L("discom-ss").circle, "circle-opacity")).toBe(0.475);
+    expect(engine.reconcile()).toBe(0);
   });
 
   it("an overlay mounts once shown + loaded; switching it off only hides it", () => {

@@ -21,11 +21,3 @@ export const LENS_LAYER_PRESETS: Record<LensId, LayerPreset> = {
   plan: ALL,
   storm: ALL,
 };
-
-/** One-line map context shown at the foot of a lens's layer list. */
-export const LENS_MAP_HINTS: Record<LensId, string> = {
-  explore: "",
-  field: "",
-  plan: "Features outside the drill-down scope are dimmed. Pick a map theme in the MIS scope bar.",
-  storm: "Weather layers are indicative third-party model output — verify against IMD advisories.",
-};

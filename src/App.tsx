@@ -13,7 +13,8 @@ import { PanelLoading, PlanWorkspace } from "./lenses/panels.tsx";
 import { Header } from "./shell/Header.tsx";
 import { LensSidePanel, MapLensOverlays, MapLensPhone } from "./shell/MapLensChrome.tsx";
 import { DEFAULT_MAP_PANE, MapResizeHandle, MIN_MAP_PANE, PaneSplitter, PlanHeader, useMapPaneWidth } from "./shell/PlanChrome.tsx";
-import { MapLayerPanel } from "./components/MapLayerPanel.tsx";
+import { LayerDrawer } from "./layers/LayerDrawer.tsx";
+import { LayersButton } from "./shell/MapToolbar.tsx";
 import { useInspectorSync } from "./inspector/useInspected.ts";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
 import { DataQualityView } from "./components/DataQualityView.tsx";
@@ -106,7 +107,13 @@ export function App() {
             </div>
             {split && !mapHidden && (
               <>
-                <MapLayerPanel data={data} preset={preset} variant="overlay" lens={lens} />
+                {/* Plan's own slicer + drill scope the analysis; the map gets the Layers drawer only. */}
+                <div className="pointer-events-none absolute left-2.5 top-2.5 z-30">
+                  <div className="pointer-events-auto">
+                    <LayersButton />
+                  </div>
+                </div>
+                <LayerDrawer phone={isMobile} />
                 {!isMobile && <MapResizeHandle />}
               </>
             )}

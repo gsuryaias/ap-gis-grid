@@ -26,6 +26,21 @@ export function hasLayer(page: Page, id: string) {
   }, id);
 }
 
+/** Open the Layers drawer (if it isn't) and return it. */
+export async function openLayers(page: Page) {
+  const drawer = page.getByRole("region", { name: "Layers", exact: true });
+  if (!(await drawer.isVisible())) await page.getByRole("button", { name: /^Layers \(/ }).click();
+  await expect(drawer).toBeVisible();
+  return drawer;
+}
+
+/** Switch a layer from the drawer's "All layers" catalogue (`label` as the catalogue names it). */
+export async function toggleLayer(page: Page, label: string) {
+  const drawer = await openLayers(page);
+  await drawer.getByRole("tab", { name: "All layers" }).click();
+  await drawer.getByRole("switch", { name: `Toggle ${label}` }).click();
+}
+
 /**
  * Switch basemap and wait until the engine has re-mounted everything on the NEW style. setStyle
  * keeps the old style (and our layers) until the new style JSON arrives, so "grid layers exist"
@@ -37,7 +52,8 @@ export async function switchBasemap(page: Page, name: "Light" | "Dark" | "Satell
     const w = window as unknown as W;
     w.__oldTop = w.__map.getLayer("band-top");
   });
-  await page.getByRole("button", { name, exact: true }).click();
+  const drawer = await openLayers(page);
+  await drawer.getByRole("group", { name: "Basemap" }).getByRole("button", { name, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`base=${name.toLowerCase()}`));
   await expect
     .poll(

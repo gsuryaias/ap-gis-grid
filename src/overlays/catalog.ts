@@ -1,8 +1,8 @@
 /**
- * Overlay catalog — the DISCOM 33 kV network (live-synced) + RTGS reference layers (boundaries,
- * transport, environment, water, hazards). Self-contained: own store (`store.ts`), own map
- * controller (`map.ts`), own UI (`components/OverlaySections.tsx`). Everything is lazy — a layer's
- * GeoJSON is fetched only when first switched on.
+ * Overlay catalog — the DISCOM 33 / 11 kV network and transmission towers (live-synced) + RTGS
+ * reference layers (boundaries, transport, environment, water, hazards). The store facade is
+ * `store.ts`, the map defs `map/registry/overlays.ts`, the UI the Layers drawer (`layers/`).
+ * Everything is lazy — a layer's GeoJSON is fetched only when first switched on.
  */
 
 export type OverlayGeometry = "polygon" | "line" | "point";

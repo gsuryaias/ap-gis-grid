@@ -11,6 +11,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createCoreSlice } from "./slices/core.ts";
+import { createCatalogueSlice } from "./slices/catalogue.ts";
 import { createCtxSlice } from "./slices/ctx.ts";
 import { createFiltersSlice } from "./slices/filters.ts";
 import { createLayersSlice, LAYERS_STORAGE_KEY, LAYERS_STORAGE_VERSION, layersStorage, mergeLayers, partializeLayers } from "./slices/layers.ts";
@@ -32,6 +33,7 @@ export const useAppStore = create<AppState>()(
       ...createUiSlice(...a),
       ...createCtxSlice(...a),
       ...createLayersSlice(...a),
+      ...createCatalogueSlice(...a),
       ...createUrlSlice(...a),
     }),
     {

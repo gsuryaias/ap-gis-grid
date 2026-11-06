@@ -51,7 +51,7 @@ export default function StormPanel({ data }: { data: GridData }) {
           Open the full weather monitor
         </button>
       </PanelSection>
-      <LayersBlock data={data} lens="storm" />
+      <LayersBlock />
     </div>
   );
 }

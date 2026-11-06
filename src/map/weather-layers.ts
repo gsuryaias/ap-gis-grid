@@ -52,7 +52,14 @@ export const RADAR_SOURCE_OPTIONS = {
 };
 
 export function radarLayers(): LayerSpecification[] {
-  return [{ id: WX_LAYER.radar, type: "raster", source: WX_SRC.radar, paint: { "raster-opacity": 0.6 } }];
+  return [{ id: WX_LAYER.radar, type: "raster", source: WX_SRC.radar, paint: { "raster-opacity": RADAR_OPACITY } }];
+}
+
+export const RADAR_OPACITY = 0.6;
+
+/** The opacity slider for the radar (`k` 0–1 scales its base opacity). */
+export function radarOpacitySpec(k: number): MapSpec {
+  return { [WX_LAYER.radar]: { paint: { "raster-opacity": Math.round(RADAR_OPACITY * k * 1000) / 1000 } } };
 }
 
 /** Alert swaths + forecast cone fills — beneath the grid so the transmission assets stay legible. */

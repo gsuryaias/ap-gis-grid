@@ -130,8 +130,10 @@ export const createLayersSlice: SliceCreator<LayersSlice> = (set, get) => {
       discoms: { APSPDCL: true, APEPDCL: true, APCPDCL: true },
       focus: null,
       fitSignal: null,
+      opacity: {},
       version: 0,
 
+      setOpacity: (id, v) => setL((l) => ({ opacity: { ...l.opacity, [id]: Math.min(1, Math.max(0, v)) } })),
       setFocus: (focus: OverlayFocus | null) => setL(() => ({ focus })),
       fitTo: (bounds, maxZoom) => setL(() => ({ fitSignal: { bounds, ts: Date.now(), maxZoom } })),
 
