@@ -76,7 +76,7 @@ export function MapResizeHandle() {
 }
 
 /** Draggable divider between the map pane and the analysis column. */
-export function PaneSplitter({ onDrag, onReset, onNudge }: { onDrag: (clientX: number) => void; onReset: () => void; onNudge: (dx: number) => void }) {
+export function PaneSplitter({ onDrag, onReset, onNudge, value }: { onDrag: (clientX: number) => void; onReset: () => void; onNudge: (dx: number) => void; value: number | null }) {
   const dragging = useRef(false);
   const end = (e: React.PointerEvent) => {
     if (!dragging.current) return;
@@ -94,6 +94,9 @@ export function PaneSplitter({ onDrag, onReset, onNudge }: { onDrag: (clientX: n
       role="separator"
       aria-orientation="vertical"
       aria-label="Resize map pane"
+      aria-valuemin={MIN_MAP_PANE}
+      aria-valuemax={typeof window === "undefined" ? 2000 : Math.max(MIN_MAP_PANE, window.innerWidth - MIN_ANALYSIS_PANE)}
+      aria-valuenow={value ?? Math.min(520, Math.round((typeof window === "undefined" ? 1200 : window.innerWidth) * 0.42))}
       tabIndex={0}
       onPointerDown={(e) => {
         dragging.current = true;

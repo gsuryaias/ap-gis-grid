@@ -6,8 +6,10 @@ import { useResource } from "../data/resources.ts";
 import type { GridData } from "../data/types.ts";
 import { weatherRes } from "../data/weather.ts";
 import { RefreshIcon } from "../components/icons.tsx";
+import { ErrorState, LoadingState } from "../components/states.tsx";
 import { fmtTime, WeatherBody } from "../components/WeatherView.tsx";
 import { useAppStore } from "../state/store.ts";
+import { Indicative } from "../trust/Indicative.tsx";
 import { LayersBlock } from "./ExplorePanel.tsx";
 import { PanelSection, StartHere } from "./StartHere.tsx";
 
@@ -20,7 +22,11 @@ export default function StormPanel({ data }: { data: GridData }) {
     <div className="flex flex-col gap-3">
       <StartHere lens="storm" />
       <PanelSection
-        title="Situation"
+        title={
+          <>
+            Situation <Indicative method="weather" label="Model output" />
+          </>
+        }
         action={
           <span className="flex items-center gap-1.5">
             {weather && <span className="text-[10.5px] tabular-nums text-ink-2">updated {fmtTime(weather.fetchedAt)}</span>}
@@ -35,17 +41,9 @@ export default function StormPanel({ data }: { data: GridData }) {
             <WeatherBody weather={weather} data={data} compact />
           </div>
         ) : status === "error" ? (
-          <div className="rounded-lg bg-surface-2 px-3 py-2.5 text-sm text-ink-2">
-            Couldn’t load weather data. {error}{" "}
-            <button type="button" onClick={refresh} className="font-medium text-accent hover:underline">
-              Retry
-            </button>
-          </div>
+          <ErrorState title="Couldn’t load weather data." message={error} onRetry={refresh} />
         ) : (
-          <div className="flex items-center gap-2 py-4 text-sm text-ink-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden />
-            Fetching live weather…
-          </div>
+          <LoadingState label="Fetching live weather…" />
         )}
         <button type="button" onClick={() => toggleWeatherView(true)} className="mt-2 text-[11px] font-medium text-accent hover:underline">
           Open the full weather monitor

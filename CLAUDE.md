@@ -57,7 +57,8 @@ Run a single test file with `npx vitest run src/lib/graph.test.ts` (add `-t "<na
 test name). After ANY ETL or component change, run `npm run typecheck` (strict, `noUnusedLocals`).
 **There is no ESLint/Prettier step** — the quality gates are `npm run typecheck` (strict;
 `noUnusedLocals` + `noUnusedParameters`, so unused imports/params *fail* the build), `npm test`, and the
-Playwright smoke suite `npm run e2e` (`e2e/*.spec.ts`; opens the app with `?e2e`, which exposes the map as
+Playwright smoke suite `npm run e2e` (`e2e/*.spec.ts`, incl. `a11y.spec.ts` — axe-core WCAG 2.2 AA, serious + critical
+fail, per lens + drawer + search + dialogs; opens the app with `?e2e`, which exposes the map as
 `window.__map`; runs as a **non-blocking** CI job in `deploy.yml`). `src/url/hash.test.ts` pins the v1
 deep-link contract — URL v2 must keep decoding every fixture there.
 
@@ -276,7 +277,8 @@ Plan; `lyr` present ⇒ authoritative layer set (wins over the remembered overla
   `cameraSignal` — jumped to on load (instead of the AP fit), eased to on Back. A link's camera wins over flying to
   its `sel`.
 - **v1 links** (`#v=1&…`) decode through `url/hash.ts` (`parseHash`, pinned by `hash.test.ts`) → `fromV1`, then the
-  app rewrites them to v2 in place. Header **Copy link** (`components/CopyLink.tsx`) copies the full view.
+  app rewrites them to v2 in place. Header **Copy link** (`components/CopyLink.tsx` `copyViewLink`) copies the full view
+  and confirms with a toast.
 
 ## Layer catalogue (the Layers drawer, Atlas 2.0 phase 3 PR 9)
 
@@ -573,6 +575,27 @@ engine were retired (see the intro notes).
   uprate capped 1.15 — no wind/solar data). `deratingFactor` / `deratedCapacityMva` / `formatDerating`.
 - **`src/lib/risk.ts`** — single-axis **vulnerability** index `substationRisk()` (coastal band, redundancy
   via feed degree, age, voltage → 0–100 + factor list) + `riskTier()`.
+## Trust & help layer (Atlas 2.0 phase 3 PR 11)
+
+- **Method cards** (`content/methods.ts`, pure: rule · source · vintage · coverage · caveat · glossary terms) for capacity,
+  DLR, age, connectivity, N-1, supply security, coastal band, risk, weather, distribution trace. `trust/Indicative.tsx`
+  `<Indicative method>` = the amber chip that opens the card in a `trust/Popover.tsx` (touch-friendly, portalled, Esc /
+  outside tap close); `<Hint>` = the ⓘ popover for a field's explanation (replaces hover-only `title`). Inspector rows
+  and sections carry `method` / `hint` as data (`FieldRow.method`, `Section.method`); the Summary, Storm panel and MIS
+  KPI tiles (`StatTile method=`) show chips too. **Add a chip to every new derived figure.**
+- **Glossary** (`content/glossary.ts`; `content.test.ts` checks ids + that every method's terms exist) → `trust/Glossary.tsx`
+  dialog (store `glossary`: null closed / "" top / id), opened from the header ⓘ, method cards, ⌘K (Glossary group) or `G`.
+- **Keyboard** (`shell/Shortcuts.tsx`): `?` sheet, `L` layers, `G` glossary, `1–4` lenses (ignored while typing / with a
+  modal open); ⌘K and `/` are the Omnibox's.
+- **One modal** (`components/Dialog.tsx`: portal, focus moved in + trapped, Esc / backdrop close, focus restored) — every
+  dialog uses it. On-demand dialogs are code-split (`shell/Dialogs.tsx`: Summary, Data quality, Weather, Glossary).
+- **One toast system** (`shell/Toaster.tsx`, ui slice `toast({text, tone, action, ttl, key})`): copied link, "network data
+  was updated — Reload", overlay / catalogue load errors, location failures.
+- **Shared states** (`components/states.tsx`): `Spinner`, `LoadingState`, `EmptyState`, `ErrorState` (+ Retry).
+- **Accessibility**: accent `#0f7353` light / `#34c08f` dark with `--color-on-accent` for text on filled accent (AA on every
+  surface); table rows (data table, MIS register) focusable + Enter / Space; horizontal scroll areas focusable; the
+  voltage bar's drill targets ≥ 24 px; the splitter carries `aria-valuenow`.
+
 ## Omnisearch (⌘K, Atlas 2.0 phase 3 PR 10)
 
 ONE search box (`search/Omnibox.tsx`, an ARIA combobox, `id="app-search"`) in the header on desktop (every lens), on

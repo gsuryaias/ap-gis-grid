@@ -5,6 +5,7 @@
 //              Alt-click (or the ◎ button) solos a layer: only it shows; solo it again to restore.
 // The basemap sits in the footer. Desktop: a panel over the map's left edge; phone: full-screen.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { EmptyState } from "../components/states.tsx";
 import { useLiveStatus } from "../data/live-status.ts";
 import { CloseIcon, MoonIcon, SatelliteIcon, SearchIcon, SpotlightIcon, SunIcon } from "../components/icons.tsx";
 import { layerTokens } from "../lenses/registry.ts";
@@ -224,7 +225,7 @@ export function LayerDrawer({ phone = false }: { phone?: boolean }) {
           {active.length ? (
             <ul>{active.map((e) => <ActiveRow key={e.id} e={e} />)}</ul>
           ) : (
-            <p className="px-4 py-6 text-center text-sm text-ink-2">Nothing is switched on. Pick layers under “All layers”.</p>
+            <EmptyState>Nothing is switched on. Pick layers under “All layers”.</EmptyState>
           )}
           <button type="button" onClick={() => setTab("catalogue")} className="mx-3 mb-3 mt-1 text-xs font-medium text-accent hover:underline">
             + Add layers
@@ -266,7 +267,7 @@ export function LayerDrawer({ phone = false }: { phone?: boolean }) {
               </p>
             )}
             {catalogStatus === "error" && <p className="px-3 py-2 text-xs text-red-600 dark:text-red-400">Couldn’t load the reference-layer catalogue.</p>}
-            {!shown.length && <p className="px-4 py-6 text-center text-sm text-ink-2">No layer matches “{q}”.</p>}
+            {!shown.length && <EmptyState>No layer matches “{q}”.</EmptyState>}
             {catalogStatus === "ready" && (
               <p className="px-3 pt-2 text-[10.5px] leading-snug text-ink-2">
                 Boundaries, transport, environment, water and hazards: RTGS (AP Real-Time Governance Society) GIS library, simplified for

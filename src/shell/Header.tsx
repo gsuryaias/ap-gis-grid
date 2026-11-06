@@ -5,6 +5,8 @@ import { LiveStatusBadge } from "../components/LiveStatus.tsx";
 import { Omnibox } from "../search/Omnibox.tsx";
 import type { GridData } from "../data/types.ts";
 import { formatInt } from "../lib/format.ts";
+import { InfoIcon } from "../components/icons.tsx";
+import { useAppStore } from "../state/store.ts";
 import { LensTabs } from "./LensTabs.tsx";
 import { MoreMenu } from "./MoreMenu.tsx";
 
@@ -28,6 +30,22 @@ function Brand({ data, compact }: { data: GridData; compact?: boolean }) {
   );
 }
 
+/** ⓘ — the glossary (what N-1, ckm, radial-SC … mean). */
+function GlossaryButton() {
+  const openGlossary = useAppStore((s) => s.openGlossary);
+  return (
+    <button
+      type="button"
+      onClick={() => openGlossary("")}
+      aria-label="Glossary"
+      title="Glossary (G)"
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-line text-ink-2 hover:bg-surface-2 hover:text-ink"
+    >
+      <InfoIcon width={15} height={15} />
+    </button>
+  );
+}
+
 export function Header({ data, isMobile }: { data: GridData; isMobile: boolean }) {
   if (isMobile)
     return (
@@ -37,6 +55,7 @@ export function Header({ data, isMobile }: { data: GridData; isMobile: boolean }
             <Brand data={data} compact />
           </div>
           <LiveStatusBadge />
+          <GlossaryButton />
           <MoreMenu withCopyLink />
         </div>
         <div className="mt-2">
@@ -55,6 +74,7 @@ export function Header({ data, isMobile }: { data: GridData; isMobile: boolean }
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <LiveStatusBadge />
         <CopyLinkButton />
+        <GlossaryButton />
         <MoreMenu />
       </div>
     </header>

@@ -39,7 +39,7 @@ test("phone: a selection opens the Inspector in the sheet; lens tabs switch lens
 
 test("phone: the Layers drawer opens full-screen from the toolbar and closes", async ({ page }) => {
   await openApp(page);
-  await page.getByRole("button", { name: /^Layers \(/ }).click();
+  await page.getByRole("button", { name: /^Layers \d+ on$/ }).click();
   const drawer = page.getByRole("region", { name: "Layers", exact: true });
   await expect(drawer).toBeVisible();
   const box = (await drawer.boundingBox())!;

@@ -19,7 +19,7 @@ export function SpotConditions({ lng, lat }: { lng: number; lat: number }) {
       row={{
         label: "Weather now",
         value: `${Math.round(spot.tempC)}°C · ${wmoLabel(spot.code)} · wind ${Math.round(spot.windKmh)} km/h ${compass8(spot.windDirDeg)}`,
-        hint: "Live Open-Meteo conditions at this location — indicative",
+        method: "weather",
       }}
     />
   );

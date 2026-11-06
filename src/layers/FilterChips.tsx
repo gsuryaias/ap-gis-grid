@@ -1,5 +1,6 @@
 // The global filter bar: voltage, circle and coast chips. One filter model (`filters` in the store)
 // — the map, the data table and every count read it.
+import { useId } from "react";
 import { VOLTAGES, type GridData, type Voltage } from "../data/types.ts";
 import { sliceActive } from "../data/selectors.ts";
 import { useFilters } from "../state/hooks.ts";
@@ -14,6 +15,7 @@ const COAST: { v: 0 | 1 | 2; label: string }[] = [
 
 export function FilterChips({ data }: { data: GridData }) {
   const { filters, toggleVoltage, setRegionCircle, setCoastalBand, resetFilters } = useFilters();
+  const id = useId();
   const select = (active: boolean) =>
     `${chip} appearance-none pr-6 bg-[length:10px] bg-[right_8px_center] bg-no-repeat outline-none focus-visible:ring-2 focus-visible:ring-accent ${
       active ? "border-accent bg-accent/10 text-ink" : "border-line bg-surface/95 text-ink-2 hover:text-ink"
@@ -40,10 +42,13 @@ export function FilterChips({ data }: { data: GridData }) {
           </button>
         );
       })}
+      <label htmlFor={`${id}-circle`} className="sr-only">
+        Filter by AP-TRANSCO circle
+      </label>
       <select
+        id={`${id}-circle`}
         value={filters.circle ?? ""}
         onChange={(e) => setRegionCircle(e.target.value || null)}
-        aria-label="Filter by AP-TRANSCO circle"
         className={select(!!filters.circle)}
         style={caret}
       >
@@ -54,10 +59,13 @@ export function FilterChips({ data }: { data: GridData }) {
           </option>
         ))}
       </select>
+      <label htmlFor={`${id}-coast`} className="sr-only">
+        Filter by distance to the coastline
+      </label>
       <select
+        id={`${id}-coast`}
         value={filters.coastalBand ?? ""}
         onChange={(e) => setCoastalBand(e.target.value === "" ? null : (Number(e.target.value) as 0 | 1 | 2))}
-        aria-label="Filter by distance to the coastline"
         className={select(filters.coastalBand != null)}
         style={caret}
       >

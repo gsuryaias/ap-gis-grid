@@ -23,7 +23,7 @@ export default function FieldPanel() {
       <StartHere lens="field" />
       <PanelSection title="Near me">
         <div className="flex flex-col gap-1.5">
-          <button type="button" onClick={locate} className={`${bigBtn} border-accent bg-accent text-white hover:opacity-90`}>
+          <button type="button" onClick={locate} className={`${bigBtn} border-accent bg-accent text-on-accent hover:opacity-90`}>
             <TargetIcon width={18} height={18} className="shrink-0" />
             {locating ? "Locating…" : "Substations near me"}
           </button>

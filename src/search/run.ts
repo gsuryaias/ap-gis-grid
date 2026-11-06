@@ -1,5 +1,5 @@
 // What picking an omnisearch hit does (the impure half of `omni.ts`).
-import { copyText } from "../components/CopyLink.tsx";
+import { copyViewLink } from "../components/CopyLink.tsx";
 import { passesSlice } from "../data/selectors.ts";
 import type { GridData } from "../data/types.ts";
 import { primeNetItem } from "../inspector/resources.ts";
@@ -21,7 +21,7 @@ function runAction(id: ActionId, data: GridData): void {
   const s = useAppStore.getState();
   switch (id) {
     case "copy-link":
-      void copyText(window.location.href);
+      copyViewLink();
       return;
     case "base-light":
     case "base-dark":
@@ -55,12 +55,21 @@ function runAction(id: ActionId, data: GridData): void {
     case "about":
       s.toggleAbout(true);
       return;
+    case "glossary":
+      s.openGlossary("");
+      return;
+    case "shortcuts":
+      s.toggleShortcuts(true);
+      return;
     case "near-me":
       // GPS when allowed; otherwise fall back to picking a point on the map.
       if (!("geolocation" in navigator)) return s.toggleNearbyMode(true);
       navigator.geolocation.getCurrentPosition(
         (pos) => useAppStore.getState().setNearbyOrigin({ lng: pos.coords.longitude, lat: pos.coords.latitude, label: "Your location", fly: true }),
-        () => useAppStore.getState().toggleNearbyMode(true),
+        () => {
+          useAppStore.getState().toggleNearbyMode(true);
+          useAppStore.getState().toast({ text: "Couldn’t get your location — tap a point on the map instead." });
+        },
         { enableHighAccuracy: true, timeout: 10000 },
       );
       return;
@@ -101,6 +110,9 @@ export function runTarget(t: OmniTarget, data: GridData): void {
       return;
     case "lens":
       s.setLens(t.id);
+      return;
+    case "glossary":
+      s.openGlossary(t.id);
       return;
   }
 }

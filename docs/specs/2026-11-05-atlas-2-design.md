@@ -10,7 +10,7 @@
 | 0 | Groundwork & hygiene (retire dormant code, e2e safety net, v1 hash contract, docs truth-up, baseline) | done — PR #14 |
 | 1 | Platform core (resource loader, store slices, pure layer specs, sync engine) | done — PR 1 (resource loader + search worker) done, PR #15 · PR 2 (store slices) done, PR #16 · PR 3 (pure layer specs) PR #17 · PR 4 (engine for overlays) PR #18 · PR 5 (engine for everything + one interaction handler; MapPane 586 → 164 lines) PR #19 — **done** |
 | 2 | Inspector adapters + URL v2 | **done** — PR 6 (Inspector adapters + What's here; DetailPanel / Dossier / NetworkTracePanel / popups deleted) PR #20 · PR 7 (URL v2: push/replace history, camera, `lyr=`, Copy link; v1 links rewritten) PR #21 |
-| 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | in progress — PR 8 (lens registry + shell: 4 lenses, header + ⋯ menu, docked lens panel, phone bottom sheet, Plan phone stack; `lyr` relative to lens defaults) PR #22 · PR 9 (layer catalogue drawer, zoom-aware legend, filter chips, solo, opacity) PR #23 · PR 10 (⌘K omnisearch: one combobox over assets, distribution, places, areas → Plan, layers, actions, lenses; SearchBar + MisSearch removed) `feat/atlas2-omnisearch` · PR 11 planned |
+| 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | **done** — PR 8 (lens registry + shell: 4 lenses, header + ⋯ menu, docked lens panel, phone bottom sheet, Plan phone stack; `lyr` relative to lens defaults) PR #22 · PR 9 (layer catalogue drawer, zoom-aware legend, filter chips, solo, opacity) PR #23 · PR 10 (⌘K omnisearch: one combobox over assets, distribution, places, areas → Plan, layers, actions, lenses; SearchBar + MisSearch removed) PR #24 · PR 11 (trust & help: Indicative chips + method cards, glossary, `?` shortcuts, one Dialog with focus trap, one toast system, shared states, axe WCAG 2.2 AA in e2e) PR #25 |
 | 4 | Vector-tile directories, service-worker rework, Field offline pack, ETL split | planned |
 | 5 | Storm / Field / Plan mission depth | planned |
 
@@ -383,6 +383,9 @@ explicit step.
    - *As built (PR 10):* the palette is the header search box itself (focused by ⌘K / `/`), not a separate modal —
      one input, one result list. Glossary entries join ⌘K in PR 11. Plants and the POWERGRID classes are loaded on
      first search focus (≈ 145 KB gz) so they are findable without switching their layers on.
+   - *As built (PR 11):* method cards + glossary are data (`src/content/`); the accent colour was darkened (light) /
+     lightened (dark) with a separate on-accent text colour to pass WCAG AA contrast; axe (serious + critical) gates each
+     lens in e2e. The on-demand dialogs were code-split to keep the shell under the 450 KB gz budget (≈ 441 KB).
 9. **Layer catalogue drawer and active-layers legend.**
    - It replaces `MapLayerPanel`, `layer-controls.tsx` and `OverlaySections.tsx`, and is rendered from the
      registry: groups, search, size, zoom and vintage, solo with Alt-click, and opacity.

@@ -398,3 +398,34 @@ test("⌘K omnisearch: palette when empty, layers / actions / areas by name, key
   await expect(page).toHaveURL(/lens=plan.*mf=circle:Kadapa/);
   await expect(page.getByRole("navigation", { name: "Drill path" }).getByText("Kadapa")).toBeVisible();
 });
+
+test("trust layer: an Indicative chip opens its method card; its glossary link opens the glossary at that term", async ({ page }) => {
+  await openApp(page, "#v=2&sel=s-ss-132kv-chnd");
+  const inspector = page.getByRole("complementary", { name: "Feature details" });
+  await inspector.getByRole("button", { name: /how “Vulnerability screening score” is worked out/ }).click();
+  const card = page.getByRole("dialog", { name: "Vulnerability screening score" });
+  await expect(card.getByText("How it is worked out")).toBeVisible();
+  await card.getByRole("button", { name: "Single-fed substation" }).click();
+  const glossary = page.getByRole("dialog", { name: "Glossary" });
+  await expect(glossary).toBeVisible();
+  await expect(glossary.locator("#gl-single-fed")).toHaveClass(/bg-accent/);
+});
+
+test("one toast system + dialogs trap focus and close on Escape", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await openApp(page);
+  await page.getByRole("button", { name: "Copy link" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Link to this view copied." })).toBeVisible();
+
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("menuitem", { name: /Network summary/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Network summary" });
+  await expect(dialog).toBeVisible();
+  for (let i = 0; i < 25; i++) {
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("button", { name: "More" })).toBeFocused();
+});

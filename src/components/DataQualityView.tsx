@@ -1,6 +1,7 @@
 import type { GridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { CloseIcon } from "./icons.tsx";
+import { Dialog } from "./Dialog.tsx";
 
 function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
@@ -19,17 +20,7 @@ export function DataQualityView({ data }: { data: GridData }) {
   const q = data.quality;
 
   return (
-    <div
-      className="absolute inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => toggle(false)}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Data quality report"
-    >
-      <div
-        className="max-h-full w-[640px] max-w-full overflow-auto rounded-[var(--radius-panel)] border border-line bg-surface p-5 shadow-[var(--shadow-panel)]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog label="Data quality report" onClose={() => toggle(false)} className="max-h-full w-[640px] max-w-full overflow-auto rounded-[var(--radius-panel)] border border-line bg-surface p-5 shadow-[var(--shadow-panel)]">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold text-ink">Data quality & coverage</h2>
@@ -95,7 +86,6 @@ export function DataQualityView({ data }: { data: GridData }) {
             </ul>
           </details>
         )}
-      </div>
-    </div>
+    </Dialog>
   );
 }

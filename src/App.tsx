@@ -11,41 +11,32 @@ import { LENS_LAYER_PRESETS } from "./map/layer-presets.ts";
 import { LENS_BY_ID } from "./lenses/registry.ts";
 import { PanelLoading, PlanWorkspace } from "./lenses/panels.tsx";
 import { Header } from "./shell/Header.tsx";
-import { About } from "./shell/MoreMenu.tsx";
+import { About } from "./shell/About.tsx";
+import { OnDemandDialogs } from "./shell/Dialogs.tsx";
+import { ShortcutsSheet, useGlobalShortcuts } from "./shell/Shortcuts.tsx";
 import { LensSidePanel, MapLensOverlays, MapLensPhone } from "./shell/MapLensChrome.tsx";
 import { DEFAULT_MAP_PANE, MapResizeHandle, MIN_MAP_PANE, PaneSplitter, PlanHeader, useMapPaneWidth } from "./shell/PlanChrome.tsx";
 import { LayerDrawer } from "./layers/LayerDrawer.tsx";
 import { LayersButton } from "./shell/MapToolbar.tsx";
 import { useInspectorSync } from "./inspector/useInspected.ts";
 import { DataTableSheet } from "./components/DataTableSheet.tsx";
-import { DataQualityView } from "./components/DataQualityView.tsx";
-import { SummaryView } from "./components/SummaryView.tsx";
-import { WeatherView } from "./components/WeatherView.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
-import { NewDataToast } from "./components/LiveStatus.tsx";
+import { ErrorState, LoadingState } from "./components/states.tsx";
+import { Toaster } from "./shell/Toaster.tsx";
 import { useOverlayStore } from "./overlays/store.ts";
 
 function Loading() {
   return (
-    <div className="grid h-full place-items-center bg-surface-2">
-      <div className="flex flex-col items-center gap-3 text-ink-2">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
-        <p className="text-sm">Loading the AP-TRANSCO network…</p>
-      </div>
+    <div className="h-full bg-surface-2">
+      <LoadingState label="Loading the AP-TRANSCO network…" block />
     </div>
   );
 }
 
 function ErrorScreen({ message }: { message: string }) {
   return (
-    <div className="grid h-full place-items-center bg-surface-2 p-6">
-      <div className="max-w-md rounded-[var(--radius-panel)] border border-line bg-surface p-6 text-center shadow-[var(--shadow-panel)]">
-        <h1 className="text-lg font-semibold text-ink">Couldn't load the map data</h1>
-        <p className="mt-2 text-sm text-ink-2">{message}</p>
-        <button onClick={() => window.location.reload()} className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-          Retry
-        </button>
-      </div>
+    <div className="h-full bg-surface-2">
+      <ErrorState title="Couldn’t load the map data" message={message} onRetry={() => window.location.reload()} block />
     </div>
   );
 }
@@ -64,6 +55,7 @@ export function App() {
 
   useUrlSync();
   useInspectorSync();
+  useGlobalShortcuts();
 
   useEffect(() => {
     void init();
@@ -121,7 +113,7 @@ export function App() {
             {!split && (isMobile ? <MapLensPhone lens={lens} data={data} /> : <MapLensOverlays data={data} />)}
           </div>
 
-          {split && !mapHidden && !isMobile ? <PaneSplitter onDrag={pane.onDrag} onReset={pane.onReset} onNudge={pane.onNudge} /> : null}
+          {split && !mapHidden && !isMobile ? <PaneSplitter onDrag={pane.onDrag} onReset={pane.onReset} onNudge={pane.onNudge} value={pane.width} /> : null}
 
           {split ? (
             <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-surface-2">
@@ -136,11 +128,10 @@ export function App() {
         </div>
 
         {!split && <DataTableSheet data={data} />}
-        <SummaryView data={data} />
-        <DataQualityView data={data} />
-        <WeatherView data={data} />
+        <OnDemandDialogs data={data} />
         <About data={data} />
-        <NewDataToast />
+        <ShortcutsSheet />
+        <Toaster />
       </div>
     </ErrorBoundary>
   );

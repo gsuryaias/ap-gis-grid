@@ -27,6 +27,7 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.1.7",
     "@tmcw/togeojson": "^7.1.2",

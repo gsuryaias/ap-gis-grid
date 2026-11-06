@@ -43,7 +43,7 @@ export function StartHere({ lens }: { lens: LensId }) {
 }
 
 /** A titled block inside a lens panel. */
-export function PanelSection({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+export function PanelSection({ title, action, children }: { title: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="border-t border-line pt-2.5">
       <div className="mb-1.5 flex items-center gap-2">

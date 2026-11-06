@@ -29,7 +29,7 @@ export function hasLayer(page: Page, id: string) {
 /** Open the Layers drawer (if it isn't) and return it. */
 export async function openLayers(page: Page) {
   const drawer = page.getByRole("region", { name: "Layers", exact: true });
-  if (!(await drawer.isVisible())) await page.getByRole("button", { name: /^Layers \(/ }).click();
+  if (!(await drawer.isVisible())) await page.getByRole("button", { name: /^Layers \d+ on$/ }).click();
   await expect(drawer).toBeVisible();
   return drawer;
 }

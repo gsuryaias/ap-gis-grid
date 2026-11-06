@@ -205,7 +205,7 @@ export function Breakdown({
       subtitle="Click a name to drill into it (the page, register and map follow) · click any number to list the assets behind it."
       actions={<SmallButton onClick={exportCsv}>CSV</SmallButton>}
     >
-      <div className="overflow-x-auto">
+      <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-y border-line bg-surface-2/70 text-left text-[11px] text-ink-2">
@@ -303,6 +303,19 @@ function Th({
 
 type RegKind = "ss" | "lines";
 
+/** Keyboard access for a clickable table row: focusable, Enter / Space activates it. */
+function rowKeys(run: () => void) {
+  return {
+    tabIndex: 0,
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        run();
+      }
+    },
+  };
+}
+
 export function Register({ model, scope, label }: { model: MisModel; scope: Scope; label: string }) {
   const [kind, setKind] = useState<RegKind>("ss");
   const [q, setQ] = useState("");
@@ -388,7 +401,7 @@ export function Register({ model, scope, label }: { model: MisModel; scope: Scop
           aria-label="Filter register"
         />
       </div>
-      <div className="overflow-x-auto" onMouseLeave={() => setHover(null)}>
+      <div tabIndex={0} className="overflow-x-auto" onMouseLeave={() => setHover(null)}>
         {kind === "ss" ? (
           <table className="w-full border-collapse text-xs">
             <thead>
@@ -404,7 +417,7 @@ export function Register({ model, scope, label }: { model: MisModel; scope: Scop
             </thead>
             <tbody>
               {ssPager.pageItems.map((r) => (
-                <tr key={r.id} className={rowCls(r.id)} onClick={() => pick(r.id)} onMouseEnter={() => setHover(r.id)}>
+                <tr key={r.id} className={rowCls(r.id)} onClick={() => pick(r.id)} onMouseEnter={() => setHover(r.id)} {...rowKeys(() => pick(r.id))}>
                   <td className="py-1.5 pl-4 pr-2">
                     <span className="flex items-center gap-1.5">
                       <VoltageBadge voltage={r.voltage} small />
@@ -438,7 +451,7 @@ export function Register({ model, scope, label }: { model: MisModel; scope: Scop
             </thead>
             <tbody>
               {linePager.pageItems.map((r) => (
-                <tr key={r.id} className={rowCls(r.id)} onClick={() => pick(r.id)} onMouseEnter={() => setHover(r.id)}>
+                <tr key={r.id} className={rowCls(r.id)} onClick={() => pick(r.id)} onMouseEnter={() => setHover(r.id)} {...rowKeys(() => pick(r.id))}>
                   <td className="max-w-[320px] py-1.5 pl-4 pr-2">
                     <span className="flex items-center gap-1.5">
                       <VoltageBadge voltage={r.voltage} small />

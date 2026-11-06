@@ -15,6 +15,7 @@ import {
   TargetIcon,
   TowerIcon,
 } from "../components/icons.tsx";
+import { Spinner } from "../components/states.tsx";
 import { VoltageBadge } from "../components/VoltageBadge.tsx";
 import { downloadText } from "../lib/export.ts";
 import { useAppStore } from "../state/store.ts";
@@ -176,9 +177,7 @@ export function Inspector({ variant = "panel", extend }: InspectorProps) {
     return (
       <Shell variant={variant} label="Feature details">
         <div className="flex items-center gap-2 px-4 py-3 text-sm text-ink-2">
-          {status === "loading" ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden />
-          ) : null}
+          {status === "loading" ? <Spinner size="md" /> : null}
           <span className="flex-1">
             {status === "loading" ? "Loading…" : status === "error" ? "Couldn't load this feature's data." : "This feature is not in the current data."}
           </span>

@@ -6,7 +6,9 @@ import { formatMva, totalIndicativeCapacity } from "../lib/capacity.ts";
 import { COASTAL_BAND_LABEL, riskTier, substationRisk, type CoastalBand } from "../lib/risk.ts";
 import { useAppStore } from "../state/store.ts";
 import { VOLTAGE_COLOR } from "../theme/palette.ts";
+import { Indicative } from "../trust/Indicative.tsx";
 import { ChevronDown, CloseIcon, TargetIcon } from "./icons.tsx";
+import { Dialog } from "./Dialog.tsx";
 
 type GroupBy = "voltage" | "circle";
 
@@ -116,17 +118,7 @@ export function SummaryView({ data }: { data: GridData }) {
   const groups = groupBy === "voltage" ? voltageGroups : circleGroups;
 
   return (
-    <div
-      className="absolute inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => toggle(false)}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Network summary"
-    >
-      <div
-        className="flex max-h-full w-[720px] max-w-full flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface shadow-[var(--shadow-panel)]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog label="Network summary" onClose={() => toggle(false)} className="flex max-h-full w-[720px] max-w-full flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface shadow-[var(--shadow-panel)]">
         <header className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <div>
             <h2 className="text-lg font-semibold text-ink">Network summary</h2>
@@ -147,6 +139,7 @@ export function SummaryView({ data }: { data: GridData }) {
           <span className="font-semibold text-ink">{formatMva(capacity.totalMva)}</span> indicative
           thermal capacity, derived from conductor type ({formatInt(capacity.rated)}/
           {formatInt(capacity.total)} lines rated). Not a load-flow result.
+          <Indicative method="capacity" />
         </p>
 
         <div className="flex items-center justify-between px-5 pb-2">
@@ -211,7 +204,9 @@ export function SummaryView({ data }: { data: GridData }) {
           })}
 
           <div className="mt-4 px-2">
-            <h3 className="text-base font-semibold text-ink">Resilience (inferred)</h3>
+            <h3 className="text-base font-semibold text-ink">
+              Resilience <Indicative method="n1" label="Inferred" />
+            </h3>
             <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <Kpi label="Single-fed SS" value={formatInt(ga.singleFedIds.size)} />
               <Kpi label="Double-fed SS" value={formatInt(doubleFed)} />
@@ -249,7 +244,9 @@ export function SummaryView({ data }: { data: GridData }) {
           </div>
 
           <div className="mt-4 px-2">
-            <h3 className="text-base font-semibold text-ink">Coastal exposure (indicative)</h3>
+            <h3 className="text-base font-semibold text-ink">
+              Coastal exposure <Indicative method="coastal" />
+            </h3>
             <div className="mt-2 overflow-hidden rounded-xl border border-line">
               <table className="w-full text-sm tabular-nums">
                 <thead>
@@ -283,7 +280,6 @@ export function SummaryView({ data }: { data: GridData }) {
             </p>
           </div>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
