@@ -21,7 +21,6 @@ import { drillRecords, METRICS, recordsFocus, scopeInterfaces, type DrillSpec } 
 import { DrillPanel } from "./DrillPanel.tsx";
 import { misInspector } from "./inspector-ext.tsx";
 import { Inspector } from "../../inspector/Inspector.tsx";
-import { MisSearch } from "./MisSearch.tsx";
 import {
   applyScope,
   bboxOf,
@@ -75,7 +74,6 @@ export default function MisWorkspace() {
   const ctx = useAppStore((s) => s.workspaceContext);
   const setCtx = useAppStore((s) => s.setWorkspaceContext);
   const selectedId = useAppStore((s) => s.selectedId);
-  const select = useAppStore((s) => s.select);
   const basemap = useAppStore((s) => s.basemap);
   const live = useLiveStatus();
 
@@ -251,7 +249,6 @@ export default function MisWorkspace() {
   useEffect(() => {
     if (selectedId) dossierRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [selectedId]);
-  const openAsset = useCallback((id: string) => select(id, { fly: true }), [select]);
 
   const chipFocus = mapFocus;
   const clearChip = () => (focus ? setFocus(null) : setDd((d) => d && { ...d, map: false }));
@@ -262,7 +259,6 @@ export default function MisWorkspace() {
       {/* Scope bar — slicer + drill path + map theme. Sticky so the context never scrolls away. */}
       <div className="sticky top-0 z-20 border-b border-line bg-surface/95 px-4 py-2 backdrop-blur">
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
-          <MisSearch model={model} conn={conn} onDrill={drill} onPick={openAsset} />
           <span className="ml-auto flex items-center gap-2">
             <span className="hidden text-[11px] text-ink-2 sm:inline">Map theme</span>
             <Segmented

@@ -14,9 +14,8 @@ interface Item {
   run: () => void;
 }
 
-export function MoreMenu({ data, withCopyLink = false }: { data: GridData; withCopyLink?: boolean }) {
+export function MoreMenu({ withCopyLink = false }: { withCopyLink?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [about, setAbout] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -33,7 +32,7 @@ export function MoreMenu({ data, withCopyLink = false }: { data: GridData; withC
     ...(withCopyLink
       ? [{ label: "Copy link to this view", run: () => void copyText(window.location.href).then((ok) => setNote(ok ? "Link copied" : "Copy failed")) }]
       : []),
-    { label: "About & sources", run: () => setAbout(true) },
+    { label: "About & sources", run: () => s().toggleAbout(true) },
   ];
 
   const close = (focusButton = true) => {
@@ -118,9 +117,15 @@ export function MoreMenu({ data, withCopyLink = false }: { data: GridData; withC
           ))}
         </div>
       )}
-      {about && createPortal(<AboutDialog data={data} onClose={() => setAbout(false)} />, document.body)}
     </div>
   );
+}
+
+/** About & sources — opened from the ⋯ menu or ⌘K (store `aboutOpen`). */
+export function About({ data }: { data: GridData }) {
+  const open = useAppStore((s) => s.aboutOpen);
+  const toggle = useAppStore((s) => s.toggleAbout);
+  return open ? createPortal(<AboutDialog data={data} onClose={() => toggle(false)} />, document.body) : null;
 }
 
 function AboutDialog({ data, onClose }: { data: GridData; onClose: () => void }) {

@@ -12,11 +12,11 @@ test("loads the network and draws the grid", async ({ page }) => {
 
 test("search → select a substation → detail + deep link", async ({ page }) => {
   await openApp(page);
-  const search = page.getByRole("textbox", { name: /Search substations/ });
+  const search = page.getByRole("combobox", { name: /Search substations/ });
   await search.fill("Vijayawada");
   const firstHit = page.getByRole("listbox").getByRole("option").first();
   await expect(firstHit).toBeVisible();
-  await firstHit.getByRole("button").click();
+  await firstHit.click();
   await expect(page).toHaveURL(/sel=/);
 });
 
@@ -27,7 +27,7 @@ test("places + transformer search answer from the search worker, each file fetch
     if (m) data.push(m[1]);
   });
   await openApp(page);
-  const search = page.getByRole("textbox", { name: /Search substations/ });
+  const search = page.getByRole("combobox", { name: /Search substations/ });
   await search.click();
   await search.fill("Tirupati");
   const list = page.getByRole("listbox");
@@ -39,7 +39,7 @@ test("places + transformer search answer from the search worker, each file fetch
   await search.fill("034400109033");
   const dtr = list.getByRole("option").filter({ hasText: "034400109033" });
   await expect(dtr).toBeVisible();
-  await dtr.getByRole("button").click();
+  await dtr.click();
   await expect(page.getByRole("heading", { name: "034400109033" })).toBeVisible();
 
   const counts = data.reduce<Record<string, number>>((a, f) => ((a[f] = (a[f] ?? 0) + 1), a), {});
@@ -294,9 +294,9 @@ test("v1 deep link opens the Network MIS (the Plan lens)", async ({ page }) => {
 test("browser Back / Forward step through selections without leaving the app (URL v2)", async ({ page }) => {
   await openApp(page);
   await expect(page).toHaveURL(/#@[\d.]+,[\d.]+,[\d.]+z&v=2/); // the camera is in the URL
-  const search = page.getByRole("textbox", { name: /Search substations/ });
+  const search = page.getByRole("combobox", { name: /Search substations/ });
   await search.fill("Vijayawada");
-  await page.getByRole("listbox").getByRole("option").first().getByRole("button").click();
+  await page.getByRole("listbox").getByRole("option").first().click();
   await expect(page).toHaveURL(/sel=s-/);
   const inspector = page.getByRole("complementary", { name: "Feature details" });
   await expect(inspector).toBeVisible();
@@ -368,4 +368,33 @@ test("filter chips drive the shared filter (map + URL)", async ({ page }) => {
   await expect(page).toHaveURL(/circle=Kadapa/);
   await page.getByRole("group", { name: "Filters" }).getByRole("button", { name: "Clear" }).click();
   await expect(page).not.toHaveURL(/volt=|circle=/);
+});
+
+test("⌘K omnisearch: palette when empty, layers / actions / areas by name, keyboard pick", async ({ page }) => {
+  await openApp(page);
+  await page.keyboard.press("ControlOrMeta+k");
+  const box = page.getByRole("combobox", { name: /Search substations/ });
+  await expect(box).toBeFocused();
+  const list = page.getByRole("listbox", { name: "Search results" });
+  // Empty → the command palette: actions and the other lenses.
+  await expect(list.getByRole("group", { name: "Lenses" }).getByRole("option", { name: /Storm lens/ })).toBeVisible();
+
+  // A layer by name, picked with the keyboard: it switches on.
+  await box.fill("towers");
+  await expect(list.getByRole("group").first()).toHaveAttribute("aria-label", "Layers");
+  await box.press("Enter");
+  await expect(page).toHaveURL(/lyr=towers-400kv/);
+
+  // An action.
+  await box.focus();
+  await box.fill("dark basemap");
+  await list.getByRole("option", { name: /Dark basemap/ }).click();
+  await expect(page).toHaveURL(/base=dark/);
+
+  // An area drills into Plan.
+  await box.focus();
+  await box.fill("kadapa");
+  await list.getByRole("group", { name: "Areas" }).getByRole("option").first().click();
+  await expect(page).toHaveURL(/lens=plan.*mf=circle:Kadapa/);
+  await expect(page.getByRole("navigation", { name: "Drill path" }).getByText("Kadapa")).toBeVisible();
 });
