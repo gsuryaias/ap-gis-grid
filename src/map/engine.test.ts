@@ -6,7 +6,7 @@ import { DISCOM_DEFS, refDef, TOWER_DEFS, type OverlayDef } from "../overlays/ca
 import { freshFilters } from "../state/slices/filters.ts";
 import type { AppState } from "../state/types.ts";
 import { attachEngine, SENTINEL } from "./engine.ts";
-import { ATLAS_LAYERS } from "./layer-presets.ts";
+import { LENS_LAYER_PRESETS } from "./layer-presets.ts";
 import { LAYER, SRC } from "./layers.ts";
 import { MIS_LAYER, type MisMapState } from "./mis-layers.ts";
 import { mapRegistry, type MapState } from "./registry/core.ts";
@@ -53,7 +53,7 @@ function setup(opts: { enabled?: string[]; loaded?: string[] } = {}) {
     selectedId: null,
     hoverId: null,
     spotlight: false,
-    workspace: "atlas",
+    lens: "explore",
     workspaceContext: { misMap: null },
     layers: {
       defs,
@@ -65,7 +65,7 @@ function setup(opts: { enabled?: string[]; loaded?: string[] } = {}) {
   const ctl = {
     map,
     loaded: new Set(opts.loaded ?? Object.keys(defs)),
-    state: { app, data: DATA, gen: undefined, pg: undefined, wx: undefined, preset: ATLAS_LAYERS } as MapState,
+    state: { app, data: DATA, gen: undefined, pg: undefined, wx: undefined, preset: LENS_LAYER_PRESETS.explore } as MapState,
     reloads: 0,
   };
   const engine = attachEngine(map.api, {
@@ -209,11 +209,11 @@ describe("map engine", () => {
     const misMap: MisMapState = {
       theme: "age", lineClass: { "l-1": 2 }, ssClass: {}, ssValue: {}, scopeSsIds: null, scopeLineIds: ["l-1"],
     };
-    setApp({ workspace: "mis", workspaceContext: { misMap } });
+    setApp({ lens: "plan", workspaceContext: { misMap } });
     engine.reconcile();
     expect(map.state(SRC.lines, "l-1")).toEqual({ misC: 2 });
     expect(map.getLayoutProperty(MIS_LAYER.lines, "visibility")).toBe("visible");
-    setApp({ workspace: "atlas" });
+    setApp({ lens: "explore" });
     engine.reconcile();
     expect(map.state(SRC.lines, "l-1")).toEqual({});
     expect(map.getLayoutProperty(MIS_LAYER.lines, "visibility")).toBe("none");

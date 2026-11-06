@@ -283,10 +283,11 @@ test("data table and map share one filter model", async ({ page }) => {
   await expect.poll(async () => Number((await ssTab.innerText()).replace(/\D/g, ""))).toBe(before);
 });
 
-test("v1 deep link opens the Network MIS", async ({ page }) => {
+test("v1 deep link opens the Network MIS (the Plan lens)", async ({ page }) => {
   await page.goto("./?e2e#v=1&w=mis");
-  const misTab = page.getByRole("navigation", { name: "Workspace" }).getByRole("button", { name: /MIS/ });
-  await expect(misTab).toHaveAttribute("aria-current", "page");
+  const planTab = page.getByRole("navigation", { name: "Lens" }).getByRole("button", { name: /Plan/ });
+  await expect(planTab).toHaveAttribute("aria-current", "page");
+  await expect(page).toHaveURL(/lens=plan/);
   await expect(page.getByText(/Radial feeds/).first()).toBeVisible();
 });
 

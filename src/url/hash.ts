@@ -2,7 +2,6 @@
 // (`url/v2.ts`); this stays as `decodeV1` so every v1 link already shared keeps opening (the app
 // then rewrites it to v2). `serializeHash` is kept only for the v1 contract tests.
 import { CIRCUITS, VOLTAGES, type Circuit, type Voltage } from "../data/types.ts";
-import { isWorkspaceId, type WorkspaceId } from "../workspaces/registry.ts";
 import { defaultMapLayout, type MapLayout } from "./layout.ts";
 
 const VERSION = 1;
@@ -10,9 +9,12 @@ const VERSION = 1;
 export type { MapLayout } from "./layout.ts";
 export { defaultMapLayout } from "./layout.ts";
 
+/** v1's workspace ids (`w=`): the Atlas (now the Explore lens) and the Network MIS (now Plan). */
+export type V1Workspace = "atlas" | "mis";
+
 export interface HashState {
   /** Active workspace (`w` key; absent or unknown = atlas). */
-  workspace: WorkspaceId;
+  workspace: V1Workspace;
   selectedId: string | null;
   basemap: "light" | "dark" | "satellite";
   voltages: Voltage[];
@@ -96,7 +98,7 @@ export function parseHash(hash: string): Partial<HashState> {
 
   // Absent or unknown `w` resolves to the Atlas, so every pre-shell deep link keeps working.
   const w = p.get("w");
-  out.workspace = isWorkspaceId(w) ? w : "atlas";
+  out.workspace = w === "mis" ? "mis" : "atlas";
 
   const sel = p.get("sel");
   if (sel) out.selectedId = sel;

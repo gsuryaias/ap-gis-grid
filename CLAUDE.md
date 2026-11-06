@@ -12,9 +12,9 @@ no API keys. Source data is ESRI shapefiles (core transmission SS + lines, and t
 plus a Google-Earth KML (generation plants) and a GeoNames AP place extract (search-box gazetteer);
 a build-time ETL turns it into clean static assets the browser loads. Deploys to GitHub Pages (project site, base `/ap-gis-grid/`).
 
-The reference map is the **Atlas** workspace. On top of it sits a **decision-support (DSS) shell** with
-one more workspace — **Network MIS** — a lazy-loaded chunk sharing one embedded map. Everything the app
-renders is pure static assets, so there is no backend at request time.
+The app is **one map with four task lenses** — **Explore** (the reference map, default), **Field** (O&M on
+site), **Plan** (the **Network MIS**, a lazy chunk beside an embedded map) and **Storm** (control room). See
+"Lenses (the shell)". Everything the app renders is pure static assets, so there is no backend at request time.
 
 > **Atlas 2.0 revamp in progress (2026-11):** an approved, phased re-architecture — four task *lenses*
 > (Explore · Field · Plan · Storm) over one map, a single layer registry + sync engine, one resource
@@ -30,8 +30,8 @@ renders is pure static assets, so there is no backend at request time.
 > `data` branch (old parquet) is untouched and unused. Don't revive these without an explicit ask.
 
 > **Risk Room removed, Network MIS added (2026-11):** the Risk Room workspace was replaced by the
-> **Network MIS** (`workspaces/mis/`), preserved on the local `archive/risk-room` branch. `WorkspaceId`
-> is `atlas | mis`. `lib/risk.ts` stays (the Inspector, SummaryView, WeatherView use it).
+> **Network MIS** (`workspaces/mis/`, now the Plan lens), preserved on the local `archive/risk-room` branch.
+> `lib/risk.ts` stays (the Inspector, SummaryView, WeatherView use it).
 
 > **Removed workspaces (2026-06):** the Planning Studio and the old parquet MIS live on the
 > `archive/planning-studio` / `archive/mis-workspace` branches.
@@ -76,10 +76,10 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 |-------|------|-------|
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
-| State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices" and "URL v2"; selection history (`back()`), workspace + workspaceContext |
-| Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in Atlas, embedded/hidden in MIS; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
-| Shell / UI | `src/App.tsx` + `src/components/` | workspace switcher + map/panel layout; `BrandHeader`, `WorkspaceChrome`, `MapLayerPanel`, SearchBar, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
-| Workspaces | `src/workspaces/<id>/` + `registry.ts` | `atlas` (inline) / `mis` (Network MIS, lazy chunk). See "Workspaces (DSS shell)" |
+| State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices" and "URL v2"; selection history (`back()`), lens + workspaceContext |
+| Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in the map lenses, embedded/hidden in Plan; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
+| Shell / UI | `src/App.tsx` + `src/shell/` + `src/components/` | see "Lenses (the shell)": `Header`, `LensTabs`, `MoreMenu`, `BottomSheet`, `MapLensChrome`, `PlanChrome`; components `MapLayerPanel`, SearchBar, DataTableSheet, Summary/DataQuality/Weather views, ControlPanel, Measure/Nearby controls |
+| Lenses | `src/lenses/` (`registry.ts` pure, `panels.tsx`, per-lens panels) + `src/workspaces/mis/` (the Plan lens body) | See "Lenses (the shell)" |
 | Analytics libs | `src/lib/` | pure, unit-tested: `geo.ts`, `capacity.ts`, `dlr.ts`, `graph.ts`, `supply-security.ts`, `risk.ts`, `weather.ts`, `format.ts`, `export.ts` |
 | Theme | `src/theme/palette.ts` + `src/index.css` | voltage palette (Okabe-Ito, CVD-safe) as both JS + CSS tokens |
 
@@ -264,7 +264,8 @@ rewrite `catalog.json`).
 
 Everything has a URL, and browser Back / Forward work inside the app. `url/v2.ts` (pure, `v2.test.ts`):
 `#@lng,lat,zoomz&v=2&lens=plan&sel=<ref>&lyr=gen,pg,wx,discom-lines,ref:districts,-ss&volt=…&circ=…&circle=…&coast=…&base=…&tbl=1&map=…&by=…&mf=…&tab=…&th=…`
-— defaults omitted; `lens` = explore (Atlas) | plan (MIS) (field/storm decode to explore until phase 3); MIS keys only in
+— defaults omitted; `lens` = explore | field | plan (MIS) | storm; `lyr` lists only what differs from the **lens defaults**
+(`-token` = a default switched off, e.g. `lyr=-wx` in Storm); entering a lens without `lyr` brings its defaults; MIS keys only in
 Plan; `lyr` present ⇒ authoritative layer set (wins over the remembered overlays), absent ⇒ layers untouched.
 - **History** (`historyMode`): selection, lens, circle and MIS drill (`mf`/`by`/`tab`) **push**; everything else
   (filters, layers, basemap, camera, theme) **replaces**, debounced 300 ms (`url/useUrlSync.ts`). Only `URL_INPUTS`
@@ -459,7 +460,7 @@ deps, no backend.
   export the *currently-shown* rows of the active tab (respecting the text filter); the Inspector has a
   per-feature **GeoJSON** download (substation Point / line geometry from `linesFc`). `downloadText()`
   is the only impure helper (Blob + anchor; no-op outside a browser, so the builders stay testable).
-- **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The `ControlPanel`
+- **Regional slice by circle** — `filters.circle: string | null` (in `FilterState`). The layer panel's
   **Region → Circle** `<select>` (13 canonical circles from `meta.circles`) filters the **core** lines +
   substations (`gridSpec` ANDs `["==",["get","circle"],…]`) and `fitToCircle` (`useMapCamera`) zooms to the
   circle's SS bounds (back to `meta.bounds` when cleared). Deep-linkable: URL key **`circle`** (changing it pushes a history entry).
@@ -554,23 +555,33 @@ engine were retired (see the intro notes).
   uprate capped 1.15 — no wind/solar data). `deratingFactor` / `deratedCapacityMva` / `formatDerating`.
 - **`src/lib/risk.ts`** — single-axis **vulnerability** index `substationRisk()` (coastal band, redundancy
   via feed degree, age, voltage → 0–100 + factor list) + `riskTier()`.
-## Workspaces (DSS shell)
+## Lenses (the shell, Atlas 2.0 phase 3)
 
-The app is a **multi-workspace shell** (`src/App.tsx` + `src/workspaces/registry.ts`). `WorkspaceId` =
-`atlas | mis` (Planning Studio, the old MIS and Risk Room were removed — see the intro notes). Adding a
-workspace = one folder under `src/workspaces/<id>/` + one entry in `registry.ts` (the shell handles switcher
-+ routing); the shell is workspace-agnostic, so a registry entry is all it takes to add/remove a tab.
-
-- **Code-split**: `atlas` is the inline default (never split out); `mis` declares a
-  `load: () => import(...)` and mounts lazily in a `<Suspense>` boundary.
-- **Map embedding**: `MapPane` renders the shared map in `full` (Atlas), `embedded` (split layout) or
-  `hidden` (collapsed) modes; the collapse is `mapLayout` (`open|collapsed|atlas-only`). The split is
-  **drag-resizable** — `App`'s `PaneSplitter` sets the map-column width (persisted to localStorage under
-  `dss-map-pane-w`, clamped to `[320, innerWidth−380]`), and a `ResizeObserver` (`useMapResize`) redraws the
-  canvas on any container size change. `WORKSPACE_LAYER_PRESETS[ws]` (in `map/layer-presets.ts`) declares
-  which overlay groups the embedded map may mount (no auto-toggling — visibility stays user-controlled
-  via `MapLayerPanel`). An analysis workspace that needs overlay DATA without showing the layer calls
-  `useResource(generationRes)` / `useResource(powerGridRes)`.
+`LensId` = `explore | field | plan | storm` (store `lens`, `setLens`; URL `lens=`). **`src/lenses/registry.ts`** is
+pure data (unit-tested in `registry.test.ts`): id, label, audience, `layout` (`map` | `split`), `defaults`
+(layers switched on beyond the core grid: Field = 33 kV lines + SS + the three tower layers; Storm = wx + RTGS
+`crz-boundary` + `cyclone-shelters`; 11 kV joins Field once tiled), `panelWidth`, `startHere` tips — plus the layer
+token helpers (`switchLensLayers`, `encodeLayerDiff` / `decodeLayerDiff`, `lensOnlyOverlays`). A lens is a **preset,
+never a filter**: switching keeps the selection and filters, turns the old lens's own defaults off and the new
+one's on, and keeps anything switched on by hand (`state/layer-on.ts` maps the `filters.show*` + `layers.enabled`
+switches to one `LayerOn`). Lens presets are not persisted as the viewer's overlay choice (`partializeLayers`).
+- **Shell** (`App.tsx` + `src/shell/`): `Header` (brand · `LensTabs` · SearchBar in map lenses · Live badge · Copy link
+  · `MoreMenu` — an ARIA menu with Network summary, Weather monitor, Data table, Data quality, About & sources).
+  Map lenses: desktop docks the lens panel left of the map (`LensSidePanel`, collapsible, `apgg-lens-panel`) with map
+  tools / Inspector / table pill floating over the map (`MapLensOverlays`); phone = search + tools on top and ONE
+  `BottomSheet` (peek / half / full, pointer drag + snap, handle is a button) holding the Inspector (`variant="sheet"`),
+  the nearby list or the lens panel. `map-helpers.framing` frames flights above the half-open sheet on phones.
+- **Panels** (`lenses/panels.tsx`): Explore (`ExplorePanel` — Start here, network at a glance, layers + legend) and
+  Field (`FieldPanel` — near me, trace via search, layers) are inline; Storm (`StormPanel`, the Weather monitor body
+  in compact form — the full situation panel is phase 5) and Plan (`workspaces/mis/MisWorkspace.tsx`) are lazy.
+  `StartHere` cards are dismissible per lens (`apgg-start-<lens>`).
+- **Plan / map embedding**: `MapPane` renders the shared map in `full` (map lenses), `embedded` (split) or `hidden`
+  (collapsed) modes; the collapse is `mapLayout` (`open|collapsed|atlas-only`). The map column keeps its place in
+  App's tree, so the map is never re-created across lens switches. Desktop split is **drag-resizable**
+  (`shell/PlanChrome.tsx` `PaneSplitter` + `useMapPaneWidth`, localStorage `dss-map-pane-w`, clamped to
+  `[320, innerWidth−380]`); on a phone the map stacks above the MIS (42 dvh). `LENS_LAYER_PRESETS` (in
+  `map/layer-presets.ts`) declares which overlay groups a lens's map may mount (all, today). An analysis view that needs
+  overlay DATA without showing the layer calls `useResource(generationRes)` / `useResource(powerGridRes)`.
 - **`workspaceContext`** (store) carries cross-workspace focus. URL-synced (only in the Plan lens, `lens=plan`): `misBy`
   (`by=`, default circle), `misFilters` (`mf=`, the drill path `dim:value~dim:value`), `misTab` (`tab=`),
   `misTheme` (`th=`; v1 `theme=`). Transient, never in the URL: `misMap` (thematic classes + scope ids for the map) and
@@ -691,7 +702,7 @@ left in the repo but is **no longer a source** (generation still uses `generatio
   `@custom-variant dark` in `index.css`), latest **@tanstack/react-table v8**.
 - **Tailwind v4 toggle switches**: don't position a thumb with arbitrary `translate-x-[…]` — v4 maps
   it to the `translate` CSS prop and it collided with `left`. Use an inline `style={{transform}}`
-  (see `ControlPanel.tsx` `Switch`).
+  (see `layer-controls.tsx` `Switch`).
 - **Basemaps**: light/dark are CARTO vector style URLs; **satellite is an inline raster style object**
   (Esri World Imagery) that must include a `glyphs` URL (we reuse CARTO's) or the substation label
   symbol layer fails. Label font is `Open Sans Bold` (served by CARTO's glyph CDN). Satellite + dark

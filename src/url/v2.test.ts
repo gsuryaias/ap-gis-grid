@@ -2,6 +2,7 @@
 // which changes push a history entry (Back steps through them) vs replace the current one.
 import { describe, expect, it } from "vitest";
 import { parseHash } from "./hash.ts";
+import { lensDefaults } from "../lenses/registry.ts";
 import { decodeUrl, defaultUrlState, encodeUrl, fromV1, historyMode, LAYER_KEYS, type UrlState } from "./v2.ts";
 
 const S = (o: Partial<UrlState> = {}): UrlState => ({ ...defaultUrlState(), ...o });
@@ -35,7 +36,7 @@ describe("URL v2 — encode / decode", () => {
 
   it("round-trips the Plan lens with its drill (MIS keys only there)", () => {
     const s = S({
-      workspace: "mis",
+      lens: "plan",
       mapLayout: "collapsed",
       misBy: "division",
       misFilters: "voltage:400,220~circle:Kadapa~division:Visakhapatnam Zone-3",
@@ -49,7 +50,7 @@ describe("URL v2 — encode / decode", () => {
     // No camera / `lyr` in the link → the camera and layers stay as they are.
     const kept = Object.fromEntries(Object.entries(s).filter(([k]) => k !== "camera" && !(LAYER_KEYS as readonly string[]).includes(k)));
     expect(decodeUrl(h)).toEqual(kept);
-    expect(encodeUrl({ ...s, workspace: "atlas", mapLayout: "atlas-only" })).not.toMatch(/by=|mf=|tab=|th=/);
+    expect(encodeUrl({ ...s, lens: "explore", mapLayout: "atlas-only" })).not.toMatch(/by=|mf=|tab=|th=/);
   });
 
   it("`lyr` absent leaves the layers alone; present sets every layer key", () => {
@@ -60,7 +61,7 @@ describe("URL v2 — encode / decode", () => {
   });
 
   it("an omitted key resets to its default (Back fully restores an entry)", () => {
-    expect(decodeUrl("#v=2")).toMatchObject({ selectedId: null, circle: null, coastalBand: null, basemap: "light", tableOpen: false, workspace: "atlas" });
+    expect(decodeUrl("#v=2")).toMatchObject({ selectedId: null, circle: null, coastalBand: null, basemap: "light", tableOpen: false, lens: "explore" });
   });
 
   it("drops junk instead of failing", () => {
@@ -70,14 +71,26 @@ describe("URL v2 — encode / decode", () => {
     expect(d.voltages).toEqual([400, 220, 132]);
     expect(d.coastalBand).toBeNull();
     expect(d.basemap).toBe("light");
-    expect(d.workspace).toBe("atlas");
+    expect(d.lens).toBe("explore");
     expect(decodeUrl("#v=2&lyr=ref:ok-id,../x").overlays).toEqual(["ok-id"]);
     expect(decodeUrl("#v=9&sel=s-1")).toEqual({});
     expect(decodeUrl("#sel=s-1")).toEqual({});
   });
 
-  it("field / storm lenses open Explore until phase 3", () => {
-    expect(decodeUrl("#v=2&lens=storm").workspace).toBe("atlas");
+  it("every lens round-trips; `lyr` is relative to the lens defaults", () => {
+    for (const lens of ["explore", "field", "plan", "storm"] as const) expect(decodeUrl(encodeUrl(S({ lens }))).lens).toBe(lens);
+    // Storm presets weather + CRZ + cyclone shelters: exactly those → no `lyr`.
+    const storm = S({ lens: "storm", ...lensDefaults("storm") });
+    expect(encodeUrl(storm)).toBe("#v=2&lens=storm");
+    // Weather off, districts on → only the differences.
+    const tweaked = S({ ...storm, showWeather: false, overlays: ["crz-boundary", "cyclone-shelters", "districts"] });
+    expect(encodeUrl(tweaked)).toBe("#v=2&lens=storm&lyr=ref:districts,-wx");
+    expect(decodeUrl(encodeUrl(tweaked))).toMatchObject({ showWeather: false, overlays: ["crz-boundary", "cyclone-shelters", "districts"] });
+    // A Field link with one tower layer switched off.
+    const field = S({ lens: "field", ...lensDefaults("field") });
+    const noTowers400 = { ...field, overlays: field.overlays.filter((o) => o !== "towers-400kv") };
+    expect(encodeUrl(noTowers400)).toBe("#v=2&lens=field&lyr=-towers-400kv");
+    expect(decodeUrl(encodeUrl(noTowers400)).overlays).toEqual(noTowers400.overlays);
   });
 });
 
@@ -104,9 +117,9 @@ describe("history policy", () => {
   const a = S({ camera: { lng: 80, lat: 16, zoom: 7 } });
   it("navigation pushes", () => {
     expect(historyMode(a, { ...a, selectedId: "s-1" })).toBe("push");
-    expect(historyMode(a, { ...a, workspace: "mis", mapLayout: "open" })).toBe("push");
+    expect(historyMode(a, { ...a, lens: "plan", mapLayout: "open" })).toBe("push");
     expect(historyMode(a, { ...a, circle: "Kadapa" })).toBe("push");
-    const plan = { ...a, workspace: "mis" as const, mapLayout: "open" as const };
+    const plan = { ...a, lens: "plan" as const, mapLayout: "open" as const };
     expect(historyMode(plan, { ...plan, misFilters: "circle:Kadapa" })).toBe("push");
   });
   it("view tweaks replace", () => {

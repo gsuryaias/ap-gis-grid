@@ -9,7 +9,7 @@ import type { MeasureMode, MeasureStats } from "../map/measure.ts";
 import type { MisMapState } from "../map/mis-layers.ts";
 import type { MapLayout } from "../url/layout.ts";
 import type { Camera, UrlState } from "../url/v2.ts";
-import type { WorkspaceId } from "../workspaces/registry.ts";
+import type { LensId } from "../lenses/registry.ts";
 
 export type Basemap = "light" | "dark" | "satellite";
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
@@ -93,8 +93,8 @@ export interface CameraSignal {
 }
 
 export interface ViewSlice {
-  /** Active workspace (DSS shell). */
-  workspace: WorkspaceId;
+  /** Active lens (`lenses/registry.ts`, URL `lens=`). */
+  lens: LensId;
   /** Split-layout map pane state (`map=` hash key when not the viewport default). */
   mapLayout: MapLayout;
   basemap: Basemap;
@@ -106,7 +106,8 @@ export interface ViewSlice {
   /** The settled map camera (URL `@lng,lat,zoom z`); written on every moveend. */
   camera: Camera | null;
   cameraSignal: CameraSignal | null;
-  setWorkspace: (w: WorkspaceId) => void;
+  /** Switch lens: keeps selection + filters, swaps the lens default layers. */
+  setLens: (l: LensId) => void;
   setMapLayout: (layout: MapLayout) => void;
   setBasemap: (b: Basemap) => void;
   toggleSpotlight: () => void;

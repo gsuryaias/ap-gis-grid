@@ -66,7 +66,10 @@ export function useMapCamera(map: MlMap | null, data: GridData, isHidden: boolea
     lastFitTs.current = fitSignal.ts;
     const narrow = map.getContainer().clientWidth < 640;
     map.fitBounds(fitSignal.bounds, {
-      padding: narrow ? { top: 190, bottom: 120, left: 20, right: 20 } : { top: 60, bottom: 60, left: 320, right: 380 },
+      // Phone: clear the search stack and the half-open bottom sheet. Desktop: clear the Inspector.
+      padding: narrow
+        ? { top: 140, bottom: Math.round(map.getContainer().clientHeight / 2) + 20, left: 20, right: 20 }
+        : { top: 60, bottom: 60, left: 60, right: 380 },
       maxZoom: fitSignal.maxZoom ?? 12,
       duration: 900,
     });

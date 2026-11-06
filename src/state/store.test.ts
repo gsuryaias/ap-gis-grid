@@ -131,6 +131,45 @@ describe("app store slices", () => {
     fetchSpy.mockRestore();
   });
 
+  it("switching lens keeps selection + filters and swaps the lens default layers", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise(() => {}));
+    const s = useAppStore.getState();
+    s.select("s-ss-132kv-chnd");
+    s.toggleVoltage(132);
+    s.layers.toggle("districts", true); // the viewer's own layer
+    useAppStore.getState().setLens("storm");
+    let st = useAppStore.getState();
+    expect(st.lens).toBe("storm");
+    expect(st.selectedId).toBe("s-ss-132kv-chnd");
+    expect(st.filters.voltages[132]).toBe(false);
+    expect(st.filters.showWeather).toBe(true);
+    expect(Object.keys(st.layers.enabled).filter((k) => st.layers.enabled[k]).sort()).toEqual(["crz-boundary", "cyclone-shelters", "districts"]);
+    // The lens presets are not remembered as the viewer's choice; their own layer is.
+    expect(partializeLayers(st).enabled).toEqual(["districts"]);
+    useAppStore.getState().setLens("plan");
+    st = useAppStore.getState();
+    expect(st.filters.showWeather).toBe(false);
+    expect(st.mapLayout).not.toBe("atlas-only");
+    expect(Object.keys(st.layers.enabled).filter((k) => st.layers.enabled[k])).toEqual(["districts"]);
+    fetchSpy.mockRestore();
+  });
+
+  it("a link into a lens brings its defaults unless it carries `lyr`; Back out of it drops them", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise(() => {}));
+    useAppStore.getState().applyUrl({ lens: "field" }, { initial: true });
+    let st = useAppStore.getState();
+    expect(st.layers.enabled["towers-400kv"]).toBe(true);
+    expect(st.layers.status["towers-400kv"]).toBe("loading");
+    useAppStore.getState().applyUrl({ lens: "explore" });
+    st = useAppStore.getState();
+    expect(Object.values(st.layers.enabled).some(Boolean)).toBe(false);
+    useAppStore.getState().applyUrl({ lens: "storm", showSubstations: true, showLines: true, showGeneration: false, showPowerGrid: false, showWeather: false, overlays: [] });
+    st = useAppStore.getState();
+    expect(st.lens).toBe("storm");
+    expect(st.filters.showWeather).toBe(false); // the link's own layer set wins
+    fetchSpy.mockRestore();
+  });
+
   it("resetFilters clears only the slicing filters", () => {
     const s = useAppStore.getState();
     s.toggleVoltage(400);

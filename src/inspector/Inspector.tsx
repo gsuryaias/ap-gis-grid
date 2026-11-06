@@ -39,21 +39,21 @@ const ICON: Record<Header["icon"], ReactNode> = {
 const iconBtn = "rounded-md p-1 text-ink-2 hover:bg-surface-2 hover:text-ink";
 
 export interface InspectorProps {
-  /** `panel`: the floating card (Atlas, phone sheet); `inline`: a full-width card in an analysis column. */
-  variant?: "panel" | "inline";
+  /** `panel`: the floating card (map lenses); `sheet`: fills the phone bottom sheet; `inline`: a card in an analysis column. */
+  variant?: "panel" | "sheet" | "inline";
   extend?: InspectorExtension;
 }
 
-function Shell({ variant, label, children }: { variant: "panel" | "inline"; label: string; children: ReactNode }) {
+const SHELL_CLASS = {
+  panel:
+    "pointer-events-auto flex min-h-0 max-h-full w-[340px] max-w-[92vw] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur",
+  sheet: "flex h-full min-h-0 w-full flex-col overflow-hidden",
+  inline: "flex flex-col overflow-hidden rounded-xl border border-accent/40 bg-surface shadow-[var(--shadow-panel)]",
+};
+
+function Shell({ variant, label, children }: { variant: "panel" | "sheet" | "inline"; label: string; children: ReactNode }) {
   return (
-    <aside
-      aria-label={label}
-      className={
-        variant === "panel"
-          ? "pointer-events-auto flex min-h-0 max-h-full w-[340px] max-w-[92vw] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
-          : "flex flex-col overflow-hidden rounded-xl border border-accent/40 bg-surface shadow-[var(--shadow-panel)]"
-      }
-    >
+    <aside aria-label={label} className={SHELL_CLASS[variant]}>
       {children}
     </aside>
   );
@@ -228,7 +228,7 @@ export function Inspector({ variant = "panel", extend }: InspectorProps) {
           )}
         </div>
       )}
-      <div className={variant === "panel" ? "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2" : "px-4 py-2"}>
+      <div className={variant === "inline" ? "px-4 py-2" : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2"}>
         {sections.map((s) => (
           <SectionView key={s.id} section={s} />
         ))}

@@ -45,7 +45,7 @@ export interface MapState {
   gen: GenerationData | undefined;
   pg: PowerGridData | undefined;
   wx: WeatherData | undefined;
-  /** Which layer groups this workspace's map may mount. */
+  /** Which layer groups this lens's map may mount. */
   preset: LayerPreset;
 }
 type S = MapState;
@@ -66,7 +66,7 @@ const spotlightOf = memo(
   },
 );
 const spotSpecOf = memo((spot: SpotlightSets | null) => spotlightSpec(spot));
-const misStateOf = (s: S): MisMapState | null => (s.app.workspace === "mis" ? (s.app.workspaceContext.misMap ?? null) : null);
+const misStateOf = (s: S): MisMapState | null => (s.app.lens === "plan" ? (s.app.workspaceContext.misMap ?? null) : null);
 const spotlightSpecOf = (s: S) => spotSpecOf(spotlightOf(s.data, s.app.spotlight, s.app.selectedId, misStateOf(s)));
 
 /** A per-def memo that keeps just the def's own layers out of one or more shared specs. */

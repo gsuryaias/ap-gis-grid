@@ -4,11 +4,12 @@
 //    &volt=400,220&circ=DC&circle=Kadapa&coast=1&base=dark&tbl=1&map=collapsed&by=division&mf=…&tab=age&th=age
 //
 // - `@lng,lat,zoom z` — the camera (written on every settled move).
-// - `lens` — explore (default) | plan (the Network MIS). field / storm decode to explore until phase 3.
+// - `lens` — explore (default) | field | plan (the Network MIS) | storm (`lenses/registry.ts`).
 // - `sel` — an Inspector ref (`inspector/refs.ts`).
-// - `lyr` — layers that differ from the defaults: gen / pg / wx, catalog overlays (RTGS ones as
-//   `ref:<id>`), and `-ss` / `-ln` for the core grid switched off. Present ⇒ authoritative (it wins
-//   over the overlays this device remembers); absent ⇒ layers are left as they are.
+// - `lyr` — layers that differ from the LENS defaults: gen / pg / wx, catalog overlays (RTGS ones as
+//   `ref:<id>`) switched on, and `-token` for a default switched off (`-ss` / `-ln` = core grid,
+//   `-wx` in Storm…). Present ⇒ authoritative (it wins over the overlays this device remembers);
+//   absent ⇒ the layers are left as they are — except that entering a lens brings its defaults.
 // - MIS keys (by / mf / tab / th) are written only in the Plan lens.
 // Defaults are omitted. v1 links (`#v=1&…`) decode through `decodeV1` (url/hash.ts) and are then
 // rewritten to v2. `historyMode` decides push vs replace: navigation (selection, lens, circle, drill)
@@ -16,14 +17,13 @@
 import { CIRCUITS, VOLTAGES, type Circuit, type Voltage } from "../data/types.ts";
 import { isValidRef } from "../inspector/refs.ts";
 import { STATIC_OVERLAY_DEFS } from "../overlays/resources.ts";
-import type { WorkspaceId } from "../workspaces/registry.ts";
+import { DEFAULT_LENS, decodeLayerDiff, encodeLayerDiff, isLensId, type LayerOn, type LensId } from "../lenses/registry.ts";
 import { parseHash as decodeV1, type HashState } from "./hash.ts";
 import { defaultMapLayout, type MapLayout } from "./layout.ts";
 
 export const URL_VERSION = 2;
 
 export type Basemap = "light" | "dark" | "satellite";
-export type Lens = "explore" | "field" | "plan" | "storm";
 
 export interface Camera {
   lng: number;
@@ -31,8 +31,8 @@ export interface Camera {
   zoom: number;
 }
 
-export interface UrlState {
-  workspace: WorkspaceId;
+export interface UrlState extends LayerOn {
+  lens: LensId;
   selectedId: string | null;
   camera: Camera | null;
   basemap: Basemap;
@@ -40,13 +40,6 @@ export interface UrlState {
   circuits: Circuit[];
   circle: string | null;
   coastalBand: 0 | 1 | 2 | 3 | null;
-  showSubstations: boolean;
-  showLines: boolean;
-  showGeneration: boolean;
-  showPowerGrid: boolean;
-  showWeather: boolean;
-  /** Enabled catalog overlays (DISCOM / towers / RTGS ids), sorted. */
-  overlays: string[];
   tableOpen: boolean;
   mapLayout: MapLayout;
   misBy: string | null;
@@ -59,7 +52,7 @@ export interface UrlState {
 export const LAYER_KEYS = ["showSubstations", "showLines", "showGeneration", "showPowerGrid", "showWeather", "overlays"] as const;
 
 export const defaultUrlState = (): UrlState => ({
-  workspace: "atlas",
+  lens: DEFAULT_LENS,
   selectedId: null,
   camera: null,
   basemap: "light",
@@ -81,8 +74,6 @@ export const defaultUrlState = (): UrlState => ({
   misTheme: null,
 });
 
-const LENS_OF: Record<WorkspaceId, Lens> = { atlas: "explore", mis: "plan" };
-const workspaceOfLens = (l: string | null): WorkspaceId => (l === "plan" ? "mis" : "atlas");
 const TOKEN = /^[a-z0-9-]{1,24}$/;
 const OVERLAY_ID = /^[a-z0-9-]{1,40}$/;
 
@@ -102,24 +93,17 @@ export function encodeUrl(s: UrlState): string {
   }
   const kv = (k: string, v: string) => parts.push(`${k}=${enc(v)}`);
   kv("v", String(URL_VERSION));
-  if (s.workspace !== "atlas") kv("lens", LENS_OF[s.workspace]);
+  if (s.lens !== DEFAULT_LENS) kv("lens", s.lens);
   if (s.selectedId) kv("sel", s.selectedId);
-  const lyr = [
-    ...(s.showGeneration ? ["gen"] : []),
-    ...(s.showPowerGrid ? ["pg"] : []),
-    ...(s.showWeather ? ["wx"] : []),
-    ...[...s.overlays].sort().map(overlayToken),
-    ...(s.showSubstations ? [] : ["-ss"]),
-    ...(s.showLines ? [] : ["-ln"]),
-  ];
-  if (lyr.length) kv("lyr", lyr.join(","));
+  const lyr = encodeLayerDiff(s, s.lens, overlayToken);
+  if (lyr) kv("lyr", lyr);
   if (s.voltages.length !== VOLTAGES.length) kv("volt", VOLTAGES.filter((v) => s.voltages.includes(v)).join(","));
   if (s.circuits.length !== CIRCUITS.length) kv("circ", CIRCUITS.filter((c) => s.circuits.includes(c)).join(","));
   if (s.circle) kv("circle", s.circle);
   if (s.coastalBand != null) kv("coast", String(s.coastalBand));
   if (s.basemap !== "light") kv("base", s.basemap);
   if (s.tableOpen) kv("tbl", "1");
-  if (s.workspace === "mis") {
+  if (s.lens === "plan") {
     if (s.mapLayout !== "atlas-only" && s.mapLayout !== defaultMapLayout()) kv("map", s.mapLayout);
     if (s.misBy && s.misBy !== "circle") kv("by", s.misBy);
     if (s.misFilters) kv("mf", s.misFilters);
@@ -159,8 +143,9 @@ function params(raw: string): { camera: Camera | null; p: Map<string, string> } 
 function decodeV2(p: Map<string, string>, camera: Camera | null): Partial<UrlState> {
   const d = defaultUrlState();
   const out: Partial<UrlState> = {};
-  const workspace = workspaceOfLens(p.get("lens") ?? null);
-  out.workspace = workspace;
+  const lensRaw = p.get("lens");
+  const lens: LensId = isLensId(lensRaw) ? lensRaw : DEFAULT_LENS;
+  out.lens = lens;
   const sel = p.get("sel");
   out.selectedId = sel && isValidRef(sel) ? sel : null;
   if (camera) out.camera = camera;
@@ -183,23 +168,14 @@ function decodeV2(p: Map<string, string>, camera: Camera | null): Partial<UrlSta
 
   const lyr = p.get("lyr");
   if (lyr != null) {
-    const toks = lyr.split(",").filter(Boolean);
-    out.showGeneration = toks.includes("gen");
-    out.showPowerGrid = toks.includes("pg");
-    out.showWeather = toks.includes("wx");
-    out.showSubstations = !toks.includes("-ss");
-    out.showLines = !toks.includes("-ln");
-    out.overlays = [
-      ...new Set(
-        toks
-          .filter((t) => !["gen", "pg", "wx", "-ss", "-ln"].includes(t))
-          .map((t) => t.replace(/^ref:/, ""))
-          .filter((t) => OVERLAY_ID.test(t)),
-      ),
-    ].sort();
+    const norm = (t: string) => {
+      const id = t.replace(/^ref:/, "");
+      return OVERLAY_ID.test(id) ? id : null;
+    };
+    Object.assign(out, decodeLayerDiff(lyr, lens, norm));
   }
 
-  if (workspace === "mis") {
+  if (lens === "plan") {
     const map = p.get("map");
     out.mapLayout = map === "open" || map === "collapsed" ? map : defaultMapLayout();
     const by = p.get("by");
@@ -223,10 +199,11 @@ export function fromV1(h: Partial<HashState>): Partial<UrlState> {
   const copy = <K extends keyof HashState & keyof UrlState>(k: K) => {
     if (h[k] !== undefined) (out as Record<string, unknown>)[k] = h[k];
   };
+  if (h.workspace) out.lens = h.workspace === "mis" ? "plan" : "explore";
   (
-    ["workspace", "selectedId", "basemap", "voltages", "circuits", "circle", "coastalBand", "showSubstations", "showLines", "showGeneration", "showPowerGrid", "showWeather", "tableOpen", "mapLayout", "misBy", "misFilters", "misTab", "misTheme"] as const
+    ["selectedId", "basemap", "voltages", "circuits", "circle", "coastalBand", "showSubstations", "showLines", "showGeneration", "showPowerGrid", "showWeather", "tableOpen", "mapLayout", "misBy", "misFilters", "misTab", "misTheme"] as const
   ).forEach(copy);
-  if (out.workspace && out.mapLayout === undefined) out.mapLayout = out.workspace === "atlas" ? "atlas-only" : defaultMapLayout();
+  if (out.lens && out.mapLayout === undefined) out.mapLayout = out.lens === "plan" ? defaultMapLayout() : "atlas-only";
   return out;
 }
 
@@ -242,7 +219,7 @@ export function decodeUrl(hash: string): Partial<UrlState> {
 }
 
 /** Navigation pushes a history entry (Back undoes it); view tweaks replace the current one. */
-const PUSH_KEYS: (keyof UrlState)[] = ["workspace", "selectedId", "circle", "misFilters", "misBy", "misTab"];
+const PUSH_KEYS: (keyof UrlState)[] = ["lens", "selectedId", "circle", "misFilters", "misBy", "misTab"];
 
 export function historyMode(prev: UrlState, next: UrlState): "push" | "replace" | "none" {
   if (encodeUrl(prev) === encodeUrl(next)) return "none";
