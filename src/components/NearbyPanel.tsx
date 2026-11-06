@@ -11,7 +11,7 @@ const COUNT = 6;
  * Lists the nearest substations to the query origin (a GPS fix or a picked map point). Respects the
  * active voltage + circle filters, so "nearest 220 kV in Kurnool" falls out of the existing toggles.
  */
-export function NearbyPanel({ data }: { data: GridData }) {
+export function NearbyPanel({ data, sheet = false }: { data: GridData; sheet?: boolean }) {
   const origin = useAppStore((s) => s.nearbyOrigin);
   const filters = useAppStore((s) => s.filters);
   const select = useAppStore((s) => s.select);
@@ -27,7 +27,11 @@ export function NearbyPanel({ data }: { data: GridData }) {
 
   return (
     <aside
-      className="pointer-events-auto flex min-h-0 max-h-full w-[320px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
+      className={
+        sheet
+          ? "flex h-full min-h-0 w-full flex-col overflow-hidden"
+          : "pointer-events-auto flex min-h-0 max-h-full w-[320px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface/96 shadow-[var(--shadow-panel)] backdrop-blur"
+      }
       aria-label="Nearby substations"
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-3">

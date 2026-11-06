@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { GridData } from "../data/types.ts";
 import type { LayerPreset } from "../map/layer-presets.ts";
-import { WORKSPACE_MAP_HINTS } from "../map/layer-presets.ts";
-import type { WorkspaceId } from "../workspaces/registry.ts";
+import { LENS_MAP_HINTS } from "../map/layer-presets.ts";
+import type { LensId } from "../lenses/registry.ts";
 import { ChevronDown, LayersIcon } from "./icons.tsx";
 import {
   BasemapSection,
@@ -15,14 +15,14 @@ import {
 } from "./layer-controls.tsx";
 import { DistributionSection, ReferenceSection, TransmissionSection } from "./OverlaySections.tsx";
 
-export type MapLayerPanelVariant = "sidebar" | "overlay";
+export type MapLayerPanelVariant = "sidebar" | "overlay" | "embedded";
 
 export interface MapLayerPanelProps {
   data: GridData;
   preset: LayerPreset;
-  /** sidebar = Atlas left column; overlay = floating on embedded map pane */
+  /** sidebar = collapsible card; overlay = floating on the Plan map pane; embedded = bare, inside a lens panel */
   variant?: MapLayerPanelVariant;
-  workspace?: WorkspaceId;
+  lens?: LensId;
   /** Initial expanded state (defaults: sidebar open, overlay collapsed). Used to collapse on mobile. */
   defaultOpen?: boolean;
 }
@@ -30,22 +30,22 @@ export interface MapLayerPanelProps {
 function LayerBody({
   data,
   preset,
-  workspace,
+  lens,
   compact,
 }: {
   data: GridData;
   preset: LayerPreset;
-  workspace?: WorkspaceId;
+  lens?: LensId;
   compact?: boolean;
 }) {
-  const hint = workspace ? WORKSPACE_MAP_HINTS[workspace] : "";
+  const hint = lens ? LENS_MAP_HINTS[lens] : "";
 
   return (
     <>
       {preset.grid && (
         <>
           <VoltageSection data={data} compact={compact} />
-          <RegionSection data={data} showCoastal={workspace === "atlas"} />
+          <RegionSection data={data} showCoastal={lens !== "plan"} />
           <ShowSection />
         </>
       )}
@@ -63,9 +63,11 @@ function LayerBody({
   );
 }
 
-/** Contextual GIS layer controls — shows only what the active workspace needs. */
-export function MapLayerPanel({ data, preset, variant = "sidebar", workspace, defaultOpen }: MapLayerPanelProps) {
+/** Contextual GIS layer controls — shows only what the active lens needs. */
+export function MapLayerPanel({ data, preset, variant = "sidebar", lens, defaultOpen }: MapLayerPanelProps) {
   const [open, setOpen] = useState(defaultOpen ?? variant === "sidebar");
+
+  if (variant === "embedded") return <LayerBody data={data} preset={preset} lens={lens} />;
 
   if (variant === "overlay") {
     return (
@@ -95,7 +97,7 @@ export function MapLayerPanel({ data, preset, variant = "sidebar", workspace, de
               <ChevronDown width={14} height={14} className="text-ink-2" />
             </button>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-line px-3 pb-2.5 pt-1">
-              <LayerBody data={data} preset={preset} workspace={workspace} compact />
+              <LayerBody data={data} preset={preset} lens={lens} compact />
             </div>
           </section>
         )}
@@ -117,7 +119,7 @@ export function MapLayerPanel({ data, preset, variant = "sidebar", workspace, de
       </button>
       {open && (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-line px-3.5 pb-3 pt-1">
-          <LayerBody data={data} preset={preset} workspace={workspace} />
+          <LayerBody data={data} preset={preset} lens={lens} />
         </div>
       )}
     </section>

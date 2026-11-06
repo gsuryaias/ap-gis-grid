@@ -127,6 +127,7 @@ export function SearchBar({ data }: { data: GridData }) {
       <div className="flex items-center gap-2 rounded-xl border border-line bg-surface/95 px-3 py-2 shadow-sm backdrop-blur focus-within:border-accent">
         <SearchIcon className="shrink-0 text-ink-2" />
         <input
+          id="app-search"
           ref={inputRef}
           value={query}
           onChange={(e) => {

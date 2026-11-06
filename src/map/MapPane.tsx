@@ -40,7 +40,7 @@ const MAP_INPUTS: ((s: AppState) => unknown)[] = [
   (s) => s.selectedId,
   (s) => s.hoverId,
   (s) => s.spotlight,
-  (s) => s.workspace,
+  (s) => s.lens,
   (s) => s.workspaceContext.misMap,
   (s) => s.layers,
 ];
@@ -78,7 +78,7 @@ export function MapPane({ data, mode, layers }: MapPaneProps) {
   useResource(powerGridRes, filters.showPowerGrid ? "" : null);
   useResource(weatherRes, filters.showWeather ? "" : null);
 
-  // --- Map lifecycle (once per data — survives workspace / mode switches) ----
+  // --- Map lifecycle (once per data — survives lens / mode switches) ----
   useEffect(() => {
     if (!containerRef.current) return;
     let disposed = false;
@@ -118,13 +118,13 @@ export function MapPane({ data, mode, layers }: MapPaneProps) {
       engineRef.current = engine;
       detachInteraction = attachInteraction(m, { defs: engine.defs, suppressed: clickSuppressed });
       // A link's camera (`@lng,lat,zoom`) wins; otherwise fit AP — on phones into what the
-      // search/tools stack (top ~190 px) leaves visible.
+      // search/tools stack (top) and the bottom sheet title row leave visible.
       const linked = useAppStore.getState().cameraSignal?.camera;
       const narrow = (containerRef.current?.clientWidth ?? 1024) < 640;
       if (linked) m.jumpTo({ center: [linked.lng, linked.lat], zoom: linked.zoom });
       else
         m.fitBounds(data.meta.bounds as LngLatBoundsLike, {
-          padding: narrow ? { top: 190, bottom: 70, left: 12, right: 12 } : 60,
+          padding: narrow ? { top: 130, bottom: 100, left: 12, right: 12 } : 60,
           duration: 0,
         });
       // The settled camera goes to the URL (replace, debounced) — not while the pane is hidden.
@@ -155,7 +155,7 @@ export function MapPane({ data, mode, layers }: MapPaneProps) {
     styled.current = { map, basemap };
   }, [map, basemap]);
 
-  // A different workspace preset can mount different layer groups.
+  // A different lens preset can mount different layer groups.
   useEffect(() => engineRef.current?.schedule(), [layers]);
 
   useMapCamera(map, data, isHidden, isFull);

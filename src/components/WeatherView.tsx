@@ -41,7 +41,7 @@ function WxIcon({ code, size = 18, className }: { code: number; size?: number; c
   return <Icon width={size} height={size} className={className} />;
 }
 
-function fmtTime(ts: number): string {
+export function fmtTime(ts: number): string {
   return new Date(ts).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
 
@@ -205,7 +205,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-1.5 mt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-2">{children}</h3>;
 }
 
-function Body({ weather, data }: { weather: WeatherData; data: GridData }) {
+/** The monitor's content; `compact` lays it out for a narrow column (the Storm lens panel). */
+export function WeatherBody({ weather, data, compact }: { weather: WeatherData; data: GridData; compact?: boolean }) {
   return (
     <>
       {/* Active cyclones */}
@@ -226,7 +227,7 @@ function Body({ weather, data }: { weather: WeatherData; data: GridData }) {
       {weather.circles.length > 0 && (
         <>
           <SectionTitle>Current conditions by circle</SectionTitle>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"}>
             {weather.circles.map((cw) => (
               <CircleCard key={cw.circle} cw={cw} />
             ))}
@@ -238,7 +239,7 @@ function Body({ weather, data }: { weather: WeatherData; data: GridData }) {
       {weather.marine.length > 0 && (
         <>
           <SectionTitle>Coastal sea state</SectionTitle>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"}>
             {weather.marine.map((m) => (
               <div key={m.name} className="rounded-xl border border-line bg-surface-2 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-1">
@@ -364,7 +365,7 @@ export function WeatherView({ data }: { data: GridData }) {
 
         <div className="overflow-auto px-5 pb-5">
           {weather ? (
-            <Body weather={weather} data={data} />
+            <WeatherBody weather={weather} data={data} />
           ) : wxStatus === "error" ? (
             <div className="py-10 text-center">
               <p className="text-sm text-ink-2">Couldn’t load weather data. {wxError}</p>

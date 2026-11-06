@@ -1,6 +1,8 @@
 import { CIRCUITS, VOLTAGES } from "../../data/types.ts";
+import { LENS_BY_ID, switchLensLayers, type LayerOn } from "../../lenses/registry.ts";
 import { defaultMapLayout } from "../../url/layout.ts";
 import { defaultUrlState, type UrlState } from "../../url/v2.ts";
+import { layerOnOf, withLayerOn } from "../layer-on.ts";
 import type { SliceCreator, UrlSlice } from "../types.ts";
 
 /**
@@ -18,19 +20,27 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
       const changed = selectedId !== s.selectedId;
       // A link's own camera wins over flying to its selection (the sender's view, or the view Back returns to).
       const flySignal = selectedId && changed && !u.camera ? { id: selectedId, ts: Date.now() } : s.flySignal;
-      const workspace = u.workspace ?? s.workspace;
+      const lens = u.lens ?? s.lens;
       const mapLayout =
-        u.mapLayout ?? (workspace === "atlas" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);
+        u.mapLayout ?? (LENS_BY_ID[lens].layout === "map" ? "atlas-only" : s.mapLayout === "atlas-only" ? defaultMapLayout() : s.mapLayout);
+      // Entering a lens brings its default layers; the link's own layer keys (`lyr`, v1 flags) win.
+      const cur = lens !== s.lens ? switchLensLayers(layerOnOf(s), s.lens, lens) : layerOnOf(s);
+      const on: LayerOn = {
+        showSubstations: u.showSubstations ?? cur.showSubstations,
+        showLines: u.showLines ?? cur.showLines,
+        showGeneration: u.showGeneration ?? cur.showGeneration,
+        showPowerGrid: u.showPowerGrid ?? cur.showPowerGrid,
+        showWeather: u.showWeather ?? cur.showWeather,
+        overlays: u.overlays ?? cur.overlays,
+      };
+      const { filters: layerFilters, layers } = withLayerOn(s, on);
       const workspaceContext = { ...s.workspaceContext };
       if (u.misBy !== undefined) workspaceContext.misBy = u.misBy ?? undefined;
       if (u.misFilters !== undefined) workspaceContext.misFilters = u.misFilters ?? undefined;
       if (u.misTab !== undefined) workspaceContext.misTab = u.misTab ?? undefined;
       if (u.misTheme !== undefined) workspaceContext.misTheme = u.misTheme ?? undefined;
-      const layers = u.overlays
-        ? { ...s.layers, enabled: Object.fromEntries(u.overlays.map((id) => [id, true])), version: s.layers.version + 1 }
-        : s.layers;
       return {
-        workspace,
+        lens,
         mapLayout,
         workspaceContext,
         selectedId,
@@ -39,16 +49,11 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
         basemap: u.basemap ?? s.basemap,
         tableOpen: u.tableOpen ?? s.tableOpen,
         filters: {
-          ...s.filters,
+          ...layerFilters,
           voltages,
           circuits,
           circle: u.circle !== undefined ? u.circle : s.filters.circle,
           coastalBand: u.coastalBand !== undefined ? u.coastalBand : s.filters.coastalBand,
-          showSubstations: u.showSubstations ?? s.filters.showSubstations,
-          showLines: u.showLines ?? s.filters.showLines,
-          showGeneration: u.showGeneration ?? s.filters.showGeneration,
-          showPowerGrid: u.showPowerGrid ?? s.filters.showPowerGrid,
-          showWeather: u.showWeather ?? s.filters.showWeather,
         },
         layers,
         flySignal,
@@ -56,8 +61,8 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
         cameraSignal: u.camera ? { camera: u.camera, ts: Date.now(), animate: !opts?.initial } : s.cameraSignal,
       };
     });
-    // Overlays a link switched on: fetch them (and the RTGS catalogue if one is a reference layer).
-    if (u.overlays) get().layers.restore();
+    // Overlays the link (or its lens) switched on: fetch them (and the RTGS catalogue for reference layers).
+    get().layers.restore();
   },
 
   urlState: (): UrlState => {
@@ -65,7 +70,8 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
     const ctx = s.workspaceContext;
     return {
       ...defaultUrlState(),
-      workspace: s.workspace,
+      ...layerOnOf(s),
+      lens: s.lens,
       selectedId: s.selectedId,
       camera: s.camera,
       basemap: s.basemap,
@@ -73,16 +79,8 @@ export const createUrlSlice: SliceCreator<UrlSlice> = (set, get) => ({
       circuits: CIRCUITS.filter((c) => s.filters.circuits[c]),
       circle: s.filters.circle,
       coastalBand: s.filters.coastalBand,
-      showSubstations: s.filters.showSubstations,
-      showLines: s.filters.showLines,
-      showGeneration: s.filters.showGeneration,
-      showPowerGrid: s.filters.showPowerGrid,
-      showWeather: s.filters.showWeather,
-      overlays: Object.keys(s.layers.enabled)
-        .filter((id) => s.layers.enabled[id])
-        .sort(),
       tableOpen: s.tableOpen,
-      mapLayout: s.workspace === "atlas" ? "atlas-only" : s.mapLayout,
+      mapLayout: LENS_BY_ID[s.lens].layout === "map" ? "atlas-only" : s.mapLayout,
       misBy: ctx.misBy ?? null,
       misFilters: ctx.misFilters ?? null,
       misTab: ctx.misTab ?? null,

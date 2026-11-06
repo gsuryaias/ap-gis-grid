@@ -7,22 +7,17 @@ import { CloseIcon, PinIcon, TargetIcon } from "./icons.tsx";
  * click anywhere on the map. Either way it sets the query origin, and {@link NearbyPanel} lists the
  * closest substations. Mutually exclusive with the measure tool (both capture map clicks).
  */
-export function NearbyControl() {
-  const nearbyMode = useAppStore((s) => s.nearbyMode);
-  const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
-  const toggleNearbyMode = useAppStore((s) => s.toggleNearbyMode);
+/** Browser geolocation → the nearest-substation origin (shared by the map tool and the Field lens). */
+export function useLocateMe() {
   const setNearbyOrigin = useAppStore((s) => s.setNearbyOrigin);
-  const clearNearby = useAppStore((s) => s.clearNearby);
-  const [geoError, setGeoError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
-  const active = nearbyMode || nearbyOrigin != null;
-
-  const locateMe = () => {
+  const locate = () => {
     if (!("geolocation" in navigator)) {
-      setGeoError("Geolocation isn’t available in this browser.");
+      setError("Geolocation isn’t available in this browser.");
       return;
     }
-    setGeoError(null);
+    setError(null);
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -31,11 +26,21 @@ export function NearbyControl() {
       },
       () => {
         setLocating(false);
-        setGeoError("Couldn’t get your location.");
+        setError("Couldn’t get your location.");
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
+  return { locate, locating, error };
+}
+
+export function NearbyControl() {
+  const nearbyMode = useAppStore((s) => s.nearbyMode);
+  const nearbyOrigin = useAppStore((s) => s.nearbyOrigin);
+  const toggleNearbyMode = useAppStore((s) => s.toggleNearbyMode);
+  const clearNearby = useAppStore((s) => s.clearNearby);
+  const { locate: locateMe, locating, error: geoError } = useLocateMe();
+  const active = nearbyMode || nearbyOrigin != null;
 
   const status = locating
     ? "Locating…"

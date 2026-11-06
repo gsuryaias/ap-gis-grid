@@ -1,6 +1,7 @@
 // DISCOM / RTGS / tower overlays — the former `overlays/store.ts`, now the `layers` slice of the one
 // app store. Feature data lives in the `overlayLayer` resource, not here.
 import type { PersistStorage, StorageValue } from "zustand/middleware";
+import { lensOnlyOverlays } from "../../lenses/registry.ts";
 import { DISCOMS, refDef, type DiscomId } from "../../overlays/catalog.ts";
 import { overlayLayer, refCatalog, STATIC_OVERLAY_DEFS } from "../../overlays/resources.ts";
 import type { AppState, LayersSlice, LayersState, OverlayFocus, PersistedLayers, SliceCreator } from "../types.ts";
@@ -24,10 +25,15 @@ export function parseStoredLayers(raw: unknown): PersistedLayers | null {
   };
 }
 
-/** What the store persists: exactly the legacy on-disk shape, so old and new builds share it. */
+/**
+ * What the store persists: exactly the legacy on-disk shape, so old and new builds share it. Overlays
+ * that are on only because the current lens presets them are not the viewer's own choice, so they are
+ * left out (entering the lens again brings them back).
+ */
 export function partializeLayers(s: AppState): PersistedLayers {
+  const preset = lensOnlyOverlays(s.lens);
   return {
-    enabled: Object.keys(s.layers.enabled).filter((k) => s.layers.enabled[k]),
+    enabled: Object.keys(s.layers.enabled).filter((k) => s.layers.enabled[k] && !preset.has(k)),
     discoms: DISCOMS.filter((d) => s.layers.discoms[d]),
   };
 }

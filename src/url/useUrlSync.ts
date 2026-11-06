@@ -13,7 +13,7 @@ const REPLACE_DEBOUNCE_MS = 300;
 /** Only these feed the URL — hover, measure, panels etc. never re-serialise. */
 const URL_INPUTS: ((s: AppState) => unknown)[] = [
   (s) => s.selectedId,
-  (s) => s.workspace,
+  (s) => s.lens,
   (s) => s.mapLayout,
   (s) => s.basemap,
   (s) => s.tableOpen,

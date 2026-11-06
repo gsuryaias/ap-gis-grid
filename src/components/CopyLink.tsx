@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { LinkIcon } from "./icons.tsx";
 
 /** Copy the current URL — the full view (lens, camera, layers, filters, selection) is in it. */
-async function copyText(text: string): Promise<boolean> {
+export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;

@@ -25,15 +25,15 @@ export const useFilters = () =>
 export const useSelection = () =>
   useAppStore(useShallow((s) => ({ selectedId: s.selectedId, history: s.history, select: s.select, back: s.back })));
 
-/** View state: workspace, map layout, basemap, spotlight. */
+/** View state: lens, map layout, basemap, spotlight. */
 export const useView = () =>
   useAppStore(
     useShallow((s) => ({
-      workspace: s.workspace,
+      lens: s.lens,
       mapLayout: s.mapLayout,
       basemap: s.basemap,
       spotlight: s.spotlight,
-      setWorkspace: s.setWorkspace,
+      setLens: s.setLens,
       setMapLayout: s.setMapLayout,
       setBasemap: s.setBasemap,
       toggleSpotlight: s.toggleSpotlight,
