@@ -95,3 +95,7 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # Pages' "syncing_files" step for this ~10k-file site has taken 10 s to 9.5 min; the default 10 min
+          # timeout cancelled three deploys on 2026-11-07. 30 min leaves room without hiding a real hang.
+          timeout: 1800000
