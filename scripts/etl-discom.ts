@@ -137,7 +137,7 @@ export function simplifyLine(coords: Position[], tol: number): Position[] {
   return coords.filter((_c, i) => keep[i]);
 }
 
-function haversineKm(a: Position, b: Position): number {
+export function haversineKm(a: Position, b: Position): number {
   const R = 6371.0088;
   const toR = Math.PI / 180;
   const dLat = (b[1] - a[1]) * toR;

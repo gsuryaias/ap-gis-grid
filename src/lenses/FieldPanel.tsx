@@ -51,7 +51,7 @@ export default function FieldPanel() {
           </span>
         </button>
         <p className="mt-1.5 px-1 text-[11px] leading-snug text-ink-2">
-          The trace is inferred from the DISCOMs' open GIS: APEPDCL is near-complete, APSPDCL is partial and APCPDCL publishes no 11 kV data.
+          The trace is inferred from the DISCOMs' open GIS: APEPDCL is near-complete, APSPDCL's 11 kV comes from its pole survey (Kadapa partial) and APCPDCL publishes no 11 kV data.
         </p>
       </PanelSection>
       <PanelSection title="Offline">

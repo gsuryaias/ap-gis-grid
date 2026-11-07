@@ -117,7 +117,7 @@ export const netAdapter: Adapter<NetEntity> = {
         kind: "note",
         text:
           "Links are inferred from the DISCOM GIS (recorded ids / names, else geometry). Coverage is partial: APEPDCL is complete, " +
-          "APSPDCL sparse, APCPDCL 11 kV not published. HT consumer services are deliberately not shown.",
+          "APSPDCL 11 kV routes from its pole survey (Kadapa partial), APCPDCL 11 kV not published. HT consumer services and individual poles are deliberately not shown.",
       },
     ];
   },

@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Feature, Position } from "geojson";
 import { haversineMeters, type Substation } from "./etl-lib.ts";
-import { anchorOf, buildEpdclFeeders, buildSpdclFeeders, dtrRows, epSsIdIndex, type Chain, type DtrRow, type F11, type SsRef } from "./etl-network.ts";
+import { anchorOf, buildEpdclFeeders, buildSpdclFeeders, buildSpdclRoutes, coverageMask, dtrRows, epSsIdIndex, type Chain, type DtrRow, type F11, type SsRef } from "./etl-network.ts";
 import type { GroupedFile } from "./net-lib.ts";
 import { buildDiscomLines, buildDiscomSubstations, type Discom, type DiscomLineOut, type DiscomSubstation } from "./etl-discom.ts";
 import { linkFeederSources, linkServedSubstations, NAME_MATCH_RADIUS_KM, PROXIMITY_KM, SERVES_M, type FeederIn } from "./etl-connectivity.ts";
@@ -255,7 +255,26 @@ export function buildNetwork(outDir: string, transco: Substation[]) {
 
   const TOL = 0.00015; // ≈ 15 m — 11 kV is only legible from ~z10, where this is sub-pixel
   const ep = epLines ? buildEpdclFeeders(epLines.features, epSsIdIndex(ss), TOL) : [];
-  const sp = spLines ? buildSpdclFeeders(spLines.features, ss.filter((s) => s.discom === "APSPDCL"), TOL) : [];
+  // APSPDCL: full pole-survey routes (scripts/import-spdcl-11kv.mts) where imported; the open-GIS spans
+  // only where the import has no coverage (a skipped/truncated circle). IDs re-numbered over both.
+  const spSs = ss.filter((s) => s.discom === "APSPDCL");
+  const spImport = readSpdclImport();
+  const spRoutes = spImport ? buildSpdclRoutes(spImport.features, spSs, TOL) : [];
+  let spFallback: F11[] = [];
+  let spSpansDropped = 0;
+  if (spLines) {
+    const covered = spRoutes.length ? coverageMask(spImport!.features.map((f) => partsOfGeom(f.geometry))) : () => false;
+    const keep = spLines.features.filter((f) => {
+      const parts = partsOfGeom(f.geometry);
+      const p = parts[0];
+      const hit = p?.length ? covered(p[Math.floor(p.length / 2)]) : false;
+      if (hit) spSpansDropped++;
+      return !hit;
+    });
+    spFallback = buildSpdclFeeders(keep, spSs, TOL);
+  }
+  const sp: F11[] = [...spRoutes, ...spFallback].map((f, i) => ({ ...f, id: `f11-sp-${String(i).padStart(5, "0")}` }));
+  if (spImport) console.log(`[etl] network: APSPDCL import ${spRoutes.length} feeders (${Object.keys(spImport.index.circles).length} circles${Object.keys(spImport.index.skipped).length ? `, skipped ${Object.keys(spImport.index.skipped).join(",")}` : ""}); open-GIS spans kept ${spLines ? spLines.features.length - spSpansDropped : 0}, dropped ${spSpansDropped} as covered`);
   const feeders: F11[] = [...ep, ...sp];
 
   // ---- DTRs + AB switches → per-feeder counts, search shards ----
@@ -390,10 +409,25 @@ export function buildNetwork(outDir: string, transco: Substation[]) {
       dtrs: discom === "APEPDCL" ? epDtr.length : spDtr.length,
       dtrsSearchable: discom === "APEPDCL" ? epDtr.filter((d) => d.code).length : spDtr.filter((d) => d.code).length,
       abSwitches: discom === "APEPDCL" ? (abFile?.count ?? 0) : 0,
+      ...(discom === "APSPDCL" && spImport
+        ? { routesFrom: spImport.index.vintage, routeCircles: Object.keys(spImport.index.circles).length, routeCirclesSkipped: Object.keys(spImport.index.skipped) }
+        : {}),
     };
   }
   console.log(`[etl] network: ${ep.length} APEPDCL + ${sp.length} APSPDCL 11 kV runs; ${epDtr.length + spDtr.length} DTRs; ${items.length} search items; ${chains.length} chains; shards ${Object.keys(shards).join(",")}`);
   return { ...summary, searchItems: items.length };
+}
+
+const partsOfGeom = (g: { type: string; coordinates: unknown } | null): Position[][] =>
+  !g ? [] : g.type === "LineString" ? [g.coordinates as Position[]] : g.type === "MultiLineString" ? (g.coordinates as Position[][]) : [];
+type SpdclIndex = { source: string; vintage: string; circles: Record<string, { feeders: number; km: number; points: number }>; skipped: Record<string, string> };
+/** Committed APSPDCL pole-survey routes (data/raw/discom/spdcl-11kv/<circle>.geojson + index.json), or null. */
+function readSpdclImport(): { index: SpdclIndex; features: Array<{ geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> }> } | null {
+  const dir = resolve("data/raw/discom/spdcl-11kv");
+  if (!existsSync(resolve(dir, "index.json"))) return null;
+  const index = JSON.parse(readFileSync(resolve(dir, "index.json"), "utf-8")) as SpdclIndex;
+  const features = Object.keys(index.circles).sort().flatMap((c) => JSON.parse(readFileSync(resolve(dir, `${c}.geojson`), "utf-8")).features);
+  return { index, features };
 }
 
 /** APSPDCL DTR feeder names are raw ("WW FEEDER"); compare like the 11 kV run labels. */

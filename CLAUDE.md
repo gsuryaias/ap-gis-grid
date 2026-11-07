@@ -180,7 +180,7 @@ date (`live-status.json → discom.APCPDCL.linesFrom`).
 The heavy display layers — 11 kV feeders, the three tower layers, DISCOM 33 kV lines + SS, and RTGS layers
 ≥ 300 KB — are drawn from **static `z/x/y.pbf` directories** (not PMTiles: GitHub Pages' CDN breaks range requests on
 gzip-encoded copies). `npm run build:tiles` reads the files `build:data` / `build:ref` emit and writes `public/tiles/`
-(**git-ignored, built in CI**; ≈ 9k files / 67 MB): uncompressed MVT (`--no-tile-compression --drop-densest-as-needed`,
+(**git-ignored, built in CI**; ≈ 9.8k files / 91 MB): uncompressed MVT (`--no-tile-compression --drop-densest-as-needed`,
 one source-layer named after the overlay, low max zooms — z12 lines/towers, z10–11 DISCOM / RTGS; MapLibre over-zooms),
 plus `index.json` (`TileIndex`: per layer minzoom/maxzoom/bounds/count/content hash `v`/shards) and per layer
 `tiles.json` (`TileList`: which tiles exist — read only by the offline-pack planner). Contract in
@@ -188,7 +188,7 @@ plus `index.json` (`TileIndex`: per layer minzoom/maxzoom/bounds/count/content h
 - **Tiles carry only what the style filters / labels / picks on** (`keep`: DISCOM `id, discom, name`; towers `i, no, cp`
   with MVT id = index; RTGS label fields, MVT id = feature index so `ref:<layer>:<i>` refs keep working).
 - **Attributes come from JSON**: id-keyed DISCOM layers get **sidecar shards** `tiles/<layer>/rows/<k>.json` (full
-  features incl. geometry, `shardOf(id)` = FNV-1a mod 128 / 16 / 8) — the Inspector (`featureRow`), fly-to bounds and the
+  features incl. geometry, `shardOf(id)` = FNV-1a mod 256 (11 kV) / 16 / 8) — the Inspector (`featureRow`), fly-to bounds and the
   downstream GeoJSON download (`featureRows`) read only the shard(s) they need. Towers / RTGS Inspector picks still load
   the layer's own JSON (refs are indexes). An 11 kV feeder deep link ≈ one ~30 KB-gz shard + a few small tiles (e2e budget
   test < 300 KB decoded; was 3.1 MB gz).
@@ -233,6 +233,24 @@ circle, coast + layer visibility) is read by the map AND the data table (`passes
 `{enabled, discoms}` (old cached builds still read it); `layersStorage` never throws and skips no-op writes
 (persist calls setItem on every update); `parseStoredLayers` sanitises (tested in `state/store.test.ts`).
 
+**APSPDCL 11 kV routes (≈ 4,900 feeders, ≈ 112,000 km) come from APSPDCL's HT pole survey**, exported from
+its internal GeoServer as one KML per circle (`circle_<name>_HT_points.kml`, ~3 M points, 9.6 GB; kept in
+the owner's Google Drive `Transco/maps/SPDCL_HT_KML_Files`, with compressed KMZ copies in
+`SPDCL_HT_KMZ_Compressed`). Every point records `back_link_point` (the pole it hangs off), so
+`npm run import:spdcl` (`scripts/import-spdcl-11kv.mts`, pure helpers in `spdcl-lib.ts`, tests in
+`spdcl.test.ts`) chains child → parent spans per (circle, division, 33/11 kV SS, feeder) into routes:
+points within 5 m of their parent are contracted (duplicate captures), spans > 1 km dropped, and the tree is
+walked into ≈ one polyline per leaf (`chainTree`), Douglas–Peucker 5 m, 5 dp →
+committed `data/raw/discom/spdcl-11kv/<circle>.geojson` + `index.json` (vintage, per-circle stats,
+**skipped** circles). Owner decision (2026-11-03, same as APCPDCL): **routes only** — feeder, SS, section/
+sub-div/division/circle, pole / DTR-pole / VCB counts, km. **Never publish individual pole, DTR or VCB points,
+their ids, survey ids or back-links.** A truncated export (GeoServer died mid-download — no `</kml>` or a
+`ServiceException` tail; **Kadapa as of 2026-11-02**) is skipped. In `buildNetwork` (`etl-distribution.ts`) the
+import (`buildSpdclRoutes`) replaces the open-GIS APSPDCL 11 kV spans wherever it has coverage (`coverageMask`,
+~330 m cells); open-GIS spans survive only in uncovered areas (Kadapa). `live-status.json → network.APSPDCL`
+carries `routesFrom` / `routeCircles` / `routeCirclesSkipped` for the UI notes. Not refreshed by `npm run update` —
+re-run the import when APSPDCL supplies a new export (and re-export Kadapa).
+
 ## TRANSCO → 33 kV connectivity (`scripts/etl-connectivity.ts`, inferred)
 
 `buildDiscom()` links the DISCOM network to the TRANSCO grid (pure helpers, `scripts/connectivity.test.ts`):
@@ -264,7 +282,7 @@ feeders/lines, distribution transformers (DTRs) and APEPDCL AB switches → `dat
   employee ids are deliberately not kept. **Owner decision (2026-11-05): the AB-switch raw file and DTR
   `pole_no` (from the open GIS) stay published as they are** — don't re-raise.
 - **ETL** (`buildNetwork` in `etl-distribution.ts` → `etl-network.ts`): `discom-11kv-lines.geojson` (lazy overlay,
-  ≈ 20 MB raw / 3.1 MB gz — the biggest file; drawn from vector tiles when built, see "Vector tiles"), `net-dtr-<shard>.json`
+  ≈ 35 MB raw / 6.8 MB gz since the APSPDCL pole-survey routes — the biggest file; drawn from vector tiles when built, see "Vector tiles"), `net-dtr-<shard>.json`
   (≈ 305k DTRs in ~380 shards: APEPDCL by the first 4 chars of the DTR code, APSPDCL by the first 2 of the
   serial) and `search-network.json` (the "network" search tier + upstream trace chains). Every 11 kV feeder is
   linked to its 33/11 kV SS (APEPDCL: recorded `sub_station_id`; APSPDCL: name within 5 km, else a run end
@@ -275,7 +293,7 @@ feeders/lines, distribution transformers (DTRs) and APEPDCL AB switches → `dat
   `looksLikeDtrCode` (≥ 4 chars, has a digit, no spaces) fetches only the matching DTR shard(s) — all parsed
   and ranked off the main thread, only the top hits cross back. Picking a
   result primes its item and selects its ref (`f11-…` / `dtr:<code>` / …) → the Inspector's `net` adapter (attributes +
-  clickable trace, coverage caveat), which turns on / highlights / zooms the overlay. Coverage is partial (APSPDCL sparse; APCPDCL has no open
+  clickable trace, coverage caveat), which turns on / highlights / zooms the overlay. Coverage is partial (APSPDCL Kadapa partial; APCPDCL has no open
   11 kV data) — the UI says so.
 
 ## RTGS reference layers (`scripts/build-ref-layers.mts` → `public/data/ref/`, lazy)
