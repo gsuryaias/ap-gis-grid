@@ -1,5 +1,5 @@
 /**
- * DISCOM 11 kV network ETL (pure builders; orchestration in build-data.mts `buildNetwork`).
+ * DISCOM 11 kV network ETL (pure builders; orchestration in etl-distribution.ts `buildNetwork`).
  *
  * Inputs: data/raw/live/net-*.{geojson,json} (scripts/sync-network.mts) + the already-built 33 kV
  * layer (discom-ss / discom-lines / transco-33kv). Outputs:
