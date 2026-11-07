@@ -22,7 +22,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
 import { decodeTowers, type WebTowersFile } from "../src/overlays/towers.ts";
-import { shardOf, type TileIndex, type TileInfo } from "../src/overlays/tiles-core.ts";
+import { shardOf, tileKey, type TileIndex, type TileInfo, type TileList } from "../src/overlays/tiles-core.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "public/data");
@@ -199,6 +199,26 @@ function findRunner(): Runner | null {
   };
 }
 
+/** Which `z/x/y.pbf` tiles a built layer directory holds (→ `<layer>/tiles.json`). */
+export function listTiles(dir: string): TileList {
+  const out: TileList = {};
+  for (const z of readdirSync(dir)) {
+    if (!/^\d+$/.test(z)) continue;
+    const keys: number[] = [];
+    for (const x of readdirSync(join(dir, z))) {
+      if (!/^\d+$/.test(x)) continue;
+      for (const f of readdirSync(join(dir, z, x))) {
+        const m = /^(\d+)\.pbf$/.exec(f);
+        if (m) keys.push(tileKey(Number(z), Number(x), Number(m[1])));
+      }
+    }
+    out[z] = keys.sort((a, b) => a - b);
+  }
+  return out;
+}
+
+const writeTileList = (dir: string) => writeFileSync(join(dir, "tiles.json"), JSON.stringify(listTiles(dir)));
+
 function readIndex(): TileIndex {
   try {
     return JSON.parse(readFileSync(join(OUT, "index.json"), "utf8")) as TileIndex;
@@ -256,6 +276,7 @@ async function main(): Promise<void> {
     const dir = join(OUT, layer.id);
     if (!force && index.layers[layer.id]?.v === v && existsSync(dir)) {
       console.log(`  ${layer.id}: unchanged`);
+      if (!existsSync(join(dir, "tiles.json"))) writeTileList(dir);
       continue;
     }
     const t0 = Date.now();
@@ -267,6 +288,7 @@ async function main(): Promise<void> {
     rmSync(dir, { recursive: true, force: true });
     run(tippecanoeArgs(layer, relative(ROOT, input), relative(ROOT, dir)));
     rmSync(join(dir, "metadata.json"), { force: true });
+    writeTileList(dir);
 
     if (layer.shards > 0) {
       mkdirSync(join(dir, "rows"), { recursive: true });

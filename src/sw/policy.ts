@@ -7,6 +7,8 @@
 //   tiles/**?v=… (tiles + sidecars)  cache-first                                 → vtiles   (bounded LRU)
 //   CARTO / Esri basemap             stale-while-revalidate                      → basemap  (bounded LRU)
 //   Range requests, non-GET, everything else (weather APIs, radar, GDACS) → not handled (the network).
+//   Offline-pack downloads (`x-apgg-pack` header) → not handled: the page stores them in `offline` itself.
+// Every strategy falls back to the `offline` cache (Field offline packs, PR 14) when its own cache misses.
 
 export type Strategy = "network-first" | "cache-first" | "stale-while-revalidate";
 export type CacheId = "shell" | "assets" | "data" | "vtiles" | "basemap";
@@ -41,6 +43,11 @@ export const isBounded = (id: CacheId): id is BoundedId => (BOUNDED as readonly 
 
 export const NAV_TIMEOUT_MS = 4000;
 
+/** The Field offline packs' cache (written by the page — `offline/packs.ts` — never trimmed by the worker). */
+export const OFFLINE_CACHE = "offline";
+/** Request header marking an offline-pack download, which the worker leaves to the network. */
+export const PACK_HEADER = "x-apgg-pack";
+
 const BASEMAP_HOST = /(^|\.)(basemaps\.cartocdn\.com|arcgisonline\.com)$/;
 
 export interface RouteInput {
@@ -49,13 +56,15 @@ export interface RouteInput {
   mode?: string;
   /** The request carries a Range header. */
   range?: boolean;
+  /** An offline-pack download (`PACK_HEADER`). */
+  pack?: boolean;
 }
 
 /** How the service worker answers a request — null = let the network handle it. */
 export function route(req: RouteInput, scope: string): Route | null {
   // Range requests (media, PMTiles-style readers) must reach the network untouched: a cached
   // full 200 is not a valid answer to them, and Pages' CDN slices gzip copies unpredictably.
-  if (req.method !== "GET" || req.range) return null;
+  if (req.method !== "GET" || req.range || req.pack) return null;
   const url = new URL(req.url);
   if (url.href.startsWith(scope)) {
     const path = url.pathname.slice(new URL(scope).pathname.length);
@@ -99,7 +108,7 @@ export const tooBigToCache = (bytes: number, lim: Limits): boolean => bytes > li
 
 /** Cache names: the shell and assets are per build; the LRU caches persist across builds. */
 export function cacheNames(build: string) {
-  return { shell: `shell-${build}`, assets: `assets-${build}`, data: "data", vtiles: "vtiles", basemap: "basemap", meta: "sw-meta" } as const;
+  return { shell: `shell-${build}`, assets: `assets-${build}`, data: "data", vtiles: "vtiles", basemap: "basemap", meta: "sw-meta", offline: OFFLINE_CACHE } as const;
 }
 
 /**
@@ -110,6 +119,6 @@ export function cacheNames(build: string) {
 export function cachesToDelete(keys: readonly string[], build: string): string[] {
   const n = cacheNames(build);
   const prevAssets = keys.filter((k) => k.startsWith("assets-") && k !== n.assets).at(-1);
-  const keep = new Set<string>([n.shell, n.assets, n.data, n.vtiles, n.basemap, n.meta, ...(prevAssets ? [prevAssets] : [])]);
+  const keep = new Set<string>([n.shell, n.assets, n.data, n.vtiles, n.basemap, n.meta, n.offline, ...(prevAssets ? [prevAssets] : [])]);
   return keys.filter((k) => !keep.has(k));
 }

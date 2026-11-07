@@ -2,7 +2,7 @@
 // `scripts/vite-sw.ts` (IIFE, production builds only) with the build constants below injected.
 // Routing and budgets live in `policy.ts`, the LRU caches in `bounded-cache.ts` — both unit-tested.
 import { BoundedCache } from "./bounded-cache.ts";
-import { cacheNames, cachesToDelete, isBounded, LIMITS, route, type BoundedId, type Route } from "./policy.ts";
+import { cacheNames, cachesToDelete, isBounded, LIMITS, PACK_HEADER, route, type BoundedId, type Route } from "./policy.ts";
 import { isStaleVersion, type DataVersions } from "../data/data-version.ts";
 
 /** Hash of this build's asset list + data versions — names the per-build caches. */
@@ -83,7 +83,7 @@ async function activate(): Promise<void> {
 
 sw.addEventListener("fetch", (event) => {
   const req = event.request;
-  const r = route({ url: req.url, method: req.method, mode: req.mode, range: req.headers.has("range") }, SCOPE);
+  const r = route({ url: req.url, method: req.method, mode: req.mode, range: req.headers.has("range"), pack: req.headers.has(PACK_HEADER) }, SCOPE);
   if (!r) return;
   const store = storeFor(r.cache);
   const bg = new Background();
@@ -117,8 +117,14 @@ interface Store {
   idle(): Promise<void>;
 }
 
+/** The Field offline packs (written by the page) — the fallback of every store. */
+const offlineMatch = (req: Request | string) => caches.match(req, { cacheName: NAMES.offline }); // never creates it
+
 function storeFor(id: Route["cache"]): Store {
-  if (isBounded(id)) return bounded[id];
+  if (isBounded(id)) {
+    const b = bounded[id];
+    return { match: async (req) => (await b.match(req)) ?? (await offlineMatch(req)), put: (req, res) => b.put(req, res), idle: () => b.idle() };
+  }
   const name = NAMES[id];
   return {
     // Assets: any build's cache will do (hashed names) — a tab on the previous build finds its chunks.
