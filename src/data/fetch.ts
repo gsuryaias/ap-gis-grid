@@ -1,5 +1,12 @@
 // Fetch helpers shared by the resource loader (main thread) and the search worker. No React, no
 // DOM-only APIs beyond fetch — this module must stay importable from a Worker.
+import { versionQuery, type DataVersions } from "./data-version.ts";
+
+/** Injected by `scripts/vite-sw.ts` in production builds (absent in dev / tests ⇒ unversioned URLs). */
+declare const __DATA_VERSIONS__: DataVersions | undefined;
+
+/** Content versions of the site's data files in this build (see data-version.ts). */
+export const DATA_VERSIONS: DataVersions = typeof __DATA_VERSIONS__ === "object" && __DATA_VERSIONS__ ? __DATA_VERSIONS__ : {};
 
 /** HTTP failure with its status, so retry logic can tell 404 from 503. */
 export class HttpError extends Error {
@@ -26,7 +33,13 @@ export async function fetchJson<T>(url: string, signal?: AbortSignal, init?: Req
   return (await res.json()) as T;
 }
 
-/** Resolve a /data asset against the Vite base path (works on GitHub Pages project sites). */
+/** `?v=<content hash>` for a /data file in a production build, else "". */
+export const dataQuery = (file: string): string => versionQuery(`data/${file}`, DATA_VERSIONS);
+
+/**
+ * Resolve a /data asset against the Vite base path (works on GitHub Pages project sites), with its
+ * content version — so a deploy that changes a file changes its URL.
+ */
 export function dataUrl(file: string): string {
-  return `${import.meta.env.BASE_URL}data/${file}`;
+  return `${import.meta.env.BASE_URL}data/${file}${file ? dataQuery(file) : ""}`;
 }

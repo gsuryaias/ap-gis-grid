@@ -78,7 +78,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 | Layer | Path | Notes |
 |-------|------|-------|
 | ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
-| Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl`/`HttpError`), `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
+| Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl` (content-versioned, see "PWA / offline")/`HttpError`), `data-version.ts`, `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
 | State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices" and "URL v2"; selection history (`back()`), lens + workspaceContext |
 | Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in the map lenses, embedded/hidden in Plan; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
 | Shell / UI | `src/App.tsx` + `src/shell/` + `src/components/` | see "Lenses (the shell)": `Header`, `LensTabs`, `MoreMenu`, `BottomSheet`, `MapLensChrome`, `PlanChrome`, `MapToolbar`; components DataTableSheet, Summary/DataQuality/Weather views, Measure/Nearby controls |
@@ -382,13 +382,32 @@ power-grid classes, cyclone track, focus pin (`top`).
   `useMeasure`, `useNearbyMarker`, `useMapResize` (debounced; MapLibre's `trackResize` is off).
 - Add a layer = add a def (and its pure builder/spec + a test); never mutate the map from a component.
 
-## PWA / offline
+## PWA / offline (service worker — Atlas 2.0 phase 4 PR 13)
 
-`public/manifest.webmanifest` + `public/sw.js` (registered in `main.tsx`, prod only): hashed assets cache-first,
-navigations network-first, `data/*` stale-while-revalidate (`live-status.json` network-first), overlay vector tiles
-+ sidecars (`tiles/*`, content-versioned) cache-first in a 4,000-entry cache (`tiles/index.json` network-first), CARTO/Esri
-basemap tiles SWR in a 1,500-entry cache. (Atlas 2.0 PR 13 reworks this: build-hash VERSION, byte-bounded LRU.) Bump `VERSION` in `sw.js` to invalidate. Because data is SWR, the
-"updated — reload" toast compares the loaded `meta.generatedAt` with the latest `live-status.generatedAt`.
+`public/manifest.webmanifest` + a **generated** service worker: `src/sw/sw.ts` (event wiring) over `src/sw/policy.ts`
+(routing, budgets, activate clean-up — pure) and `src/sw/bounded-cache.ts` (LRU cache), unit-tested in `src/sw/sw.test.ts`.
+`scripts/vite-sw.ts` (a Vite plugin, **production builds only**) compiles it to a classic IIFE `dist/sw.js` with the build
+constants injected; `main.tsx` registers it in prod. There is no `public/sw.js` and no hand-bumped `VERSION`.
+- **Content-versioned data URLs**: the plugin hashes `public/data/**` + `public/tiles/index.json`
+  (`scripts/data-versions.ts`) into `__DATA_VERSIONS__`; `dataUrl(file)` (`data/fetch.ts`, also the search worker's
+  `dataQuery`) appends `?v=<hash>` — contract in `data/data-version.ts` (the ~380 DTR shards share one version;
+  **`live-status.json` is never versioned**: it's polled to detect new deploys). A deploy that changes a file changes its
+  URL, so the first view after a deploy can't mix new code with stale data, and unchanged files keep their cache entry.
+  Dev / tests: the map is empty ⇒ plain URLs.
+- **Routes**: navigations network-first (after 4 s a cached shell answers; the response still updates the cache) →
+  `shell-<build>`; hashed `assets/*` cache-first, **precached on install** (every chunk, so lazy lenses / dialogs / the search
+  worker work offline; unchanged chunks are copied from the previous build's cache) → `assets-<build>`; `data/*?v=` +
+  `tiles/index.json?v=` cache-first, unversioned data (live-status) network-first → `data`; `tiles/**?v=` (tiles + sidecars)
+  cache-first → `vtiles`; CARTO / Esri basemap SWR → `basemap`. **Range requests, non-GET and live APIs bypass the worker.**
+- **Budgets** (`LIMITS`, LRU by count AND bytes, trimmed to 90 %): data 800 / 80 MB, vtiles 6,000 / 60 MB, basemap
+  2,000 / 80 MB; a response > ⅓ of a budget is served but not cached. Each LRU cache keeps a url → [bytes, lastUsed] index
+  persisted (debounced) in the `sw-meta` cache and rebuilt against `keys()` after a restart.
+- **Activate**: `__SW_BUILD__` (hash of the asset list + data versions) names the per-build caches; everything else is
+  deleted except the LRU caches and the **previous build's `assets-*`** (a tab open across a deploy can still lazy-load
+  its chunks); data entries whose version this build superseded are purged. `skipWaiting` + `clients.claim` as before.
+- Because data URLs are versioned, the "updated — reload" toast still compares the loaded `meta.generatedAt` with the latest
+  (unversioned, network-first) `live-status.generatedAt`. e2e: `e2e/offline.spec.ts` (versioned URLs served by the worker;
+  an offline reload reopens the map).
 
 ## Generation overlay (lazy-loaded)
 
@@ -813,7 +832,8 @@ so CI can regenerate. `Transco.kml` is retained for reference but unused.
 ## Deploy
 
 `.github/workflows/deploy.yml` publishes `dist/` to Pages on push to `main` (it runs `build:data` →
-`apt install tippecanoe` + `build:tiles --require` → `npm test` → `build`); a parallel, non-blocking `e2e` job runs the Playwright smoke suite against the build
+`apt install tippecanoe` + `build:tiles --require` → `npm test` → `build`, which also emits `sw.js` and hashes the data for
+its versioned URLs — so `build:tiles` must run before `build`); a parallel, non-blocking `e2e` job runs the Playwright smoke suite against the build
 and uploads traces on failure. Vite `base` is `/ap-gis-grid/` (override via `BASE_PATH` env — `/` for a
 user/org site, `/<repo>/` if renamed). Repo: Settings → Pages → Source = GitHub Actions.
 

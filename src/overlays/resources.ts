@@ -11,7 +11,8 @@ import { DISCOM11_DEF, DISCOM_DEFS, refDef, TOWER_DEFS, type OverlayDef, type Re
 import { rowsPath, shardOf, tilePath, type TileIndex, type TileInfo } from "./tiles-core.ts";
 import { decodeTowers, type WebTowersFile } from "./towers.ts";
 import { dataUrl, defineResource, fetchJson, HttpError, isTransient } from "../data/resources.ts";
-import { isAbort } from "../data/fetch.ts";
+import { DATA_VERSIONS, isAbort } from "../data/fetch.ts";
+import { versionQuery } from "../data/data-version.ts";
 
 /** Overlay defs known without any fetch. */
 export const STATIC_OVERLAY_DEFS: Record<string, OverlayDef> = Object.fromEntries(
@@ -46,7 +47,7 @@ const EMPTY_INDEX: TileIndex = { generatedAt: "", layers: {} };
 export const tileIndex = defineResource<TileIndex>("tile-index", {
   load: async (_p, signal) => {
     try {
-      const idx = await fetchJson<TileIndex>(siteUrl("tiles/index.json"), signal);
+      const idx = await fetchJson<TileIndex>(siteUrl(`tiles/index.json${versionQuery("tiles/index.json", DATA_VERSIONS)}`), signal);
       return idx && typeof idx.layers === "object" ? idx : EMPTY_INDEX;
     } catch (e) {
       // Network blips / 5xx retry (and surface); a 404 (Pages) or Vite's dev server answering an

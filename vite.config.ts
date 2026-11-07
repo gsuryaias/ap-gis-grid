@@ -2,6 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { serviceWorker } from "./scripts/vite-sw.ts";
 
 // GitHub Pages project site is served from /<repo>/. Override with BASE_PATH for a
 // user/org site ("/") or a different repo name.
@@ -9,7 +10,8 @@ const base = process.env.BASE_PATH ?? "/ap-gis-grid/";
 
 export default defineConfig({
   base,
-  plugins: [react(), tailwindcss()],
+  // serviceWorker(): production only — emits sw.js and content-versions the data URLs.
+  plugins: [react(), tailwindcss(), serviceWorker()],
   // Module workers (workers/search.worker.ts) — supported by every browser that runs MapLibre v5.
   worker: { format: "es" },
   build: {
