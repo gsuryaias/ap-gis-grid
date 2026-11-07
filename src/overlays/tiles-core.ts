@@ -3,6 +3,8 @@
 //
 //   public/tiles/index.json                       TileIndex (absent ⇒ every layer falls back to GeoJSON)
 //   public/tiles/<layer>/{z}/{x}/{y}.pbf          uncompressed MVT, one source-layer named <layer>
+//   public/tiles/<layer>/tiles.json               TileList: which tiles exist (empty ones are never written) —
+//                                                 read only by the Field offline pack planner
 //   public/tiles/<layer>/rows/<shard>.json        attribute sidecar: full features (props + geometry),
 //                                                 sharded by `shardOf(id)` — the Inspector, fly-to
 //                                                 bounds and downloads read these, never clipped tiles
@@ -45,3 +47,12 @@ export const tilePath = (layer: string, info: Pick<TileInfo, "v">): string => `t
 
 /** Path of one attribute-sidecar shard, relative to the site base. */
 export const rowsPath = (layer: string, shard: number, info: Pick<TileInfo, "v">): string => `tiles/${layer}/rows/${shard}.json?v=${info.v}`;
+
+/** The tiles a layer has, by zoom: `tileKey(z, x, y)` numbers, ascending. */
+export type TileList = Record<string, number[]>;
+
+/** A tile's number within its zoom (unique per z). */
+export const tileKey = (z: number, x: number, y: number): number => x * 2 ** z + y;
+
+/** Path of a layer's tile list, relative to the site base. */
+export const tileListPath = (layer: string, info: Pick<TileInfo, "v">): string => `tiles/${layer}/tiles.json?v=${info.v}`;

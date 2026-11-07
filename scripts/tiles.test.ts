@@ -1,8 +1,10 @@
 // Vector-tile build helpers (scripts/build-tiles.mts) + the shared tile contract (src/overlays/tiles-core.ts).
 import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { FeatureCollection } from "geojson";
-import { boundsOf, REF_TILE_MIN_BYTES, shardFeatures, tileInput, tileLayers, tippecanoeArgs } from "./build-tiles.mts";
+import { boundsOf, listTiles, REF_TILE_MIN_BYTES, shardFeatures, tileInput, tileLayers, tippecanoeArgs } from "./build-tiles.mts";
 import { fnv1a, rowsPath, shardOf, tilePath, type TileIndex } from "../src/overlays/tiles-core.ts";
 import { DISCOM11_DEF, DISCOM_DEFS, TOWER_DEFS } from "../src/overlays/catalog.ts";
 
@@ -95,6 +97,15 @@ describe.runIf(existsSync(INDEX))("built tiles", () => {
       expect(info.count, id).toBe(data.features.length);
       expect(info.shards, id).toBeGreaterThan(0);
       for (let k = 0; k < info.shards; k++) expect(existsSync(new URL(`../public/tiles/${id}/rows/${k}.json`, import.meta.url)), `${id} shard ${k}`).toBe(true);
+    }
+  });
+
+  it("every layer lists exactly the tiles it holds (the offline-pack planner trusts the list)", () => {
+    for (const id of Object.keys(index.layers)) {
+      const dir = fileURLToPath(new URL(`../public/tiles/${id}`, import.meta.url));
+      const f = join(dir, "tiles.json");
+      if (!existsSync(f)) continue; // built before tile lists existed — CI always writes them
+      expect(JSON.parse(readFileSync(f, "utf8")), id).toEqual(listTiles(dir));
     }
   });
 });

@@ -182,7 +182,8 @@ The heavy display layers — 11 kV feeders, the three tower layers, DISCOM 33 kV
 gzip-encoded copies). `npm run build:tiles` reads the files `build:data` / `build:ref` emit and writes `public/tiles/`
 (**git-ignored, built in CI**; ≈ 9k files / 67 MB): uncompressed MVT (`--no-tile-compression --drop-densest-as-needed`,
 one source-layer named after the overlay, low max zooms — z12 lines/towers, z10–11 DISCOM / RTGS; MapLibre over-zooms),
-plus `index.json` (`TileIndex`: per layer minzoom/maxzoom/bounds/count/content hash `v`/shards). Contract in
+plus `index.json` (`TileIndex`: per layer minzoom/maxzoom/bounds/count/content hash `v`/shards) and per layer
+`tiles.json` (`TileList`: which tiles exist — read only by the offline-pack planner). Contract in
 `src/overlays/tiles-core.ts` (shared with the script).
 - **Tiles carry only what the style filters / labels / picks on** (`keep`: DISCOM `id, discom, name`; towers `i, no, cp`
   with MVT id = index; RTGS label fields, MVT id = feature index so `ref:<layer>:<i>` refs keep working).
@@ -398,7 +399,8 @@ constants injected; `main.tsx` registers it in prod. There is no `public/sw.js` 
   `shell-<build>`; hashed `assets/*` cache-first, **precached on install** (every chunk, so lazy lenses / dialogs / the search
   worker work offline; unchanged chunks are copied from the previous build's cache) → `assets-<build>`; `data/*?v=` +
   `tiles/index.json?v=` cache-first, unversioned data (live-status) network-first → `data`; `tiles/**?v=` (tiles + sidecars)
-  cache-first → `vtiles`; CARTO / Esri basemap SWR → `basemap`. **Range requests, non-GET and live APIs bypass the worker.**
+  cache-first → `vtiles`; CARTO / Esri basemap SWR → `basemap`. **Range requests, non-GET, live APIs and offline-pack downloads
+  (`x-apgg-pack`) bypass the worker**; every strategy falls back to the Field offline packs' `offline` cache on a miss.
 - **Budgets** (`LIMITS`, LRU by count AND bytes, trimmed to 90 %): data 800 / 80 MB, vtiles 6,000 / 60 MB, basemap
   2,000 / 80 MB; a response > ⅓ of a budget is served but not cached. Each LRU cache keeps a url → [bytes, lastUsed] index
   persisted (debounced) in the `sw-meta` cache and rebuilt against `keys()` after a restart.
@@ -408,6 +410,31 @@ constants injected; `main.tsx` registers it in prod. There is no `public/sw.js` 
 - Because data URLs are versioned, the "updated — reload" toast still compares the loaded `meta.generatedAt` with the latest
   (unversioned, network-first) `live-status.generatedAt`. e2e: `e2e/offline.spec.ts` (versioned URLs served by the worker;
   an offline reload reopens the map).
+
+## Field offline packs (`src/offline/`, Atlas 2.0 phase 4 PR 14)
+
+The Field panel's **Offline** section: pick a circle → **Save for offline** (progress bar, files + MB, Cancel) → saved packs
+listed with their tile size, date and "up to date" / "update available (N files)" (Update re-fetches only what changed;
+content-versioned URLs make it incremental), Delete, and the browser's storage estimate. Needs the service worker
+(production build; the section says so otherwise — `useOfflineSupported` follows `controllerchange`).
+- **What a pack holds** (`plan.ts`, pure, `plan.test.ts` on the real data): for `PACK_LAYERS` (Field defaults, 11 kV, NH / SH /
+  rail / mandals / mandal HQs for context) + any overlay switched on — the circle's vector tiles at every zoom the layer has
+  (MapLibre over-zooms the deepest), **only tiles that exist** (`tiles/<layer>/tiles.json`, written by `build:tiles`; empty
+  tiles are never written, so each would be a 404 page), all sidecar shards (sharded by id, not place), tower files and
+  untiled layers' GeoJSON; plus statewide `PACK_FILES` (core grid, search tiers, connectivity, generation / power grid,
+  live-status, catalogues) and the basemap style + sprites + the app's label glyphs. Circle extent = its substations
+  + 0.15° (`circleBBox`; lines are left out — 400 kV corridors run far outside). Typical: 450–1,600 tiles / 3–12 MB per
+  circle + ≈ 46 MB of statewide files stored once.
+- **No bulk third-party basemap tiles** (CARTO / Esri terms) — streets show offline only where the user already looked
+  (the worker's basemap LRU cache); the RTGS layers give context. Transformer-code search needs a connection (DTR shards
+  aren't packed).
+- **Storage** (`packs.ts`): ONE cache `offline` (written by the page, never trimmed by the worker; every worker strategy
+  falls back to it on a miss) + an index in the same cache (`__offline/index.json`: per pack its URLs, known-missing URLs,
+  failures; per URL its bytes). Delete removes only URLs no other pack references; the last delete drops the cache. Pack
+  downloads carry `x-apgg-pack` so the worker steps aside (no double caching). `navigator.storage.persist()` is requested
+  on the first save. Never `caches.open("offline")` just to read — it re-creates a deleted cache; use
+  `caches.match(req, {cacheName})`.
+- e2e (`e2e/offline.spec.ts`): save Vizianagaram → its 11 kV tiles render from the pack with the network off → delete.
 
 ## Generation overlay (lazy-loaded)
 
@@ -675,7 +702,7 @@ switches to one `LayerOn`). Lens presets are not persisted as the viewer's overl
   `BottomSheet` (peek / half / full, pointer drag + snap, handle is a button) holding the Inspector (`variant="sheet"`),
   the nearby list or the lens panel. `map-helpers.framing` frames flights above the half-open sheet on phones.
 - **Panels** (`lenses/panels.tsx`): Explore (`ExplorePanel` — Start here, network at a glance, layers + legend) and
-  Field (`FieldPanel` — near me, trace via search, layers) are inline; Storm (`StormPanel`, the Weather monitor body
+  Field (`FieldPanel` — near me, trace via search, offline packs, layers) are inline; Storm (`StormPanel`, the Weather monitor body
   in compact form — the full situation panel is phase 5) and Plan (`workspaces/mis/MisWorkspace.tsx`) are lazy.
   `StartHere` cards are dismissible per lens (`apgg-start-<lens>`).
 - **Plan / map embedding**: `MapPane` renders the shared map in `full` (map lenses), `embedded` (split) or `hidden`

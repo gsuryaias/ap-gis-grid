@@ -1,8 +1,9 @@
-// Field lens panel: near me, trace a transformer / feeder, and the layer list (towers + 33 kV on).
+// Field lens panel: near me, trace a transformer / feeder, offline packs, and the layer list (towers + 33 kV on).
 import { useLocateMe } from "../components/NearbyControl.tsx";
 import { PinIcon, SearchIcon, TargetIcon } from "../components/icons.tsx";
 import { useAppStore } from "../state/store.ts";
 import { LayersBlock } from "./ExplorePanel.tsx";
+import { OfflinePacks } from "../offline/OfflinePacks.tsx";
 import { PanelSection, StartHere } from "./StartHere.tsx";
 
 /** Focus the app's search box (the one omnisearch input). */
@@ -52,6 +53,9 @@ export default function FieldPanel() {
         <p className="mt-1.5 px-1 text-[11px] leading-snug text-ink-2">
           The trace is inferred from the DISCOMs' open GIS: APEPDCL is near-complete, APSPDCL is partial and APCPDCL publishes no 11 kV data.
         </p>
+      </PanelSection>
+      <PanelSection title="Offline">
+        <OfflinePacks />
       </PanelSection>
       <LayersBlock />
     </div>
