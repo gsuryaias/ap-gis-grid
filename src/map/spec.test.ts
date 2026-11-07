@@ -233,15 +233,17 @@ describe("weather specs", () => {
     expect(weatherOn(on, "cyclone")).toBe(true);
   });
 
-  it("the risk halo filters to exactly the substations inside a cone", () => {
-    const ss = (id: string, lng: number, lat: number) => ({ id, lng, lat }) as SubstationProps;
+  it("the risk halo filters to exactly the substations in the warning envelope", () => {
+    const ss = (id: string, lng: number, lat: number, coastalBand?: 0 | 1 | 2 | 3) => ({ id, lng, lat, coastalBand }) as SubstationProps;
     const cone = {
       type: "Polygon" as const,
       coordinates: [[[80, 15], [82, 15], [82, 17], [80, 17], [80, 15]]],
     };
-    const wx = { cyclones: [{ conePolygons: [cone] }] } as unknown as WeatherData;
-    const ids = wxRiskIds(wx, [ss("s-b", 81, 16), ss("s-out", 78, 13), ss("s-a", 80.5, 15.5)]);
-    expect(ids.sort()).toEqual(["s-a", "s-b"]);
+    const track = { type: "Feature", properties: { wxKind: "track" }, geometry: { type: "LineString", coordinates: [[84, 14], [81, 16]] } };
+    const wx = { cyclones: [{ id: 1, alertLevel: "Orange", conePolygons: [cone], geometry: { type: "FeatureCollection", features: [track] } }] } as unknown as WeatherData;
+    // s-coast is outside the cone but coastal and ~100 km from the track; s-inland is as near but inland.
+    const ids = wxRiskIds(wx, [ss("s-b", 81, 16), ss("s-out", 78, 13), ss("s-a", 80.5, 15.5), ss("s-coast", 83, 15.6, 0), ss("s-inland", 83, 15.6, 3)]);
+    expect(ids.sort()).toEqual(["s-a", "s-b", "s-coast"]);
     expect(wxRiskSpec(["s-b", "s-a"])).toEqual({
       [WX_LAYER.riskSubstations]: { filter: ["in", ["get", "id"], ["literal", ["s-a", "s-b"]]] },
     });

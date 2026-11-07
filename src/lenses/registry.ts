@@ -96,7 +96,8 @@ export const LENSES: LensDef[] = [
     startHere: {
       title: "Storm watch",
       tips: [
-        "Rain radar, cyclone tracks and forecast cones are on; substations inside a cone get an amber halo.",
+        "Rain radar, cyclone tracks and forecast cones are on; substations in the warning envelope (the cone, or the coast near the track) get an amber halo.",
+        "The panel follows the exposure down the network: radial pockets and cut points, then the 33/11 kV substations behind them. Print briefing makes a one-page report.",
         "The CRZ line and cyclone shelters are on too — more hazards are in the layer list.",
         "All weather is third-party model output (indicative) — verify against IMD advisories.",
       ],

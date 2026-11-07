@@ -9,7 +9,9 @@ import { useResource } from "../data/resources.ts";
 import { downloadText, toCsv } from "../lib/export.ts";
 import { compass8 } from "../lib/geo.ts";
 import { riskTier, substationRisk, type RiskTier } from "../lib/risk.ts";
-import { assetsInCone, wmoGroup, wmoLabel, type WmoGroup } from "../lib/weather.ts";
+import { stormSystem } from "../data/storm-systems.ts";
+import { warningEnvelope } from "../lib/storm-envelope.ts";
+import { wmoGroup, wmoLabel, type WmoGroup } from "../lib/weather.ts";
 import { useAppStore } from "../state/store.ts";
 import { WX_ALERT_COLOR } from "../theme/palette.ts";
 import { Dialog } from "./Dialog.tsx";
@@ -46,7 +48,7 @@ export function fmtTime(ts: number): string {
   return new Date(ts).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
 
-function fmtDay(iso: string): string {
+export function fmtDay(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric" });
 }
 
@@ -66,11 +68,13 @@ const TIER_CLASS: Record<RiskTier, string | undefined> = {
 function CycloneCard({ ev, data }: { ev: CycloneEvent; data: GridData }) {
   const select = useAppStore((s) => s.select);
   const toggleView = useAppStore((s) => s.toggleWeatherView);
-  // Substations inside the forecast cone / alert swaths — the grid-relevance readout, ranked
-  // by the indicative vulnerability screening score (storm mode).
+  // Substations in this system's warning envelope (cone / alert swaths, plus the coast near the
+  // track — `lib/storm.ts`), ranked by the indicative vulnerability screening score.
   const atRisk = useMemo(() => {
     const ga = graphAnalysis(data);
-    return assetsInCone(data.substations, ev.conePolygons)
+    const ids = new Set(warningEnvelope(data.substations, [stormSystem(ev)]).map((h) => h.id));
+    return data.substations
+      .filter((ss) => ids.has(ss.id))
       .map((ss) => {
         const feedDegree = ga.feedDegrees.get(ss.id) ?? 0;
         // Core SS carry no commissioning date (`doc` is null in this dataset) → unknown age.
@@ -126,11 +130,11 @@ function CycloneCard({ ev, data }: { ev: CycloneEvent; data: GridData }) {
       <p className="mt-1 text-sm">
         {atRisk.length > 0 ? (
           <span className="font-medium text-ink">
-            {atRisk.length} substation{atRisk.length === 1 ? "" : "s"} inside the forecast envelope
+            {atRisk.length} substation{atRisk.length === 1 ? "" : "s"} in the warning envelope
             <span className="font-normal text-ink-2"> (also haloed on the map · indicative)</span>
           </span>
         ) : (
-          <span className="text-ink-2">No AP-TRANSCO substations inside the current forecast envelope.</span>
+          <span className="text-ink-2">No AP-TRANSCO substations in the current warning envelope (cone, or coast near the track).</span>
         )}
       </p>
       {atRisk.length > 0 && (
@@ -141,7 +145,7 @@ function CycloneCard({ ev, data }: { ev: CycloneEvent; data: GridData }) {
             </span>
             <button
               onClick={exportCsv}
-              title="Export all in-cone substations as CSV"
+              title="Export every substation in the warning envelope as CSV"
               className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
             >
               <DownloadIcon width={14} height={14} /> CSV
@@ -206,11 +210,98 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-1.5 mt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-2">{children}</h3>;
 }
 
-/** The monitor's content; `compact` lays it out for a narrow column (the Storm lens panel). */
-export function WeatherBody({ weather, data, compact }: { weather: WeatherData; data: GridData; compact?: boolean }) {
+/** Per-circle current conditions (cards). */
+export function CircleConditions({ weather, compact }: { weather: WeatherData; compact?: boolean }) {
+  if (!weather.circles.length) return null;
+  return (
+    <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"}>
+      {weather.circles.map((cw) => (
+        <CircleCard key={cw.circle} cw={cw} />
+      ))}
+    </div>
+  );
+}
+
+/** Offshore wave / swell strip. */
+export function SeaState({ weather, compact }: { weather: WeatherData; compact?: boolean }) {
+  if (!weather.marine.length) return null;
+  return (
+    <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"}>
+      {weather.marine.map((m) => (
+        <div key={m.name} className="rounded-xl border border-line bg-surface-2 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-1">
+            <span className="truncate text-xs font-semibold text-ink">{m.name}</span>
+            <WaveIcon width={15} height={15} className="shrink-0 text-ink-2" />
+          </div>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-ink">{m.waveM != null ? `${m.waveM.toFixed(1)} m` : "—"}</p>
+          <p className="text-[11px] tabular-nums text-ink-2">swell {m.swellM != null ? `${m.swellM.toFixed(1)} m` : "—"}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 3-day outlook table (max temp / max gust / rain per circle). */
+export function Outlook({ weather }: { weather: WeatherData }) {
+  if (!weather.circles.length || !weather.circles[0].daily.dates.length) return null;
+  return (
+    <div tabIndex={0} className="overflow-x-auto rounded-xl border border-line">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-line bg-surface-2 text-left text-[11px] font-semibold uppercase tracking-wide text-ink-2">
+            <th className="px-3 py-2">Circle</th>
+            {weather.circles[0].daily.dates.map((d) => (
+              <th key={d} className="px-3 py-2 text-right">{fmtDay(d)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {weather.circles.map((cw) => (
+            <tr key={cw.circle} className="border-b border-line/60 last:border-0">
+              <td className="px-3 py-1.5 font-medium text-ink">{cw.circle}</td>
+              {cw.daily.dates.map((d, i) => (
+                <td key={d} className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums text-ink-2">
+                  <span className="inline-flex items-center gap-1.5">
+                    <WxIcon code={cw.daily.codes[i]} size={13} />
+                    <span className="text-ink">{Math.round(cw.daily.tMaxC[i])}°</span>
+                    <WindIcon width={12} height={12} />
+                    {Math.round(cw.daily.gustMaxKmh[i])}
+                    {cw.daily.precipSumMm[i] >= 1 && (
+                      <span className="text-sky-600 dark:text-sky-400">{Math.round(cw.daily.precipSumMm[i])} mm</span>
+                    )}
+                  </span>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Per-source failures + the attribution / honesty footnote. */
+export function WeatherSources({ weather }: { weather: WeatherData }) {
   return (
     <>
-      {/* Active cyclones */}
+      {weather.sourceErrors.length > 0 && (
+        <p className="mt-3 rounded-lg bg-amber-100/70 px-2.5 py-2 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
+          Some sources didn’t respond: {weather.sourceErrors.join(" · ")}
+        </p>
+      )}
+      <p className="mt-3 text-xs text-ink-2">
+        Indicative, third-party data — not an operational forecast. Conditions &amp; marine:
+        Open-Meteo · Radar: RainViewer · Cyclones: GDACS (UN/EC JRC). Gusts and cyclone envelopes
+        are model outputs; verify against IMD advisories before acting.
+      </p>
+    </>
+  );
+}
+
+/** The monitor's content. */
+export function WeatherBody({ weather, data }: { weather: WeatherData; data: GridData }) {
+  return (
+    <>
       <SectionTitle>Tropical cyclones · Bay of Bengal / Arabian Sea</SectionTitle>
       {weather.cyclones.length === 0 ? (
         <p className="rounded-xl border border-line bg-surface-2 px-3.5 py-2.5 text-sm text-ink-2">
@@ -223,94 +314,13 @@ export function WeatherBody({ weather, data, compact }: { weather: WeatherData; 
           ))}
         </div>
       )}
-
-      {/* Per-circle current conditions */}
-      {weather.circles.length > 0 && (
-        <>
-          <SectionTitle>Current conditions by circle</SectionTitle>
-          <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"}>
-            {weather.circles.map((cw) => (
-              <CircleCard key={cw.circle} cw={cw} />
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Coastal / marine strip */}
-      {weather.marine.length > 0 && (
-        <>
-          <SectionTitle>Coastal sea state</SectionTitle>
-          <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"}>
-            {weather.marine.map((m) => (
-              <div key={m.name} className="rounded-xl border border-line bg-surface-2 px-3 py-2.5">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="truncate text-xs font-semibold text-ink">{m.name}</span>
-                  <WaveIcon width={15} height={15} className="shrink-0 text-ink-2" />
-                </div>
-                <p className="mt-1 text-lg font-semibold tabular-nums text-ink">
-                  {m.waveM != null ? `${m.waveM.toFixed(1)} m` : "—"}
-                </p>
-                <p className="text-[11px] tabular-nums text-ink-2">
-                  swell {m.swellM != null ? `${m.swellM.toFixed(1)} m` : "—"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* 3-day outlook */}
-      {weather.circles.length > 0 && weather.circles[0].daily.dates.length > 0 && (
-        <>
-          <SectionTitle>3-day outlook · max temp / max gust / rain</SectionTitle>
-          <div tabIndex={0} className="overflow-x-auto rounded-xl border border-line">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line bg-surface-2 text-left text-[11px] font-semibold uppercase tracking-wide text-ink-2">
-                  <th className="px-3 py-2">Circle</th>
-                  {weather.circles[0].daily.dates.map((d) => (
-                    <th key={d} className="px-3 py-2 text-right">{fmtDay(d)}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {weather.circles.map((cw) => (
-                  <tr key={cw.circle} className="border-b border-line/60 last:border-0">
-                    <td className="px-3 py-1.5 font-medium text-ink">{cw.circle}</td>
-                    {cw.daily.dates.map((d, i) => (
-                      <td key={d} className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums text-ink-2">
-                        <span className="inline-flex items-center gap-1.5">
-                          <WxIcon code={cw.daily.codes[i]} size={13} />
-                          <span className="text-ink">{Math.round(cw.daily.tMaxC[i])}°</span>
-                          <WindIcon width={12} height={12} />
-                          {Math.round(cw.daily.gustMaxKmh[i])}
-                          {cw.daily.precipSumMm[i] >= 1 && (
-                            <span className="text-sky-600 dark:text-sky-400">
-                              {Math.round(cw.daily.precipSumMm[i])} mm
-                            </span>
-                          )}
-                        </span>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {weather.sourceErrors.length > 0 && (
-        <p className="mt-3 rounded-lg bg-amber-100/70 px-2.5 py-2 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
-          Some sources didn’t respond: {weather.sourceErrors.join(" · ")}
-        </p>
-      )}
-
-      <p className="mt-3 text-xs text-ink-2">
-        Indicative, third-party data — not an operational forecast. Conditions &amp; marine:
-        Open-Meteo · Radar: RainViewer · Cyclones: GDACS (UN/EC JRC). Gusts and cyclone envelopes
-        are model outputs; verify against IMD advisories before acting.
-      </p>
+      {weather.circles.length > 0 && <SectionTitle>Current conditions by circle</SectionTitle>}
+      <CircleConditions weather={weather} />
+      {weather.marine.length > 0 && <SectionTitle>Coastal sea state</SectionTitle>}
+      <SeaState weather={weather} />
+      {weather.circles[0]?.daily.dates.length > 0 && <SectionTitle>3-day outlook · max temp / max gust / rain</SectionTitle>}
+      <Outlook weather={weather} />
+      <WeatherSources weather={weather} />
     </>
   );
 }

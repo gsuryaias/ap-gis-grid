@@ -2,14 +2,16 @@
 // the registry (`map/registry/core.ts`) mounts them through the engine:
 //   - RainViewer composite rain-radar raster (latest frame; the engine swaps tiles in place)
 //   - GDACS cyclone geometry: alert swaths + forecast cone + track + current position
-//   - an amber halo on substations that sit inside a forecast cone (filter on the core SS source)
+//   - an amber halo on substations in the warning envelope — inside a forecast cone, or coastal and
+//     near the track (`lib/storm.ts`; a filter on the core SS source)
 import type { ExpressionSpecification, LayerSpecification } from "maplibre-gl";
 import type { Feature, FeatureCollection } from "geojson";
 import type { FilterState } from "../data/selectors.ts";
 import type { WeatherData } from "../data/weather.ts";
 import { WX_ALERT_COLOR, WX_RISK_COLOR, WX_TRACK_COLOR } from "../theme/palette.ts";
 import type { SubstationProps } from "../data/types.ts";
-import { assetsInCone } from "../lib/weather.ts";
+import { stormSystems } from "../data/storm-systems.ts";
+import { warningEnvelope } from "../lib/storm-envelope.ts";
 import { SRC } from "./layers.ts";
 import type { MapSpec } from "./spec.ts";
 
@@ -115,7 +117,7 @@ export function cycloneLineLayers(): LayerSpecification[] {
   ];
 }
 
-/** The amber halo on substations inside a forecast cone (rides the core SS source). */
+/** The amber halo on substations in the warning envelope (rides the core SS source). */
 export function riskSubstationLayers(): LayerSpecification[] {
   return [
     {
@@ -134,15 +136,17 @@ export function riskSubstationLayers(): LayerSpecification[] {
   ];
 }
 
-/** Pure: the amber at-risk halo shows exactly the substations inside an active forecast cone. */
+/** Pure: the amber at-risk halo shows exactly the substations in the warning envelope. */
 export function wxRiskSpec(riskIds: readonly string[]): MapSpec {
   return { [WX_LAYER.riskSubstations]: { filter: ["in", ["get", "id"], ["literal", [...riskIds].sort()]] } };
 }
 
-/** Pure: the substations inside any active cyclone's forecast cone (feeds `wxRiskSpec`). */
+/**
+ * Pure: the substations in any active system's warning envelope — inside its cone, or coastal
+ * (band ≤ 1) and within `STORM_TRACK_KM` of its track (feeds `wxRiskSpec`).
+ */
 export function wxRiskIds(weather: WeatherData, substations: SubstationProps[]): string[] {
-  const cones = weather.cyclones.flatMap((ev) => ev.conePolygons);
-  return cones.length ? assetsInCone(substations, cones).map((s) => s.id) : [];
+  return warningEnvelope(substations, stormSystems(weather)).map((h) => h.id);
 }
 
 /** Pure: is a weather map layer on? The master toggle × that layer's sub-toggle. */

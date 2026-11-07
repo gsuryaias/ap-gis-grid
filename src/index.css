@@ -113,3 +113,25 @@ label:has(> input:focus-visible) { box-shadow: 0 0 0 2px color-mix(in srgb, var(
   .maplibregl-ctrl-bottom-left { margin-bottom: 2.4rem; }
 }
 .ov-popup .ov-link { color: var(--color-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; text-align: left; cursor: pointer; }
+
+/* Print-only sheets (shell/PrintSheet.tsx): hidden on screen; while one is mounted, printing shows
+   only it — on white, in fixed ink colours, whatever the app theme. */
+.print-sheet { display: none; }
+@media print {
+  body.has-print-sheet { background: #fff !important; }
+  body.has-print-sheet > :not(.print-sheet) { display: none !important; }
+  body.has-print-sheet > .print-sheet { display: block; }
+  @page { size: A4; margin: 12mm 12mm 14mm; }
+}
+.print-sheet { color: #111827; background: #fff; font: 10pt/1.4 ui-sans-serif, system-ui, sans-serif; }
+.print-sheet h1 { font-size: 16pt; font-weight: 700; margin: 0 0 2pt; }
+.print-sheet h2 { font-size: 11pt; font-weight: 700; margin: 12pt 0 4pt; break-after: avoid; }
+.print-sheet p { margin: 2pt 0; }
+.print-sheet .ps-meta { color: #4b5563; font-size: 8.5pt; }
+.print-sheet .ps-status { display: inline-block; padding: 1pt 6pt; border-radius: 3pt; color: #fff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.print-sheet table { width: 100%; border-collapse: collapse; font-size: 8.5pt; break-inside: auto; }
+.print-sheet tr { break-inside: avoid; }
+.print-sheet th { text-align: left; font-weight: 600; border-bottom: 1pt solid #9ca3af; padding: 2pt 4pt; }
+.print-sheet td { border-bottom: 0.5pt solid #e5e7eb; padding: 2pt 4pt; vertical-align: top; }
+.print-sheet .num { text-align: right; font-variant-numeric: tabular-nums; }
+.print-sheet .ps-note { color: #4b5563; font-size: 8pt; margin-top: 8pt; }
