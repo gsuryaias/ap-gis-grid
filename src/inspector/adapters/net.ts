@@ -2,10 +2,11 @@
 // and section offices. Absorbs the old NetworkTracePanel (attributes + inferred supply path) and
 // the DISCOM tap popup (every attribute, the TRANSCO source as a link).
 import type { Feature } from "geojson";
+import type { ConnectivityIndex } from "../../data/connectivity.ts";
 import { NET_KIND_LABEL, type Chain, type NetItem, type NetKind } from "../../data/network-search.ts";
 import { DISCOM_NAME, fieldLabel, type DiscomId } from "../../overlays/catalog.ts";
 import { NET_LAYER, netKindOf } from "../refs.ts";
-import type { Adapter, FieldRow, Locate, TraceLevel } from "../types.ts";
+import type { Adapter, FieldRow, InspectorCtx, LinkRow, Locate, Section, TraceLevel } from "../types.ts";
 import { display, locateGeometry, oneFeature } from "./util.ts";
 
 export interface NetEntity {
@@ -17,6 +18,23 @@ export interface NetEntity {
   feature: Feature | null;
   /** Search-index item (label, trace chain, DTR attributes), once resolved. */
   item: NetItem | null;
+  /** What it feeds: a 33 kV feeder's 33/11 kV SS, a 33/11 kV SS's 11 kV feeders (null = still loading / n/a). */
+  down: LinkRow[] | null;
+}
+
+/** The 33/11 kV substations a 33 kV feeder serves (the connectivity index — the TRANSCO SS view's source). */
+export function servedBy33(ref: string, transcoSsId: string | undefined, conn: Pick<ConnectivityIndex, "bySs" | "ss">): LinkRow[] {
+  const tuples = (transcoSsId && conn.bySs[transcoSsId]) || Object.values(conn.bySs).flat();
+  const t = tuples.find((x) => x[0] === ref) ?? Object.values(conn.bySs).flat().find((x) => x[0] === ref);
+  return (t?.[5] ?? [])
+    .map((id): LinkRow => ({ ref: id, label: conn.ss[id]?.[0] ?? id, meta: conn.ss[id]?.[1], icon: "ss" }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function downOf(kind: NetKind, ref: string, feature: Feature | null, ctx: Pick<InspectorCtx, "conn" | "netBelow">): LinkRow[] | null {
+  if (kind === "f33") return ctx.conn ? servedBy33(ref, feature?.properties?.transcoSsId as string | undefined, ctx.conn) : null;
+  if (kind === "ss33") return ctx.netBelow ? ctx.netBelow.map((i) => ({ ref: i.ref, label: i.label, meta: i.sub.split(" · ").at(-1), icon: "line" as const })) : null;
+  return null;
 }
 
 export const LINK_LABEL: Record<string, string> = {
@@ -64,8 +82,23 @@ export function traceLevels(e: NetEntity): TraceLevel[] {
     { label: "33 kV feeder", name: e.kind === "f33" ? (c?.[3] ?? name) : (c?.[3] ?? null), ref: e.kind === "f33" ? null : (c?.[2] ?? null), here: e.kind === "f33" },
     { label: "33/11 kV substation", name: e.kind === "ss33" ? (c?.[1] ?? name) : (c?.[1] ?? null), ref: e.kind === "ss33" ? null : (c?.[0] ?? null), here: e.kind === "ss33" },
   ];
-  if (e.kind === "f33") return levels.slice(0, 2);
-  if (e.kind === "f11") levels.push({ label: "11 kV feeder", name, here: true });
+  const n = (x: number, one: string, many: string) => `${x.toLocaleString("en-IN")} ${x === 1 ? one : many}`;
+  if (e.kind === "f33") {
+    const out = levels.slice(0, 2);
+    if (e.down) out.push({ label: "33/11 kV substations", name: e.down.length ? n(e.down.length, "served", "served") : null, below: true });
+    return out;
+  }
+  if (e.kind === "ss33") {
+    if (e.down) levels.push({ label: "11 kV feeders", name: e.down.length ? n(e.down.length, "feeder", "feeders") : null, below: true });
+    return levels;
+  }
+  if (e.kind === "f11") {
+    levels.push({ label: "11 kV feeder", name, here: true });
+    const p = e.feature?.properties;
+    const dtrs = typeof p?.dtrs === "number" ? p.dtrs : null;
+    const kva = typeof p?.dtrKva === "number" ? p.dtrKva : null;
+    if (e.feature) levels.push({ label: "Transformers", name: dtrs ? `${n(dtrs, "transformer", "transformers")}${kva ? ` · ${kva.toLocaleString("en-IN")} kVA` : ""}` : null, below: true });
+  }
   if (e.kind === "dtr") {
     levels.push({ label: "11 kV feeder", name: e.item?.dtr?.feederName ?? null, ref: e.item?.dtr?.feederId ?? null });
     levels.push({ label: "Transformer", name, here: true });
@@ -81,7 +114,13 @@ export const netAdapter: Adapter<NetEntity> = {
   // sections have no feature: the search item carries them (the 11 kV layer is shown for context).
   needs: (ref) => {
     const k = netKindOf(ref);
-    return { layer: k ? NET_LAYER[k] : null, ...(k && k !== "dtr" && k !== "sec" ? { row: true } : {}), net: true };
+    return {
+      layer: k ? NET_LAYER[k] : null,
+      ...(k && k !== "dtr" && k !== "sec" ? { row: true } : {}),
+      net: true,
+      ...(k === "ss33" ? { below: true } : {}),
+      ...(k === "f33" ? { conn: true } : {}),
+    };
   },
   resolve: (ref, ctx) => {
     const kind = netKindOf(ref);
@@ -90,7 +129,7 @@ export const netAdapter: Adapter<NetEntity> = {
     const feature = (layer && kind !== "dtr" ? ctx.row : null) ?? null;
     const item = ctx.netItem ?? null;
     if (!feature && !item) return null;
-    return { ref, kind, layer, feature, item };
+    return { ref, kind, layer, feature, item, down: downOf(kind, ref, feature, ctx) };
   },
   header: (e) => {
     const p = e.feature?.properties ?? {};
@@ -112,6 +151,7 @@ export const netAdapter: Adapter<NetEntity> = {
     return [
       { id: "overview", kind: "fields", rows },
       ...(levels.length ? [{ id: "trace", kind: "trace" as const, title: "Supply path", method: "trace" as const, levels }] : []),
+      ...downSection(e),
       {
         id: "provenance",
         kind: "note",
@@ -138,10 +178,29 @@ export const netAdapter: Adapter<NetEntity> = {
         : null;
     return {
       lines: e.kind === "f33" ? [e.ref] : [],
-      ss: e.kind === "ss33" ? [e.ref] : [],
-      lines11: e.kind === "f11" ? [e.ref] : e.kind === "dtr" && e.item?.dtr?.feederId ? [e.item.dtr.feederId] : [],
+      // What it feeds lights up with it: a 33 kV feeder's substations, a substation's 11 kV feeders.
+      ss: e.kind === "ss33" ? [e.ref] : e.kind === "f33" ? (e.down ?? []).map((d) => d.ref) : [],
+      lines11:
+        e.kind === "f11" ? [e.ref] : e.kind === "dtr" && e.item?.dtr?.feederId ? [e.item.dtr.feederId] : e.kind === "ss33" ? (e.down ?? []).map((d) => d.ref) : [],
       point: pt,
     };
   },
   geojson: (e) => oneFeature(e.feature ?? undefined),
 };
+
+/** "Feeds" — the next level down, as links (also lit amber on the map while inspected). */
+function downSection(e: NetEntity): Section[] {
+  if (e.kind !== "f33" && e.kind !== "ss33") return [];
+  const title = e.kind === "f33" ? "Feeds · 33/11 kV substations" : "Feeds · 11 kV feeders";
+  if (!e.down) return [{ id: "downstream", kind: "note", text: "Loading what it feeds…" }];
+  return [
+    {
+      id: "downstream",
+      kind: "links",
+      title: e.down.length ? `${title} · ${e.down.length.toLocaleString("en-IN")}` : title,
+      aside: "(highlighted on the map)",
+      items: e.down,
+      empty: e.kind === "f33" ? "No 33/11 kV substation is traced on this feeder." : "No 11 kV feeder is traced to this substation (APCPDCL publishes none).",
+    },
+  ];
+}

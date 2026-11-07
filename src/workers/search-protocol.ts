@@ -6,9 +6,10 @@ export type SearchOp =
   | { op: "places" }
   | { op: "network" }
   | { op: "search"; q: string }
-  | { op: "byRef"; ref: string };
+  | { op: "byRef"; ref: string }
+  | { op: "below"; ref: string };
 
-export type SearchResult = { places: number; network: number; search: SearchHits; byRef: NetItem | null };
+export type SearchResult = { places: number; network: number; search: SearchHits; byRef: NetItem | null; below: NetItem[] };
 
 export type SearchRequest = SearchOp & { id: number; base: string };
 

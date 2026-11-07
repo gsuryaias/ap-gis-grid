@@ -50,7 +50,7 @@ export function SectionTitle({ title, aside, method }: { title: string; aside?: 
 
 function Link({ item }: { item: LinkRow }) {
   return (
-    <button type="button" onClick={() => go(item.ref)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2">
+    <button type="button" onClick={() => go(item.ref)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2 pointer-coarse:min-h-11">
       {item.voltage && <VoltageDot voltage={item.voltage} />}
       {item.icon && (
         <span className="shrink-0 text-ink-2">{item.icon === "line" ? <LineIcon width={14} height={14} /> : <SubstationIcon width={14} height={14} />}</span>
@@ -70,20 +70,20 @@ function Trace({ levels }: { levels: TraceLevel[] }) {
       {levels.map((l, i) => (
         <li key={i} className="relative pb-2 last:pb-0">
           <span
-            className={`absolute -left-[19px] top-1 h-2.5 w-2.5 rounded-full border-2 ${l.here ? "border-amber-500 bg-amber-400" : l.name ? "border-accent bg-surface" : "border-line bg-surface"}`}
+            className={`absolute -left-[19px] top-1 h-2.5 w-2.5 rounded-full border-2 ${l.here ? "border-amber-500 bg-amber-400" : l.below ? "border-dashed border-ink-2 bg-surface" : l.name ? "border-accent bg-surface" : "border-line bg-surface"}`}
             aria-hidden
           />
           <div className="text-[10.5px] uppercase tracking-wide text-ink-2">{l.label}</div>
           {l.name ? (
             l.ref && !l.here ? (
-              <button type="button" onClick={() => go(l.ref!)} className="text-left text-sm font-medium text-accent hover:underline">
+              <button type="button" onClick={() => go(l.ref!)} className="text-left text-sm font-medium text-accent hover:underline pointer-coarse:min-h-11">
                 {l.name}
               </button>
             ) : (
               <div className="text-sm font-medium text-ink">{l.name}</div>
             )
           ) : (
-            <div className="text-xs italic text-ink-2">not traced in the open GIS data</div>
+            <div className="text-xs italic text-ink-2">{l.below ? "none traced" : "not traced in the open GIS data"}</div>
           )}
         </li>
       ))}

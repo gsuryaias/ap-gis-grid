@@ -1,11 +1,11 @@
-// The React side of the lens registry: icons, and the side panel each lens shows. Explore and Field
-// are inline (the default + the phone-first lens); Storm and Plan (the Network MIS) are lazy chunks.
+// The React side of the lens registry: icons, and the side panel each lens shows. Explore is inline
+// (the default); Field (with the offline packs), Storm and Plan (the Network MIS) are lazy chunks —
+// all precached by the service worker, so Field still opens offline.
 import { lazy, Suspense, type ComponentType, type SVGProps } from "react";
 import { ChartIcon, CompassIcon, CycloneIcon, WrenchIcon } from "../components/icons.tsx";
 import { LoadingState } from "../components/states.tsx";
 import type { GridData } from "../data/types.ts";
 import ExplorePanel from "./ExplorePanel.tsx";
-import FieldPanel from "./FieldPanel.tsx";
 import type { LensId } from "./registry.ts";
 
 export const LENS_ICON: Record<LensId, ComponentType<SVGProps<SVGSVGElement>>> = {
@@ -15,6 +15,7 @@ export const LENS_ICON: Record<LensId, ComponentType<SVGProps<SVGSVGElement>>> =
   storm: CycloneIcon,
 };
 
+const FieldPanel = lazy(() => import("./FieldPanel.tsx"));
 const StormPanel = lazy(() => import("./StormPanel.tsx"));
 
 /** The Plan lens body — the Network MIS (lazy). */
@@ -26,7 +27,12 @@ export function PanelLoading() {
 
 /** The side panel of a map lens (Plan has its own split layout). */
 export function LensPanel({ lens, data }: { lens: LensId; data: GridData }) {
-  if (lens === "field") return <FieldPanel />;
+  if (lens === "field")
+    return (
+      <Suspense fallback={<PanelLoading />}>
+        <FieldPanel />
+      </Suspense>
+    );
   if (lens === "storm")
     return (
       <Suspense fallback={<PanelLoading />}>

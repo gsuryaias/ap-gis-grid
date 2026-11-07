@@ -7,6 +7,7 @@
 import type { ReactNode } from "react";
 import type { Feature, FeatureCollection } from "geojson";
 import type { MethodId } from "../content/methods.ts";
+import type { ConnectivityIndex } from "../data/connectivity.ts";
 import type { NetItem } from "../data/network-search.ts";
 import type { GenerationData, GridData, PowerGridData, Voltage } from "../data/types.ts";
 import type { WeatherData } from "../data/weather.ts";
@@ -57,6 +58,8 @@ export interface TraceLevel {
   name: string | null;
   ref?: string | null;
   here?: boolean;
+  /** Downstream of the inspected asset (drawn below it, with a hollow marker). */
+  below?: boolean;
 }
 
 export interface Action {
@@ -108,6 +111,10 @@ export interface InspectorCtx {
   overlayDef: (id: string) => OverlayDef | undefined;
   /** The distribution-network search item for this ref, once resolved (net refs only). */
   netItem?: NetItem | null;
+  /** The network items directly below this ref (a 33/11 kV SS's 11 kV feeders), once resolved. */
+  netBelow?: NetItem[] | null;
+  /** The TRANSCO → 33 kV connectivity index (33 kV feeder → the 33/11 kV SS it serves), once loaded. */
+  conn?: ConnectivityIndex | null;
   year: number;
 }
 
@@ -121,6 +128,10 @@ export interface Needs {
   row?: boolean;
   /** The distribution-network search item (trace chain) — resolved in the search worker. */
   net?: boolean;
+  /** …and what hangs directly below it (search worker) — the downstream trace. */
+  below?: boolean;
+  /** The TRANSCO → 33 kV connectivity index. */
+  conn?: boolean;
   /** The generation / power-grid overlay data (a deep-linked plant works without the layer on). */
   gen?: boolean;
   pg?: boolean;

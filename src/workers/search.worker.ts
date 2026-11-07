@@ -36,6 +36,8 @@ ctx.onmessage = (e) => {
         return engine.search(req.q);
       case "byRef":
         return engine.byRef(req.ref);
+      case "below":
+        return engine.below(req.ref);
     }
   };
   run().then(

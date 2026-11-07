@@ -38,6 +38,8 @@ function runInThread(op: SearchOp): Promise<unknown> {
       return e.search(op.q);
     case "byRef":
       return e.byRef(op.ref);
+    case "below":
+      return e.below(op.ref);
   }
 }
 
@@ -91,6 +93,11 @@ export const networkTier = defineResource<number>("search:network", { load: () =
 /** Ranked place / network / transformer hits for a query (tiers not yet loaded yield []). */
 export function searchTiers(q: string): Promise<SearchHits> {
   return call({ op: "search", q });
+}
+
+/** The network items directly below a ref (a 33/11 kV SS's 11 kV feeders). */
+export function lookupNetBelow(ref: string): Promise<NetItem[]> {
+  return call({ op: "below", ref });
 }
 
 /** Network search item by overlay feature id (loads the network tier if needed). */

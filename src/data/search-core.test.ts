@@ -53,6 +53,17 @@ describe("SearchEngine (real data)", () => {
     expect(await engine.byRef("no-such-ref")).toBeNull();
   });
 
+  it("lists a 33/11 kV SS's 11 kV feeders (and nothing for other kinds)", async () => {
+    const f11 = (await engine.search("Arasavalli")).net.find((n) => n.kind === "f11")!;
+    const ss = f11.chain![0]!;
+    const below = await engine.below(ss);
+    expect(below.length).toBeGreaterThan(1);
+    expect(below.every((i) => i.kind === "f11" && i.chain?.[0] === ss)).toBe(true);
+    expect(below.map((i) => i.ref)).toContain(f11.ref);
+    expect(await engine.below(f11.ref)).toEqual([]);
+    expect(await engine.below("ds-no-such")).toEqual([]);
+  });
+
   it("fetches only the matching DTR shard for a code-like query", async () => {
     const before = fetched.length;
     const { dtr } = await engine.search("03440010903");

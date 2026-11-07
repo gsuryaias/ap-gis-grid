@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { FeatureCollection } from "geojson";
 import { graphAnalysis } from "../data/graph-data.ts";
+import type { ConnectivityIndex } from "../data/connectivity.ts";
 import type { NetItem } from "../data/network-search.ts";
 import { connectedLines } from "../data/selectors.ts";
 import type { FeatureProps, GridData, LineProps, SubstationProps } from "../data/types.ts";
@@ -12,7 +13,7 @@ import { decodeTowers, type WebTowersFile } from "../overlays/towers.ts";
 import { rankHits } from "../map/interaction.ts";
 import { overlayPick } from "../map/registry/overlays.ts";
 import type { Interaction } from "../map/registry/types.ts";
-import { propertyRows, traceLevels, type NetEntity } from "./adapters/net.ts";
+import { propertyRows, servedBy33, traceLevels, type NetEntity } from "./adapters/net.ts";
 import { ADAPTERS, inspect, mergeSections, needsOf } from "./inspect.ts";
 import { isValidRef, netRef, parseRefFeature, parseTowerRef, refKind, towerRef } from "./refs.ts";
 import type { InspectorCtx, Section } from "./types.ts";
@@ -72,7 +73,7 @@ describe("refs", () => {
     expect(needsOf("s-x")).toEqual({});
     expect(needsOf("g-x")).toEqual({ gen: true });
     // DISCOM refs read their own row (a sidecar shard when tiled) — never the whole layer.
-    expect(needsOf("dl-ep-1")).toEqual({ layer: "discom-lines", row: true, net: true });
+    expect(needsOf("dl-ep-1")).toEqual({ layer: "discom-lines", row: true, net: true, conn: true });
     expect(needsOf("f11-ep-1")).toEqual({ layer: "discom-11kv-lines", row: true, net: true });
     expect(needsOf("dtr:1234")).toEqual({ layer: "discom-11kv-lines", net: true });
     expect(needsOf("sec:x")).toEqual({ layer: null, net: true });
@@ -147,6 +148,8 @@ describe("distribution network adapter", () => {
       transcoSs: "132 kV CHILAKAPALEM",
       transcoSsId: "s-ss-132kv-ckpm",
       lengthKm: 7.59,
+      dtrs: 50,
+      dtrKva: 4657,
     },
   };
 
@@ -169,8 +172,10 @@ describe("distribution network adapter", () => {
     expect(rows.find((r) => r.label === "TRANSCO source (inferred)")?.ref).toBe("s-ss-132kv-ckpm");
     expect(rows.find((r) => r.label === "33/11 kV SS")?.ref).toBe("ds-ep-9");
     const trace = ins.sections[1].kind === "trace" ? ins.sections[1].levels : [];
-    expect(trace.map((l) => l.ref ?? null)).toEqual(["s-ss-132kv-ckpm", "dl-ep-4", "ds-ep-9", null]);
-    expect(trace.at(-1)).toMatchObject({ label: "11 kV feeder", here: true });
+    expect(trace.map((l) => l.ref ?? null)).toEqual(["s-ss-132kv-ckpm", "dl-ep-4", "ds-ep-9", null, null]);
+    expect(trace.at(-2)).toMatchObject({ label: "11 kV feeder", here: true });
+    // …and on down: what the feeder carries.
+    expect(trace.at(-1)).toEqual({ label: "Transformers", name: "50 transformers · 4,657 kVA", below: true });
     expect(ins.focus).toEqual({ lines: [], ss: [], lines11: ["f11-ep-1"], point: null });
     expect(ins.locate).toEqual({ bounds: [[83.9, 18.27], [83.91, 18.28]], maxZoom: 13 });
   });
@@ -202,11 +207,40 @@ describe("distribution network adapter", () => {
   });
 
   it("a 33 kV feeder traces only TRANSCO SS → itself", () => {
-    const e: NetEntity = { ref: "dl-ep-4", kind: "f33", layer: "discom-lines", feature: null, item: { ...item, kind: "f33", ref: "dl-ep-4", label: "33KV Arasavalli" } };
+    const e: NetEntity = { ref: "dl-ep-4", kind: "f33", layer: "discom-lines", feature: null, item: { ...item, kind: "f33", ref: "dl-ep-4", label: "33KV Arasavalli" }, down: null };
     expect(traceLevels(e).map((l) => [l.label, l.here ?? false])).toEqual([
       ["TRANSCO substation", false],
       ["33 kV feeder", true],
     ]);
+  });
+
+  it("a 33 kV feeder lists the 33/11 kV SS it serves (connectivity index) and lights them up", () => {
+    const conn = json<ConnectivityIndex>("transco-33kv.json");
+    const [transcoId, tuples] = Object.entries(conn.bySs).find(([, ts]) => ts.some((t) => t[5].length >= 3))!;
+    const t = tuples.find((x) => x[5].length >= 3)!;
+    const f33 = { ...item, kind: "f33" as const, ref: t[0], label: t[1] ?? "33 kV feeder", chain: [null, null, null, null, transcoId, "X"] as NetItem["chain"] };
+    expect(inspect(t[0], ctx({ netItem: f33 }))!.sections.find((s) => s.id === "downstream")).toMatchObject({ kind: "note" }); // index still loading
+    const ins = inspect(t[0], ctx({ netItem: f33, conn }))!;
+    const down = ins.sections.find((s) => s.id === "downstream");
+    expect(down?.kind === "links" && down.items.map((i) => i.ref).sort()).toEqual([...t[5]].sort());
+    expect(down?.kind === "links" && down.items[0].label === conn.ss[down.items[0].ref][0]).toBe(true);
+    expect(traceLevels(ins.entity as NetEntity).at(-1)).toMatchObject({ label: "33/11 kV substations", name: `${t[5].length} served`, below: true });
+    expect(ins.focus?.ss.sort()).toEqual([...t[5]].sort());
+    expect(servedBy33(t[0], undefined, conn).length).toBe(t[5].length); // found without the TRANSCO hint too
+  });
+
+  it("a 33/11 kV substation lists its 11 kV feeders (search worker) and lights them up", () => {
+    const ss: NetItem = { ...item, kind: "ss33", ref: "ds-ep-9", label: "Arasavalli", sub: "APEPDCL · 33/11 kV substation" };
+    const kids: NetItem[] = [item, { ...item, ref: "f11-ep-2", label: "11KV Zilla", sub: "APEPDCL · 11 kV from Arasavalli SS · Srikakulam-D1" }];
+    const ins = inspect("ds-ep-9", ctx({ netItem: ss, netBelow: kids }))!;
+    expect(needsOf("ds-ep-9")).toMatchObject({ below: true, row: true, net: true });
+    const down = ins.sections.find((s) => s.id === "downstream");
+    expect(down).toMatchObject({ kind: "links", title: "Feeds · 11 kV feeders · 2" });
+    expect(down?.kind === "links" && down.items.map((i) => [i.ref, i.meta])).toEqual([["f11-ep-1", "11 kV from Arasavalli SS"], ["f11-ep-2", "Srikakulam-D1"]]);
+    expect(traceLevels(ins.entity as NetEntity).at(-1)).toEqual({ label: "11 kV feeders", name: "2 feeders", below: true });
+    expect(ins.focus?.lines11).toEqual(["f11-ep-1", "f11-ep-2"]);
+    const none = inspect("ds-ep-9", ctx({ netItem: ss, netBelow: [] }))!.sections.find((s) => s.id === "downstream");
+    expect(none).toMatchObject({ kind: "links", items: [], empty: expect.stringMatching(/APCPDCL/) });
   });
 
   it("property rows put connectivity first and spell out link methods", () => {
