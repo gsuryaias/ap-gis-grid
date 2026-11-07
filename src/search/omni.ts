@@ -289,7 +289,7 @@ export function groupHits(hits: OmniHit[]): OmniSection[] {
 
 /** Notes shown under a group: the coverage caveats a searcher must not miss. */
 export const GROUP_NOTE: Partial<Record<OmniGroup, string>> = {
-  Distribution: "Inferred from the DISCOMs' open GIS — APSPDCL partial; APCPDCL publishes no 11 kV / transformer data.",
+  Distribution: "Inferred from the DISCOMs' GIS — APSPDCL 11 kV from its pole survey (Kadapa partial); APCPDCL publishes no 11 kV / transformer data.",
   Places: "GeoNames gazetteer — jumps the map and lists the nearest substations.",
   Areas: "Opens the Network MIS (Plan) scoped to the area.",
 };

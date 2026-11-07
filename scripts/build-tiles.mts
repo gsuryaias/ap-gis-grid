@@ -58,7 +58,7 @@ export const REF_TILE_MIN_BYTES = 300_000;
  */
 export function tileLayers(refCatalog: Array<{ id: string; file: string; geometry: string; labelField: string | null; bytes: number }>): TileLayer[] {
   return [
-    { id: "discom-11kv-lines", file: "discom-11kv-lines.geojson", keep: DISCOM_KEEP, minzoom: 10, maxzoom: 12, shards: 128 },
+    { id: "discom-11kv-lines", file: "discom-11kv-lines.geojson", keep: DISCOM_KEEP, minzoom: 10, maxzoom: 12, shards: 256 },
     ...[400, 220, 132].map(
       (kv): TileLayer => ({
         id: `towers-${kv}kv`,

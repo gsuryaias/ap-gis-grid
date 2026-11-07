@@ -143,7 +143,7 @@ export const STATIC_OVERLAY_BYTES: Record<string, number> = {
   "towers-132kv": 5_164_955,
   "discom-lines": 3_958_199,
   "discom-ss": 1_734_896,
-  "discom-11kv-lines": 20_116_490,
+  "discom-11kv-lines": 34_773_910,
 };
 
 const KEYWORDS: Record<string, string[]> = {

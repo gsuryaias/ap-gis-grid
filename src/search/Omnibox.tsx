@@ -212,7 +212,7 @@ export function Omnibox({ data, size = "md" }: { data: GridData; size?: "sm" | "
           {loading && q.length >= 2 && <p className="px-3 py-1.5 text-xs text-ink-2">Loading places and the distribution network…</p>}
           {q.length >= 2 && !flat.length && !loading && (
             <p className="px-3 py-3 text-sm text-ink-2">
-              No match for “{q}”. Distribution coverage is partial (APSPDCL sparse; APCPDCL has no open 11 kV data).
+              No match for “{q}”. Distribution coverage is partial (APSPDCL Kadapa partial; APCPDCL has no open 11 kV data).
             </p>
           )}
         </div>

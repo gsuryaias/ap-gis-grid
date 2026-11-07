@@ -5,7 +5,7 @@
 //   search-network.json  ~450 KB gz — loaded on first focus of the search box (like places)
 //   net-dtr-<shard>.json small shards — loaded only when a typed query looks like a DTR code /
 //                        serial (APEPDCL: first 4 characters; APSPDCL: first 2)
-// Coverage is partial (APSPDCL sparse; APCPDCL has no open 11 kV data) — the UI says so.
+// Coverage: APEPDCL full; APSPDCL routes from its pole survey (Kadapa partial); APCPDCL has no 11 kV data — the UI says so.
 // This file is pure (types + decoders); it must stay importable from the worker.
 
 /** [ssId, ssName, f33Id, f33Name, transcoId, transcoLabel] */

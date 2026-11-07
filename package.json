@@ -16,6 +16,7 @@
     "update": "bash scripts/update.sh",
     "sync:towers": "tsx scripts/sync-towers.mts",
     "sync:network": "tsx scripts/sync-network.mts",
+    "import:spdcl": "tsx scripts/import-spdcl-11kv.mts",
     "e2e": "PLAYWRIGHT_BROWSERS_PATH=0 playwright test",
     "e2e:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium",
     "build:tiles": "tsx scripts/build-tiles.mts"
