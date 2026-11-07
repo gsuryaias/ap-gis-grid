@@ -1,13 +1,13 @@
 // Search worker: owns the big search tiers (places.json ~2 MB, search-network.json ~2.7 MB, DTR
 // shards) so their JSON parse, indexing and per-keystroke ranking never block the main thread.
 // Only the top-N hits cross back. See data/search-client.ts for the main-thread side.
-import { HttpError } from "../data/fetch.ts";
+import { dataQuery, HttpError } from "../data/fetch.ts";
 import { SearchEngine } from "../data/search-core.ts";
 import type { SearchRequest, SearchResponse, WireError } from "./search-protocol.ts";
 
 let base = "";
 const engine = new SearchEngine(async <T,>(file: string) => {
-  const res = await fetch(base + file);
+  const res = await fetch(base + file + dataQuery(file));
   if (!res.ok) throw new HttpError(res.status, res.statusText, file);
   return (await res.json()) as T;
 });
