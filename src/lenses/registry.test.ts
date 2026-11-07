@@ -46,7 +46,7 @@ describe("switching lens", () => {
     expect(switchLensLayers(storm, "storm", "explore")).toEqual(mine);
     const field = switchLensLayers(storm, "storm", "field");
     expect(field.showWeather).toBe(false);
-    expect(field.overlays).toEqual(["discom-lines", "discom-ss", "districts", "towers-132kv", "towers-220kv", "towers-400kv"]);
+    expect(field.overlays).toEqual(["discom-11kv-lines", "discom-lines", "discom-ss", "districts", "towers-132kv", "towers-220kv", "towers-400kv"]);
   });
 
   it("a hidden core grid comes back on entering a lens (it is every lens's default)", () => {

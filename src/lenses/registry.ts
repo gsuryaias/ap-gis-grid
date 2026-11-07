@@ -56,15 +56,16 @@ export const LENSES: LensDef[] = [
     audience: "O&M on site",
     description: "Near me, towers and the 33 kV distribution network, and the trace from a transformer up to its TRANSCO substation.",
     layout: "map",
-    // 11 kV feeders join once they are tiled (phase 4) — today they are a single 3 MB download.
-    defaults: { overlays: ["discom-lines", "discom-ss", "towers-132kv", "towers-220kv", "towers-400kv"] },
+    // 11 kV feeders are vector tiles (phase 4): nothing loads below zoom 10, then only the tiles in view.
+    defaults: { overlays: ["discom-lines", "discom-ss", "discom-11kv-lines", "towers-132kv", "towers-220kv", "towers-400kv"] },
     panelWidth: 300,
     startHere: {
       title: "In the field",
       tips: [
-        "Near me lists the closest substations with distance and compass bearing.",
-        "Search a DTR code or 11 kV feeder to trace it up to its TRANSCO substation.",
-        "Towers appear from zoom 9 — tap one for its type and line. Satellite is in the Layers drawer.",
+        "Near me lists the closest substations with distance, compass bearing and directions.",
+        "Search a DTR code or feeder to trace it up to its TRANSCO substation — and down to what it feeds.",
+        "Every feature has Directions / Maps app buttons; for a line they go to its point nearest you.",
+        "Towers appear from zoom 9, 11 kV feeders from zoom 10. Satellite is one switch below.",
       ],
     },
   },

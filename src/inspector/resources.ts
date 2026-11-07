@@ -3,7 +3,7 @@
 // or a deep link looks it up (loading the network tier once).
 import type { NetItem } from "../data/network-search.ts";
 import { defineResource } from "../data/resources.ts";
-import { lookupNetRef } from "../data/search-client.ts";
+import { lookupNetBelow, lookupNetRef } from "../data/search-client.ts";
 import { netRef } from "./refs.ts";
 
 const primed = new Map<string, NetItem>();
@@ -18,3 +18,6 @@ export function primeNetItem(item: NetItem): string {
 export const netItemRes = defineResource<NetItem | null>("net-item", {
   load: async (ref) => primed.get(ref) ?? lookupNetRef(ref),
 });
+
+/** The 11 kV feeders under a 33/11 kV substation (search worker) — the Inspector's downstream trace. */
+export const netBelowRes = defineResource<NetItem[]>("net-below", { load: (ref) => lookupNetBelow(ref) });

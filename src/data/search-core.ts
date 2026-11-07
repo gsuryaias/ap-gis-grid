@@ -46,6 +46,7 @@ export class SearchEngine {
   private placesP: Promise<number> | null = null;
   private netP: Promise<number> | null = null;
   private shards = new Map<string, Promise<NetItem[]>>();
+  private feedersOf: Map<string, NetItem[]> | null = null;
   private readonly fetchJson: Fetch;
 
   constructor(fetchJson: Fetch) {
@@ -124,5 +125,29 @@ export class SearchEngine {
       return all.flat().find((d) => d.label === code) ?? null;
     }
     return net.byRef.get(ref) ?? null;
+  }
+
+  /**
+   * What hangs directly below a network asset: a 33/11 kV substation's 11 kV feeders (each 11 kV
+   * feeder's chain starts at the one SS it is linked to, so the list is complete for what is
+   * traced). Other kinds have no indexed children here (33 kV feeders use the connectivity index).
+   */
+  async below(ref: string): Promise<NetItem[]> {
+    await this.loadNetwork();
+    const net = this.net;
+    if (!net || !ref.startsWith("ds-")) return [];
+    if (!this.feedersOf) {
+      const m = new Map<string, NetItem[]>();
+      for (const i of net.items) {
+        const ss = i.kind === "f11" ? i.chain?.[0] : null;
+        if (!ss) continue;
+        const arr = m.get(ss);
+        if (arr) arr.push(i);
+        else m.set(ss, [i]);
+      }
+      for (const arr of m.values()) arr.sort((a, b) => a.label.localeCompare(b.label));
+      this.feedersOf = m;
+    }
+    return this.feedersOf.get(ref) ?? [];
   }
 }

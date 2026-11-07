@@ -8,7 +8,8 @@ import { featureRow, overlayLayer, rowKey } from "../overlays/resources.ts";
 import { useAppStore } from "../state/store.ts";
 import { inspect, needsOf } from "./inspect.ts";
 import { refKind } from "./refs.ts";
-import { netItemRes } from "./resources.ts";
+import { connectivity } from "../data/connectivity.ts";
+import { netBelowRes, netItemRes } from "./resources.ts";
 import type { Inspected, InspectorCtx } from "./types.ts";
 
 export interface InspectedState {
@@ -26,6 +27,8 @@ export function useInspected(ref: string | null): InspectedState {
   const overlay = useResource(overlayLayer, needs.overlay && needs.layer ? needs.layer : null);
   const row = useResource(featureRow, needs.row && needs.layer && ref ? rowKey(needs.layer, ref) : null);
   const net = useResource(netItemRes, needs.net && ref ? ref : null);
+  const below = useResource(netBelowRes, needs.below && ref ? ref : null);
+  const conn = useResource(connectivity, needs.conn ? "" : null);
   const gen = useResource(generationRes, needs.gen ? "" : null);
   const pg = useResource(powerGridRes, needs.pg ? "" : null);
   // Observe only: DLR in the line overview appears once something has loaded live weather.
@@ -44,6 +47,8 @@ export function useInspected(ref: string | null): InspectedState {
       overlayDef: (id) => defs[id],
       row: row.data ?? null,
       netItem: net.data ?? null,
+      netBelow: below.data ?? null,
+      conn: conn.data ?? null,
       year: YEAR,
     };
     const ins = inspect(ref, ctx);
@@ -52,7 +57,7 @@ export function useInspected(ref: string | null): InspectedState {
     if (pending.includes("loading")) return { ins: null, status: "loading" };
     if (pending.includes("error")) return { ins: null, status: "error" };
     return { ins: null, status: "missing" };
-  }, [ref, data, defs, overlay.data, overlay.status, row.data, row.status, net.data, net.status, gen.status, pg.status, genData, pgData, weather]);
+  }, [ref, data, defs, overlay.data, overlay.status, row.data, row.status, net.data, net.status, below.data, conn.data, gen.status, pg.status, genData, pgData, weather]);
 }
 
 /** Kinds whose camera move `useMapCamera` already does from `flySignal` (sync data, `flyToFeature`). */

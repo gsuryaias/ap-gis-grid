@@ -362,6 +362,17 @@ typed `dtr:<code>` · `sec:<label>` · `tw:<kv>:<index>` · `ref:<layer>:<index>
 - `Inspector.tsx`: `variant="panel"` (Atlas right column / phone sheet) or `"inline"` (MIS); `extend` merges
   workspace sections by id (same id replaces, new ids follow the overview) — MIS passes `misInspector(model, …)`.
   Back breadcrumb = selection `history`; "Also here · N" / "What's here" = the `here` list from the last tap.
+- **Trace up AND down** (net adapter): the "Supply path" runs TRANSCO SS → 33 kV feeder → 33/11 kV SS → 11 kV feeder →
+  transformer, then continues below the inspected asset (`TraceLevel.below`, hollow marker): a 33 kV feeder → the
+  33/11 kV SS it serves (`needs.conn` → the `connectivity` index, `servedBy33` — chains alone under-count, an SS records
+  one feeder), a 33/11 kV SS → its 11 kV feeders (`needs.below` → `netBelowRes` → the search worker's `below(ref)`,
+  complete: an 11 kV feeder's chain starts at its one SS), an 11 kV feeder → its transformer count / kVA. Section
+  `downstream` ("Feeds · …") lists them as links and the adapter's `focus` lights them amber on the map.
+- **Navigate** (`inspector/Navigate.tsx` over `lib/navigate.ts`, pure + tested): the Field lens shows a bar under the
+  header — Directions (Google Maps `dir/?api=1`), the phone's maps app (`geo:` on Android, Apple Maps on iOS), copy
+  coordinates; other lenses get one small header icon. Points go to themselves; lines to the vertex nearest the
+  last Near-me origin (else the middle vertex); areas get none. The near-me list has a directions link per row.
+  List / trace / "What's here" rows are ≥ 44 px on touch screens (`pointer-coarse:min-h-11`).
 
 ## Overlay catalog module (`src/overlays/`)
 
@@ -731,8 +742,8 @@ so an action can open About.
 
 `LensId` = `explore | field | plan | storm` (store `lens`, `setLens`; URL `lens=`). **`src/lenses/registry.ts`** is
 pure data (unit-tested in `registry.test.ts`): id, label, audience, `layout` (`map` | `split`), `defaults`
-(layers switched on beyond the core grid: Field = 33 kV lines + SS + the three tower layers; Storm = wx + RTGS
-`crz-boundary` + `cyclone-shelters`; 11 kV joins Field once tiled), `panelWidth`, `startHere` tips — plus the layer
+(layers switched on beyond the core grid: Field = 33 kV lines + SS + 11 kV feeders (tiled) + the three tower layers;
+Storm = wx + RTGS `crz-boundary` + `cyclone-shelters`), `panelWidth`, `startHere` tips — plus the layer
 token helpers (`switchLensLayers`, `encodeLayerDiff` / `decodeLayerDiff`, `lensOnlyOverlays`). A lens is a **preset,
 never a filter**: switching keeps the selection and filters, turns the old lens's own defaults off and the new
 one's on, and keeps anything switched on by hand (`state/layer-on.ts` maps the `filters.show*` + `layers.enabled`
@@ -743,9 +754,11 @@ switches to one `LayerOn`). Lens presets are not persisted as the viewer's overl
   tools / Inspector / table pill floating over the map (`MapLensOverlays`); phone = search + tools on top and ONE
   `BottomSheet` (peek / half / full, pointer drag + snap, handle is a button) holding the Inspector (`variant="sheet"`),
   the nearby list or the lens panel. `map-helpers.framing` frames flights above the half-open sheet on phones.
-- **Panels** (`lenses/panels.tsx`): Explore (`ExplorePanel` — Start here, network at a glance, layers + legend) and
-  Field (`FieldPanel` — near me, trace via search, offline packs, layers) are inline; Storm (`StormPanel`, the situation panel — see
-  "Storm situation") and Plan (`workspaces/mis/MisWorkspace.tsx`) are lazy.
+- **Panels** (`lenses/panels.tsx`): Explore (`ExplorePanel` — Start here, network at a glance, layers + legend) is
+  inline; Field (`FieldPanel` — near me, trace via search, map presets (satellite / towers / 11 kV, 44 px switches),
+  offline packs, layers), Storm (`StormPanel`, the situation panel — see "Storm situation") and Plan
+  (`workspaces/mis/MisWorkspace.tsx`) are lazy (the SW precaches every chunk, so Field opens offline). Keep the shell
+  under its 450 KB gz budget — new lens UI goes in a lazy chunk.
   `StartHere` cards are dismissible per lens (`apgg-start-<lens>`).
 - **Plan / map embedding**: `MapPane` renders the shared map in `full` (map lenses), `embedded` (split) or `hidden`
   (collapsed) modes; the collapse is `mapLayout` (`open|collapsed|atlas-only`). The map column keeps its place in

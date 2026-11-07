@@ -21,6 +21,7 @@ import { downloadText } from "../lib/export.ts";
 import { useAppStore } from "../state/store.ts";
 import type { HereItem } from "../state/types.ts";
 import { mergeSections } from "./inspect.ts";
+import { NavigateBar, NavigateIconLink } from "./Navigate.tsx";
 import type { Header, Inspected, InspectorExtension } from "./types.ts";
 import { SectionView } from "./ui.tsx";
 import { useInspected } from "./useInspected.ts";
@@ -69,7 +70,7 @@ function HereList({ items, current, onPick }: { items: HereItem[]; current: stri
             type="button"
             onClick={() => onPick(h.ref)}
             aria-current={h.ref === current ? "true" : undefined}
-            className={`flex w-full flex-col items-start px-4 py-1.5 text-left hover:bg-surface-2 ${h.ref === current ? "bg-accent/10" : ""}`}
+            className={`flex w-full flex-col items-start px-4 py-1.5 text-left hover:bg-surface-2 pointer-coarse:min-h-11 ${h.ref === current ? "bg-accent/10" : ""}`}
           >
             <span className="text-[10.5px] uppercase tracking-wide text-ink-2">{h.kind}</span>
             <span className="w-full truncate text-sm font-medium text-ink">{h.label}</span>
@@ -80,7 +81,7 @@ function HereList({ items, current, onPick }: { items: HereItem[]; current: stri
   );
 }
 
-function Header({ ins, onClose }: { ins: Inspected; onClose: () => void }) {
+function Header({ ins, onClose, field }: { ins: Inspected; onClose: () => void; field: boolean }) {
   const spotlight = useAppStore((s) => s.spotlight);
   const toggleSpotlight = useAppStore((s) => s.toggleSpotlight);
   const select = useAppStore((s) => s.select);
@@ -130,6 +131,7 @@ function Header({ ins, onClose }: { ins: Inspected; onClose: () => void }) {
             <DownloadIcon width={16} height={16} />
           </button>
         )}
+        {!field && <NavigateIconLink ins={ins} className={iconBtn} />}
         {ins.locate && (
           <button type="button" onClick={() => select(ins.ref, { fly: true, keepHere: true })} aria-label="Center on map" title="Center on map" className={iconBtn}>
             <TargetIcon width={16} height={16} />
@@ -150,6 +152,7 @@ export function Inspector({ variant = "panel", extend }: InspectorProps) {
   const select = useAppStore((s) => s.select);
   const back = useAppStore((s) => s.back);
   const setHere = useAppStore((s) => s.setHere);
+  const field = useAppStore((s) => s.lens === "field");
   const { ins, status } = useInspected(ref);
   const [hereOpen, setHereOpen] = useState(false);
   const pickHere = (r: string) => select(r, { keepHere: true });
@@ -208,7 +211,8 @@ export function Inspector({ variant = "panel", extend }: InspectorProps) {
           <span className="truncate">Back to {titles.get(prev) ?? "previous"}</span>
         </button>
       )}
-      <Header ins={ins} onClose={() => select(null)} />
+      <Header ins={ins} onClose={() => select(null)} field={field} />
+      {field && <NavigateBar ins={ins} />}
       {others > 0 && (
         <div className="shrink-0 border-b border-line">
           <button

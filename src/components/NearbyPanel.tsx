@@ -2,7 +2,8 @@ import type { Position } from "geojson";
 import type { GridData } from "../data/types.ts";
 import { useAppStore } from "../state/store.ts";
 import { bearingDeg, compass8, formatLength, haversineMeters } from "../lib/geo.ts";
-import { CloseIcon, SubstationIcon, TargetIcon } from "./icons.tsx";
+import { navLinks } from "../lib/navigate.ts";
+import { CloseIcon, NavigateIcon, SubstationIcon, TargetIcon } from "./icons.tsx";
 import { VoltageDot } from "./VoltageBadge.tsx";
 
 const COUNT = 6;
@@ -56,10 +57,10 @@ export function NearbyPanel({ data, sheet = false }: { data: GridData; sheet?: b
           <p className="px-2 py-3 text-sm text-ink-2">No substations match the current voltage / circle filter.</p>
         ) : (
           hits.map(({ s, m }) => (
+            <div key={s.id} className="flex items-center gap-1">
             <button
-              key={s.id}
               onClick={() => select(s.id, { fly: true })}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2 pointer-coarse:min-h-11"
             >
               <VoltageDot voltage={s.voltage} />
               <span className="shrink-0 text-ink-2">
@@ -70,6 +71,17 @@ export function NearbyPanel({ data, sheet = false }: { data: GridData; sheet?: b
                 {formatLength(m)} · {compass8(bearingDeg(o, [s.lng, s.lat]))}
               </span>
             </button>
+            <a
+              href={navLinks(s.lng, s.lat, s.name, typeof navigator === "undefined" ? "" : navigator.userAgent)[0].href}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Directions to ${s.name}`}
+              title="Directions in Google Maps"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-2 hover:bg-surface-2 hover:text-accent pointer-coarse:h-11 pointer-coarse:w-11"
+            >
+              <NavigateIcon width={15} height={15} />
+            </a>
+            </div>
           ))
         )}
       </div>
