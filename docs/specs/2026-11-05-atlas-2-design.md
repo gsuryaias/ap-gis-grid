@@ -11,7 +11,7 @@
 | 1 | Platform core (resource loader, store slices, pure layer specs, sync engine) | done — PR 1 (resource loader + search worker) done, PR #15 · PR 2 (store slices) done, PR #16 · PR 3 (pure layer specs) PR #17 · PR 4 (engine for overlays) PR #18 · PR 5 (engine for everything + one interaction handler; MapPane 586 → 164 lines) PR #19 — **done** |
 | 2 | Inspector adapters + URL v2 | **done** — PR 6 (Inspector adapters + What's here; DetailPanel / Dossier / NetworkTracePanel / popups deleted) PR #20 · PR 7 (URL v2: push/replace history, camera, `lyr=`, Copy link; v1 links rewritten) PR #21 |
 | 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | **done** — PR 8 (lens registry + shell: 4 lenses, header + ⋯ menu, docked lens panel, phone bottom sheet, Plan phone stack; `lyr` relative to lens defaults) PR #22 · PR 9 (layer catalogue drawer, zoom-aware legend, filter chips, solo, opacity) PR #23 · PR 10 (⌘K omnisearch: one combobox over assets, distribution, places, areas → Plan, layers, actions, lenses; SearchBar + MisSearch removed) PR #24 · PR 11 (trust & help: Indicative chips + method cards, glossary, `?` shortcuts, one Dialog with focus trap, one toast system, shared states, axe WCAG 2.2 AA in e2e) PR #25 |
-| 4 | Vector-tile directories, service-worker rework, Field offline pack, ETL split | in progress — PR 14 (Field offline packs: save a circle's existing tiles + sidecars + statewide files into an `offline` cache the worker falls back to; progress, size, incremental update, delete; no bulk third-party basemap tiles); PR 13 (generated service worker: content-versioned data URLs, build-hash caches, precached assets, LRU caches by count + bytes, Range bypass, offline e2e); PR 12 (static vector tiles for 11 kV, towers, DISCOM 33 kV, RTGS ≥ 300 KB via tippecanoe in CI / Docker; sidecar shards for the Inspector; GeoJSON fallback; 11 kV feeder pick ≈ 30 KB gz shard + tiles, was 3.1 MB gz) |
+| 4 | Vector-tile directories, service-worker rework, Field offline pack, ETL split | done — ETL split (`build-data.mts` 1,706 → 72 lines of orchestration over `etl-sources` / `etl-core` / `etl-towers` / `etl-overlays` / `etl-distribution` / `etl-places`; outputs byte-identical); PR 14 (Field offline packs: save a circle's existing tiles + sidecars + statewide files into an `offline` cache the worker falls back to; progress, size, incremental update, delete; no bulk third-party basemap tiles); PR 13 (generated service worker: content-versioned data URLs, build-hash caches, precached assets, LRU caches by count + bytes, Range bypass, offline e2e); PR 12 (static vector tiles for 11 kV, towers, DISCOM 33 kV, RTGS ≥ 300 KB via tippecanoe in CI / Docker; sidecar shards for the Inspector; GeoJSON fallback; 11 kV feeder pick ≈ 30 KB gz shard + tiles, was 3.1 MB gz) |
 | 5 | Storm / Field / Plan mission depth | planned |
 
 ## Baseline (2026-11-05, before the revamp)
@@ -428,6 +428,8 @@ explicit step.
 
 Split `scripts/build-data.mts` (1,706 lines) into per-domain modules (`etl-core`, `etl-overlays`, `etl-places`,
 `etl-towers`) in the same phase.
+*(Done, plus `etl-sources` (raw-layer readers, so `etl-towers` doesn't import back into `etl-core`) and
+`etl-distribution` (DISCOM 33 kV + 11 kV orchestration — folding it into `etl-overlays` would make that ~700 lines).)*
 
 ### Phase 5 — Mission depth (3 PRs)
 

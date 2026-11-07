@@ -1,5 +1,5 @@
 // Pure, side-effect-free helpers for the AP-TRANSCO ETL.
-// Kept separate from build-data.mts so they can be unit-tested in isolation.
+// Kept separate from the ETL orchestration (build-data.mts + etl-*.ts domain modules) so they can be unit-tested in isolation.
 import { parse as parseHtml } from "node-html-parser";
 import type { Position } from "geojson";
 

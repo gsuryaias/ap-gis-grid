@@ -77,7 +77,7 @@ WGS84 (EPSG:4326) — no reprojection. `Transco.kml` is retained for reference b
 
 | Layer | Path | Notes |
 |-------|------|-------|
-| ETL | `scripts/build-data.mts` + `scripts/etl-lib.ts` | pure helpers in etl-lib (unit-tested); orchestration in build-data.mts |
+| ETL | `scripts/build-data.mts` (orchestration only) + domain modules `etl-sources` (live pull vs shapefile snapshot readers) · `etl-core` (shared geometry helpers + the core grid: substations, lines, meta, search index, data quality) · `etl-towers` · `etl-overlays` (generation, power grid) · `etl-distribution` (DISCOM 33 kV + connectivity, 11 kV network) · `etl-places` | pure helpers in `etl-lib` / `etl-discom` / `etl-connectivity` / `etl-network` / `towers-lib` (unit-tested). A refactor of the ETL must leave `public/data/*` byte-identical apart from `generatedAt` stamps |
 | Data | `src/data/` | `resources.ts` (**the one lazy-asset loader** — see below), `fetch.ts` (worker-safe `fetchJson`/`dataUrl` (content-versioned, see "PWA / offline")/`HttpError`), `data-version.ts`, `types.ts` (canonical types), `load.ts` (initial grid + gen/pg fetch), `selectors.ts`, `graph-data.ts` (memoised topology), `weather.ts`, `connectivity.ts` (TRANSCO→33 kV index), `network-search.ts` (11 kV / DTR types + decoders), `search-core.ts` + `search-client.ts` (places / network / DTR search engine, run in `workers/search.worker.ts`), `live-status.ts` |
 | State | `src/state/` (one Zustand store from slices) + `src/url/` | see "Store slices" and "URL v2"; selection history (`back()`), lens + workspaceContext |
 | Map | `src/map/` | see "Map engine" below: `MapPane.tsx` (the one map — `full` in the map lenses, embedded/hidden in Plan; ~160 lines of wiring), `engine.ts`, `registry/{types,core,overlays}.ts`, `interaction.ts`, `hooks.ts` (camera / measure / nearby / resize), `spec.ts` (`MapSpec` / `FeatureStateSpec` + conditional appliers), `layers.ts` / `weather-layers.ts` / `mis-layers.ts` (pure layer builders + specs), `layer-presets.ts` (per-workspace layer groups), `basemaps.ts`, `measure.ts`, `map-helpers.ts` (fly / fit / `sourceForId`), `testing/fake-map.ts` |
@@ -147,7 +147,7 @@ also has ~24 structural/insulator fields that are currently empty (the Inspector
   kept; objectid/globalid/lat-lng duplicates/`linename_sd_merge` dropped). Change detection keys on
   line + tower number (`towerKeys`/`diffTowers`); gates: per-layer floor + >15% drop rejected.
   `towers-manifest.json` = per-layer status. `npm run update` runs it after `sync:live` (non-fatal).
-- **ETL** (`buildTowers` in build-data): `buildWebTowers` dictionary-encodes low-cardinality columns →
+- **ETL** (`buildTowers` in `etl-towers.ts`): `buildWebTowers` dictionary-encodes low-cardinality columns →
   `public/data/towers-<kv>.json` (≈ 180 / 480 / 620 KB gz), matches each tower line to a core line by
   normalised name (99.6% of towers), and folds a per-line summary into `lines.geojson` as
   `LineProps.towers` `{n, cp, sp, types}`; counts in `live-status.json → towers`.
@@ -263,7 +263,7 @@ feeders/lines, distribution transformers (DTRs) and APEPDCL AB switches → `dat
   services are never pulled; `dtr_loc_name` (often a private person's name), `ht_scno`, remarks, device and
   employee ids are deliberately not kept. **Owner decision (2026-11-05): the AB-switch raw file and DTR
   `pole_no` (from the open GIS) stay published as they are** — don't re-raise.
-- **ETL** (`buildNetwork` in build-data → `etl-network.ts`): `discom-11kv-lines.geojson` (lazy overlay,
+- **ETL** (`buildNetwork` in `etl-distribution.ts` → `etl-network.ts`): `discom-11kv-lines.geojson` (lazy overlay,
   ≈ 20 MB raw / 3.1 MB gz — the biggest file; drawn from vector tiles when built, see "Vector tiles"), `net-dtr-<shard>.json`
   (≈ 305k DTRs in ~380 shards: APEPDCL by the first 4 chars of the DTR code, APSPDCL by the first 2 of the
   serial) and `search-network.json` (the "network" search tier + upstream trace chains). Every 11 kV feeder is
@@ -442,7 +442,7 @@ A second, optional layer of **generation plants** classified by energy mix. It i
 none of its code path runs until the user enables it.
 
 - **Source / ETL**: live `Generation_SS` layer (`buildGenerationLive`, with `capacityMw` + `units`) when synced,
-  else `data/raw/generation.kml` → `buildGeneration()` in `build-data.mts` → `public/data/generation.geojson`.
+  else `data/raw/generation.kml` → `buildGeneration()` in `etl-overlays.ts` → `public/data/generation.geojson`.
   Energy class comes from the KML `SS Type` cell via `classifyEnergy()` (canonical
   `Solar | Wind | Thermal | Gas | Hydro | Other`; source spells hydro "Hydal", `<Null>` → `Other`).
   IDs are synthetic `g-<slug(name)>`. Validation gate: **57 plants**. Counts (current data):
@@ -473,7 +473,7 @@ user enables it. It bundles **three classes** behind one master toggle, each wit
 - **Railway traction SS** — `railway-ss.geojson` (**62** RTSS points). IDs `rs-<slug>`.
 - **Bulk-load / HT SS** — `bulkload-ss.geojson` (**139** private/industrial HT-consumer points). IDs `bs-<slug>`.
 
-- **Source / ETL**: `buildPowerGrid()` in `build-data.mts` reads all four shapefiles, filters nothing
+- **Source / ETL**: `buildPowerGrid()` in `etl-overlays.ts` reads all four shapefiles, filters nothing
   (these layers are already curated), and emits the four geojson. Pure helpers (`cleanPgName`,
   `normalizeKv`, `parseMva`) live in `etl-lib.ts`. Voltage is a **`number`** (765 supported); a few
   source rows have unparseable voltage → `0` (UI shows "—"). Validation gate: build fails on 0 features.
@@ -576,7 +576,7 @@ mandals, rivers/reservoirs, hills, railway stations, temples, forests…) from a
 extract** (`data/raw/geonames-ap.tsv` — the `IN` dump filtered to admin1 = `02`, roads excluded;
 **CC BY 4.0**, credited in the App footer).
 
-- **ETL**: `buildPlaces()` in `build-data.mts`; pure helpers `parsePlacesTsv` / `placeType` /
+- **ETL**: `buildPlaces()` in `etl-places.ts`; pure helpers `parsePlacesTsv` / `placeType` /
   `dedupePlaces` in `etl-lib.ts` (unit-tested). Near-duplicates (same name + feature class within
   10 km) collapse to the most populous row (33,497 from 34,649); district names come from the
   extract's own ADM2 rows (covers both the 13- and 26-district vintages GeoNames mixes); the

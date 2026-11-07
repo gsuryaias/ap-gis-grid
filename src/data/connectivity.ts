@@ -1,6 +1,6 @@
 import { dataUrl, defineResource, fetchJson } from "./resources.ts";
 
-/** [id, name, discom, km, method, servedSsIds] — see build-data.mts `transco-33kv.json`. */
+/** [id, name, discom, km, method, servedSsIds] — see scripts/etl-distribution.ts `buildDiscom` (`transco-33kv.json`). */
 export type FeederTuple = [string, string | null, string, number, "name" | "proximity" | "feeder-group", string[]];
 /** [name, discom, lng, lat] */
 export type DiscomSsTuple = [string, string, number, number];

@@ -1,5 +1,5 @@
 // Network search tier — DISCOM 33 kV feeders, 33/11 kV substations, 11 kV feeders, sections and
-// distribution transformers (written by build-data `buildNetwork`; see scripts/etl-network.ts).
+// distribution transformers (written by `buildNetwork` in scripts/etl-distribution.ts; see scripts/etl-network.ts).
 // Two lazy tiers, both outside the initial payload and both parsed in the search worker
 // (data/search-core.ts → workers/search.worker.ts), never on the main thread:
 //   search-network.json  ~450 KB gz — loaded on first focus of the search box (like places)
