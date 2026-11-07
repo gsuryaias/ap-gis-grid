@@ -1,9 +1,9 @@
 // Pure helpers for the real-time weather overlay/dashboard. Dependency- and side-effect-free
 // (same discipline as geo.ts / etl-lib) so they unit-test in the `node` environment. All
 // network I/O lives in src/data/weather.ts.
-import type { MultiPolygon, Polygon, Position } from "geojson";
+import type { Position } from "geojson";
 import type { SubstationProps } from "../data/types.ts";
-import { centroid, pointInPolygonGeom } from "./geo.ts";
+import { centroid } from "./geo.ts";
 
 /** Coarse rendering family for a WMO weather code (drives the dashboard icon). */
 export type WmoGroup = "clear" | "cloud" | "fog" | "rain" | "snow" | "storm";
@@ -96,15 +96,3 @@ export const AP_COAST_POINTS: ReadonlyArray<{ name: string; lng: number; lat: nu
   { name: "Ongole coast", lng: 80.35, lat: 15.45 },
   { name: "Nellore coast", lng: 80.3, lat: 14.4 },
 ];
-
-/**
- * Substations inside any of the given forecast-cone / alert-swath polygons. Indicative only —
- * the cone is a path-uncertainty envelope, not a damage prediction.
- */
-export function assetsInCone(
-  substations: SubstationProps[],
-  polygons: Array<Polygon | MultiPolygon>,
-): SubstationProps[] {
-  if (polygons.length === 0) return [];
-  return substations.filter((s) => polygons.some((p) => pointInPolygonGeom([s.lng, s.lat], p)));
-}

@@ -53,7 +53,15 @@ export const WX_ALERT_COLOR: Record<string, string> = {
   Red: "#dc2626",
 };
 export const WX_TRACK_COLOR = "#881337"; // rose-900 — cyclone track + positions
-export const WX_RISK_COLOR = "#f59e0b"; // amber-500 — substations inside a forecast cone
+export const WX_RISK_COLOR = "#f59e0b"; // amber-500 — substations in the storm warning envelope
+
+// Storm situation status (Storm lens). "No information" is FEMA's neutral grey — never green.
+export const STORM_STATUS_COLOR: Record<"warning" | "watch" | "clear" | "noinfo", string> = {
+  warning: "#dc2626",
+  watch: "#f59e0b",
+  clear: "#16a34a",
+  noinfo: "#8a8f98",
+};
 
 export const ENERGY_LABEL: Record<EnergyType, string> = {
   Thermal: "Thermal",

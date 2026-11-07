@@ -517,17 +517,41 @@ in `src/map/weather-layers.ts`; dashboard in `src/components/WeatherView.tsx`.
 - **Map layers** (engine defs `WX_RADAR` / `WX_CYCLONE_FILLS` / `WX_CYCLONE_LINES` / `WX_RISK` in
   `map/registry/core.ts`, builders in `weather-layers.ts`): radar raster + cyclone fills in the `beneath` band so the
   grid stays legible; track/positions/cone outline on top. A new radar frame swaps tiles in place (`setTiles`), a new
-  fetch re-uploads the cyclone GeoJSON (`computed` source keyed on `fetchedAt`). Substations inside a forecast cone
-  get an amber halo — the `wx-risk-substations` circle layer rides the core SS source with an id `in`-filter
-  (`wxRiskSpec`, NOT feature-state). Visibility = `weatherOn(filters, layer)` (master × sub-toggle).
+  fetch re-uploads the cyclone GeoJSON (`computed` source keyed on `fetchedAt`). Substations in the **warning
+  envelope** (see "Storm situation") get an amber halo — the `wx-risk-substations` circle layer rides the core SS source
+  with an id `in`-filter (`wxRiskSpec` ← `wxRiskIds`, NOT feature-state). Visibility = `weatherOn(filters, layer)` (master × sub-toggle).
 - **Weather monitor** (`WeatherView`, `weatherOpen` like `summaryOpen`, not in hash): cyclone alert
-  cards (GDACS level colours + "N substations inside the forecast envelope" via `assetsInCone`),
+  cards (GDACS level colours + "N substations in the warning envelope" via `warningEnvelope`),
   13-circle conditions grid, coastal sea state, 3-day outlook table, last-updated + manual refresh.
 - **The SS Inspector** shows a "Weather now" line for a selected substation **only while the overlay is
   on** (`spotWeather` resource keyed by `spotCell` — one fetch per ~1 km cell).
 - Palette: cyclone swaths use GDACS's semantic green/orange/red (`WX_ALERT_COLOR`), track is
   rose-900 `WX_TRACK_COLOR`, risk halo amber `WX_RISK_COLOR` — all outside the voltage palette.
   Everything is labelled **indicative** (model output, not IMD advisories) per the honesty convention.
+
+## Storm situation (the Storm lens panel, Atlas 2.0 phase 5 PR 15)
+
+`lenses/StormPanel.tsx` (lazy) = the control room's picture, all derived live from the weather feed + the static grid
+analytics — **indicative screening** (method card `storm`, glossary `warning-envelope`):
+- **Warning envelope** (`lib/storm-envelope.ts`, pure — small on purpose, it is in the shell bundle for the map halo):
+  SS inside a GDACS cone / alert swath **∪** SS with `coastalBand ≤ 1` (< 25 km from the sea) within `STORM_TRACK_KM`
+  (150) of the track (`stormSystem` in `data/storm-systems.ts` turns an event's `wxKind` track/position features into
+  polylines). `exposedLines`: a line with any vertex in the envelope (bbox-prefiltered).
+- **Situation** (`lib/storm.ts`, pure, lazy chunk only — it pulls in supply security; `storm.test.ts` incl. the real
+  network): `atRisk` = envelope ∪ `feed` (a radial SS whose supply-security bridge path has an exposed line or SS on it)
+  ∪ `cut` (islanded by an exposed cut point, `cutImpacts`); generation `gen:` nodes are never counted. Exposed radial
+  `pockets` + `cuts` ranked by 33/11 kV SS behind them; `downstream` = every at-risk SS's 33 kV feeders / distinct 33/11
+  kV SS (by DISCOM) from `transco-33kv.json` (`connectivity`, loaded only while a system is active).
+- **Circle board** (`circleBoard`): Warning = SS in the envelope; Watch = supply at risk, outlook gust ≥ 62 km/h (IMD gale)
+  or ≥ 115.6 mm/day (IMD very heavy); **Clear only when both GDACS and the circle's forecast answered**, else FEMA-grey
+  "No information" (`STORM_STATUS_COLOR`). Headline = the worst circle.
+- `data/storm.ts` `stormPicture(data, weather, conn)` memoises it (plus `supplySecurityOf`, `atRiskRows` = the shared
+  list / CSV / briefing rows). CSV exports: at-risk SS, downstream feeders.
+- **Printable briefing** (`lenses/StormBriefing.tsx` in `shell/PrintSheet.tsx`): a portal on `<body>` hidden on screen;
+  while mounted, `body.has-print-sheet` makes print media show only it (`.print-sheet` CSS in `index.css`, fixed light
+  colours). "Print briefing" = `window.print()`; ⌘P in the Storm lens prints it too. No map image.
+- e2e `e2e/storm.spec.ts` mocks a GDACS landfall near Kakinada (Open-Meteo / RainViewer aborted → hermetic) and checks
+  the panel, the halo filter, axe, and print media.
 
 ## Measurement tool
 
@@ -702,8 +726,8 @@ switches to one `LayerOn`). Lens presets are not persisted as the viewer's overl
   `BottomSheet` (peek / half / full, pointer drag + snap, handle is a button) holding the Inspector (`variant="sheet"`),
   the nearby list or the lens panel. `map-helpers.framing` frames flights above the half-open sheet on phones.
 - **Panels** (`lenses/panels.tsx`): Explore (`ExplorePanel` — Start here, network at a glance, layers + legend) and
-  Field (`FieldPanel` — near me, trace via search, offline packs, layers) are inline; Storm (`StormPanel`, the Weather monitor body
-  in compact form — the full situation panel is phase 5) and Plan (`workspaces/mis/MisWorkspace.tsx`) are lazy.
+  Field (`FieldPanel` — near me, trace via search, offline packs, layers) are inline; Storm (`StormPanel`, the situation panel — see
+  "Storm situation") and Plan (`workspaces/mis/MisWorkspace.tsx`) are lazy.
   `StartHere` cards are dismissible per lens (`apgg-start-<lens>`).
 - **Plan / map embedding**: `MapPane` renders the shared map in `full` (map lenses), `embedded` (split) or `hidden`
   (collapsed) modes; the collapse is `mapLayout` (`open|collapsed|atlas-only`). The map column keeps its place in

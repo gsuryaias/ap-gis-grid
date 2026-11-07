@@ -12,7 +12,7 @@
 | 2 | Inspector adapters + URL v2 | **done** — PR 6 (Inspector adapters + What's here; DetailPanel / Dossier / NetworkTracePanel / popups deleted) PR #20 · PR 7 (URL v2: push/replace history, camera, `lyr=`, Copy link; v1 links rewritten) PR #21 |
 | 3 | Lens shell, layer catalogue, omnisearch / ⌘K, trust & help layer | **done** — PR 8 (lens registry + shell: 4 lenses, header + ⋯ menu, docked lens panel, phone bottom sheet, Plan phone stack; `lyr` relative to lens defaults) PR #22 · PR 9 (layer catalogue drawer, zoom-aware legend, filter chips, solo, opacity) PR #23 · PR 10 (⌘K omnisearch: one combobox over assets, distribution, places, areas → Plan, layers, actions, lenses; SearchBar + MisSearch removed) PR #24 · PR 11 (trust & help: Indicative chips + method cards, glossary, `?` shortcuts, one Dialog with focus trap, one toast system, shared states, axe WCAG 2.2 AA in e2e) PR #25 |
 | 4 | Vector-tile directories, service-worker rework, Field offline pack, ETL split | done — ETL split (`build-data.mts` 1,706 → 72 lines of orchestration over `etl-sources` / `etl-core` / `etl-towers` / `etl-overlays` / `etl-distribution` / `etl-places`; outputs byte-identical); PR 14 (Field offline packs: save a circle's existing tiles + sidecars + statewide files into an `offline` cache the worker falls back to; progress, size, incremental update, delete; no bulk third-party basemap tiles); PR 13 (generated service worker: content-versioned data URLs, build-hash caches, precached assets, LRU caches by count + bytes, Range bypass, offline e2e); PR 12 (static vector tiles for 11 kV, towers, DISCOM 33 kV, RTGS ≥ 300 KB via tippecanoe in CI / Docker; sidecar shards for the Inspector; GeoJSON fallback; 11 kV feeder pick ≈ 30 KB gz shard + tiles, was 3.1 MB gz) |
-| 5 | Storm / Field / Plan mission depth | planned |
+| 5 | Storm / Field / Plan mission depth | in progress — PR 15 (Storm situation: warning envelope = cone ∪ coast ≤ 25 km within 150 km of the track, also the map halo; supply exposure via radial feed paths + exposed cut points; downstream 33/11 kV; 13-circle board with FEMA-grey "No information"; printable briefing via a print-only sheet; mocked-GDACS e2e) · PR 16 Field · PR 17 Plan — planned |
 
 ## Baseline (2026-11-05, before the revamp)
 
@@ -442,6 +442,11 @@ Split `scripts/build-data.mts` (1,706 lines) into per-domain modules (`etl-core`
     - 13-circle conditions, sea state and the 3-day outlook.
     - Status uses the FEMA-style grey for "no information".
     - A **printable briefing** (print CSS, timestamp, sources).
+    *(Built as: `lib/storm-envelope.ts` (envelope, shell bundle — the map halo) + `lib/storm.ts` (situation + circle
+    board, lazy) over `data/storm.ts`; N = 150 km; a line counts as exposed when a vertex is in the envelope; a radial SS
+    is at risk when a bridge corridor on its feed carries an exposed line or SS; circle Watch = supply at risk, gust ≥ 62
+    km/h or ≥ 115.6 mm/day in the outlook; Clear needs both GDACS and the circle's forecast. Briefing = `shell/PrintSheet`
+    portal + `.print-sheet` print CSS — no map image.)*
 16. **Field mission.**
     - Near me, with the 6 nearest SS and a compass bearing.
     - "Navigate" deep links (`geo:` and Google Maps).

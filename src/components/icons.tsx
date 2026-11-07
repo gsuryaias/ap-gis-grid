@@ -127,3 +127,6 @@ export const DotsIcon = (p: P) => (
 export const PanelLeftIcon = (p: P) => (
   <svg {...base(p)}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></svg>
 );
+export const PrintIcon = (p: P) => (
+  <svg {...base(p)}><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2" /><path d="M6 14h12v7H6z" /></svg>
+);

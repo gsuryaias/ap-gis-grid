@@ -130,7 +130,7 @@ function Weather({ compact }: { compact: boolean }) {
       {wxLayers.cyclone && data.cyclones.length > 0 && (
         <>
           <Key swatch={{ shape: "polygon", color: WX_ALERT_COLOR.Orange, fill: true }} label="Forecast cone / alert swath" />
-          <Key swatch={{ shape: "point", color: WX_RISK_COLOR }} label="Substation inside the cone" />
+          <Key swatch={{ shape: "point", color: WX_RISK_COLOR }} label="Substation in the warning envelope" />
         </>
       )}
       {!compact && data.sourceErrors.length > 0 && <Note>Some sources didn’t respond: {data.sourceErrors.join(" · ")}</Note>}

@@ -2,7 +2,7 @@
 // Our World in Data pattern: say up front what a derived number is, how it was made, from what,
 // how old it is and how much it covers — and that it is not an operational figure. Pure data.
 
-export type MethodId = "capacity" | "dlr" | "age" | "connectivity" | "supply" | "n1" | "coastal" | "risk" | "weather" | "trace";
+export type MethodId = "capacity" | "dlr" | "age" | "connectivity" | "supply" | "n1" | "coastal" | "risk" | "weather" | "trace" | "storm";
 
 export interface MethodCard {
   id: MethodId;
@@ -102,7 +102,7 @@ export const METHODS: Record<MethodId, MethodCard> = {
   weather: {
     id: "weather",
     title: "Live weather and cyclones",
-    rule: "Model conditions at the 13 circle centres, offshore sea state, composite rain radar and the GDACS cyclone track / forecast cone; substations inside a cone are haloed.",
+    rule: "Model conditions at the 13 circle centres, offshore sea state, composite rain radar and the GDACS cyclone track / forecast cone; substations in the warning envelope (cone, or coastal and near the track) are haloed.",
     source: "Open-Meteo (forecast + marine), RainViewer (radar), GDACS (UN / EC JRC).",
     vintage: "Live; weather refreshes every 10 minutes, radar is the latest past frame.",
     coverage: "Bay of Bengal / Arabian Sea systems; radar to zoom 7.",
@@ -118,5 +118,15 @@ export const METHODS: Record<MethodId, MethodCard> = {
     coverage: "APEPDCL near-complete; APSPDCL partial; APCPDCL has no open 11 kV or transformer data.",
     caveat: "Spatially inferred — a step can be wrong or missing; confirm with the DISCOM.",
     terms: ["dtr", "inferred-link", "ss33"],
+  },
+  storm: {
+    id: "storm",
+    title: "Storm situation screen",
+    rule: "Warning envelope = substations inside a GDACS cone / alert swath, plus coastal ones (band ≤ 1, under 25 km from the sea) within 150 km of the track. Supply at risk = substations whose radial feed crosses an exposed line or substation, or that a lost exposed cut point would island; downstream = their 33 kV feeders and 33/11 kV substations. Circles: Warning = a substation in the envelope; Watch = supply at risk, gusts ≥ 62 km/h (IMD gale) or ≥ 115.6 mm/day rain (IMD very heavy) in the 3-day outlook; Clear needs both feeds to answer, else grey ‘No information’.",
+    source: "GDACS cone + track; Open-Meteo outlook; the inferred grid topology and TRANSCO → 33 kV links in this Atlas.",
+    vintage: "Live (weather refreshes every 10 minutes); the grid is as of the last data build.",
+    coverage: "Active Bay of Bengal / Arabian Sea systems; AP-TRANSCO substations and lines; 33 kV links where the DISCOM data has them (APSPDCL partial).",
+    caveat: "A screening aid, not an IMD warning or a damage forecast — the envelope is a path-uncertainty band and every link is inferred.",
+    terms: ["warning-envelope", "forecast-cone", "pocket", "cut-point", "coastal-band"],
   },
 };

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Polygon } from "geojson";
 import type { SubstationProps } from "../data/types.ts";
 import { pointInPolygonGeom, pointInRing } from "./geo.ts";
-import { assetsInCone, circlePoints, cycloneInBasin, wmoGroup, wmoLabel } from "./weather.ts";
+import { circlePoints, cycloneInBasin, wmoGroup, wmoLabel } from "./weather.ts";
 
 function ss(id: string, circle: string | null, lng: number, lat: number): SubstationProps {
   return {
@@ -66,7 +66,7 @@ describe("cycloneInBasin", () => {
   });
 });
 
-describe("pointInRing / pointInPolygonGeom / assetsInCone", () => {
+describe("pointInRing / pointInPolygonGeom", () => {
   const square: Polygon = {
     type: "Polygon",
     coordinates: [[[80, 15], [82, 15], [82, 17], [80, 17], [80, 15]]],
@@ -89,10 +89,4 @@ describe("pointInRing / pointInPolygonGeom / assetsInCone", () => {
     expect(pointInPolygonGeom([80.4, 16], withHole)).toBe(true); // in the donut
   });
 
-  it("filters substations to those inside any polygon", () => {
-    const inside = ss("in", "X", 81, 16);
-    const outside = ss("out", "X", 78, 13);
-    expect(assetsInCone([inside, outside], [square]).map((s) => s.id)).toEqual(["in"]);
-    expect(assetsInCone([inside, outside], [])).toEqual([]);
-  });
 });
